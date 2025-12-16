@@ -1,0 +1,144 @@
+:root {
+    --AIR_BLOCK_COLOR: rgb(170 167 191 / 29%);
+    --BR_BASE: 22px / 21px;
+}
+
+header {
+    width: auto;
+    margin: 10px;
+    border-radius: 100px;
+    padding: 10px;
+    height: 60px;
+
+    .Search-Container {
+        z-index: 1;
+
+        .UI-Input {
+            border-radius: var(--BR_BASE);
+        }
+    }
+}
+
+header,
+.Search-Result,
+.UI-Window,
+.Music-MiniPlayer {
+    background: rgb(255 255 255 / 30%);
+    backdrop-filter: none;
+}
+
+.Search-Result {
+    border-radius: 28px;
+}
+
+.UI-Window {
+    color: #000;
+    border-radius: 28px;
+}
+
+.UI-Window_text {
+    color: #000;
+}
+
+.UI-Tabs .Tab {
+    border-radius: 100px;
+}
+
+.Music-ControlButtons {
+    z-index: 1;
+}
+
+header::after,
+.Search-Result::after,
+.UI-Window::after,
+.Music-MiniPlayer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 28px;
+    backdrop-filter: blur(5px) saturate(2);
+    filter: url(#glass-distortion);
+    isolation: isolate;
+    -webkit-backdrop-filter: blur(5px) saturate(2);
+    -webkit-filter: url(#glass-distortion);
+}
+
+header::before,
+.Search-Result::before,
+.UI-Window::before,
+.Music-MiniPlayer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: 28px;
+    box-shadow: inset 1px 1px 4px 5px rgb(255 255 255 / 30%);
+}
+
+@media only screen and (max-device-width: 768px),
+only screen and (device-width: 768px) and (device-height: 768px),
+only screen and (width: 768px) and (orientation: landscape),
+only screen and (device-width: 768px),
+only screen and (max-width: 768px) {
+    .UI-B_FIRST {
+        margin-top: 80px;
+    }
+
+    .Search-Result {
+        margin: 80px auto auto auto;
+    }
+
+    header {
+        padding: 0;
+    }
+
+    .UI-L_NAV {
+        background: rgb(255 255 255 / 30%);
+        backdrop-filter: none;
+        width: auto;
+        margin: 10px;
+        border-radius: 100px;
+        height: 70px;
+
+        .ActiveButton {
+            background: rgb(33 33 33 / 77%);
+            border-radius: 20px;
+            color: #FFF;
+
+            .UI-LN_ICON svg {
+                fill: #FFF;
+            }
+        }
+
+        button {
+            color: rgb(33 33 33 / 77%);
+
+            .UI-LN_ICON svg {
+                fill: rgb(33 33 33 / 77%);
+            }
+        }
+    }
+
+    .UI-L_NAV::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: 28px;
+        backdrop-filter: blur(5px) saturate(2);
+        filter: url(#glass-distortion);
+        isolation: isolate;
+        -webkit-backdrop-filter: blur(5px) saturate(2);
+        -webkit-filter: url(#glass-distortion);
+    }
+
+    .UI-L_NAV::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        border-radius: 28px;
+        box-shadow: inset 1px 1px 4px 5px rgb(255 255 255 / 30%);
+    }
+}
