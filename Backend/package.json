@@ -1,0 +1,37 @@
+{
+  "name": "element",
+  "version": "2.7",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "npx tsx index.ts",
+    "build": "tsc",
+    "obfuscate": "javascript-obfuscator ./dist --output ./dist"
+  },
+  "dependencies": {
+    "@msgpack/msgpack": "^3.1.2",
+    "axios": "^1.11.0",
+    "base64url": "^3.0.1",
+    "bcryptjs": "^3.0.2",
+    "check-disk-space": "^3.4.0",
+    "file-type": "^21.0.0",
+    "heic-convert": "^2.1.0",
+    "ioredis": "^5.7.0",
+    "music-metadata": "^11.7.3",
+    "mysql2": "^3.14.3",
+    "node-id3": "^0.2.9",
+    "path": "^0.12.7",
+    "sharp": "^0.34.3",
+    "url": "^0.11.4",
+    "uuidv7": "^1.0.2",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.2.0",
+    "@types/ws": "^8.18.1",
+    "javascript-obfuscator": "^4.1.1",
+    "typescript": "^5.9.2"
+  }
+}
