@@ -1,0 +1,55 @@
+.ReportModal {
+    .UI-Input {
+        width: 100%;
+    }
+}
+
+.ReportModal .HeaderBlock {
+    background: var(--AIR_BLOCK_COLOR);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.ReportModal .ReasonItem svg {
+    width: 18px;
+    height: 18px;
+    color: var(--SECOND_TEXT_COLOR);
+}
+
+.ReportModal .ReportReasonsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    overflow: hidden;
+    box-shadow: var(--BLOCK_SHADOW);
+}
+
+.ReportModal .ReportReasonContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ReportModal .ReportReasonTitle {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--BTN_TEXT_COLOR);
+}
+
+.ReportModal .ReportReasonDescription {
+    font-size: 13px;
+    color: var(--SECOND_TEXT_COLOR);
+    line-height: 1.4;
+}
+
+.ReportModal .ReportReasonArrow {
+    color: var(--SECOND_TEXT_COLOR);
+    opacity: 0.6;
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

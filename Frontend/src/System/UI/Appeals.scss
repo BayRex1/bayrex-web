@@ -1,0 +1,340 @@
+.AppealsReview {
+    padding: 0;
+
+    &-Header {
+        margin-bottom: 20px;
+    }
+
+    &-Filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--BORDER_COLOR);
+            background: var(--BLOCK_COLOR);
+            color: var(--TEXT_COLOR);
+            border-radius: var(--BR_BASE);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+
+            &:hover {
+                background: var(--BLOCK_BLOCK_COLOR);
+            }
+
+            &.active {
+                background: var(--ACCENT_COLOR);
+                color: white;
+                border-color: var(--ACCENT_COLOR);
+            }
+        }
+    }
+
+    &-Empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--D_OR_P_COLOR);
+    }
+
+    &-List {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &-Item {
+        background: var(--BLOCK_COLOR);
+        border: 1px solid var(--BORDER_COLOR);
+        border-radius: var(--BR_BASE);
+        padding: 16px;
+        transition: all 0.2s;
+
+        &:hover {
+            border-color: var(--ACCENT_COLOR_LITE);
+        }
+    }
+
+    &-ItemHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+
+        .User {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--TEXT_COLOR);
+        }
+
+        .Status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+
+            svg {
+                width: 16px;
+                height: 16px;
+                fill: currentColor;
+            }
+        }
+    }
+
+    &-ItemContent {
+        margin-bottom: 16px;
+
+        .Restriction,
+        .Reason,
+        .OriginalReason,
+        .Response {
+            margin-bottom: 12px;
+
+            strong {
+                color: var(--TEXT_COLOR);
+                display: block;
+                margin-bottom: 4px;
+            }
+
+            p {
+                color: var(--D_OR_P_COLOR);
+                margin: 0;
+                padding: 8px 12px;
+                background: var(--BLOCK_BLOCK_COLOR);
+                border-radius: 6px;
+                line-height: 1.4;
+            }
+
+            small {
+                color: var(--D_OR_P_COLOR);
+                font-size: 12px;
+                margin-top: 4px;
+                display: block;
+            }
+        }
+    }
+
+    &-ItemFooter {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--BORDER_COLOR);
+
+        .Date {
+            color: var(--D_OR_P_COLOR);
+            font-size: 13px;
+        }
+
+        .Actions {
+            display: flex;
+            gap: 8px;
+        }
+    }
+
+    &-ActionBtn {
+        padding: 6px 12px;
+        border: 1px solid var(--BORDER_COLOR);
+        background: var(--BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+
+        svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        &:hover {
+            background: var(--BLOCK_BLOCK_COLOR);
+        }
+
+        &.approve {
+            &:hover {
+                background: var(--SUCCESS_COLOR);
+                border-color: var(--SUCCESS_COLOR);
+                color: white;
+            }
+        }
+
+        &.reject {
+            &:hover {
+                background: var(--ERROR_COLOR);
+                border-color: var(--ERROR_COLOR);
+                color: white;
+            }
+        }
+
+        &.review {
+            &:hover {
+                background: var(--INFO_COLOR);
+                border-color: var(--INFO_COLOR);
+                color: white;
+            }
+        }
+    }
+}
+
+.ReviewAppealModal {
+    &-Content {
+        padding: 20px;
+        max-width: 600px;
+    }
+
+    .Appeal-Info {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: var(--BLOCK_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+
+        h4 {
+            margin: 0 0 12px 0;
+            color: var(--TEXT_COLOR);
+        }
+
+        p {
+            margin: 8px 0;
+            color: var(--D_OR_P_COLOR);
+
+            strong {
+                color: var(--TEXT_COLOR);
+            }
+        }
+    }
+
+    .Appeal-Reason {
+        background: var(--BLOCK_COLOR);
+        border: 1px solid var(--BORDER_COLOR);
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 8px;
+        color: var(--TEXT_COLOR);
+        line-height: 1.4;
+    }
+
+    .Response-Field {
+        margin-bottom: 20px;
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--TEXT_COLOR);
+            font-weight: 500;
+        }
+
+        .SocialInput-container {
+            width: 100%;
+            
+            .UI-Input {
+                min-height: 120px;
+                padding: 12px;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid var(--BORDER_COLOR);
+            border-radius: var(--BR_BASE);
+            background: var(--BLOCK_COLOR);
+            color: var(--TEXT_COLOR);
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: vertical;
+
+            &:focus {
+                outline: none;
+                border-color: var(--ACCENT_COLOR);
+            }
+
+            &::placeholder {
+                color: var(--D_OR_P_COLOR);
+            }
+        }
+    }
+
+    .Response-Counter {
+        text-align: right;
+        font-size: 12px;
+        color: var(--D_OR_P_COLOR);
+        margin-top: 4px;
+    }
+
+    &-Actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+
+        .approve {
+            background: var(--SUCCESS_COLOR);
+            border-color: var(--SUCCESS_COLOR);
+            color: white;
+
+            &:hover:not(:disabled) {
+                background: var(--SUCCESS_COLOR_DARK);
+                border-color: var(--SUCCESS_COLOR_DARK);
+            }
+        }
+
+        .reject {
+            background: var(--ERROR_COLOR);
+            border-color: var(--ERROR_COLOR);
+            color: white;
+
+            &:hover:not(:disabled) {
+                background: var(--ERROR_COLOR_DARK);
+                border-color: var(--ERROR_COLOR_DARK);
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .AppealsReview {
+        &-ItemFooter {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+
+            .Actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        &-Filters {
+            button {
+                flex: 1;
+                min-width: 0;
+                text-align: center;
+            }
+        }
+    }
+
+    .ReviewAppealModal {
+        &-Content {
+            padding: 16px;
+        }
+
+        &-Actions {
+            flex-direction: column;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
+}

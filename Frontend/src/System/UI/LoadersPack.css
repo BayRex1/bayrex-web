@@ -1,0 +1,207 @@
+/* Загрузчик - 1 */
+
+.UI-Loader_1 {
+  --uil1-size: 35px;
+  --uil1-color: black;
+  --uil1-speed: 1.5s;
+  --uil1-dot-size: calc(var(--uil1-size) * 0.4);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--uil1-size);
+  width: var(--uil1-size);
+  animation: uil1_anim2 calc(var(--uil1-speed) * 1.667) infinite linear;
+}
+
+.UI-Loader_1::before,
+.UI-Loader_1::after {
+  content: "";
+  position: absolute;
+  height: var(--uil1-dot-size);
+  width: var(--uil1-dot-size);
+  border-radius: 50%;
+  background-color: var(--uil1-color);
+  flex-shrink: 0;
+  transition: background-color 0.3s ease;
+}
+
+.UI-Loader_1::before {
+  animation: uil1_anim var(--uil1-speed) linear infinite;
+}
+
+.UI-Loader_1::after {
+  animation: uil1_anim var(--uil1-speed) linear calc(var(--uil1-speed) / -2)
+    infinite;
+}
+
+@keyframes uil1_anim2 {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes uil1_anim {
+  0% {
+    transform: translateX(calc(var(--uil1-size) * 0.25)) scale(0.73684);
+    opacity: 0.65;
+  }
+  5% {
+    transform: translateX(calc(var(--uil1-size) * 0.235)) scale(0.684208);
+    opacity: 0.58;
+  }
+  10% {
+    transform: translateX(calc(var(--uil1-size) * 0.182)) scale(0.631576);
+    opacity: 0.51;
+  }
+  15% {
+    transform: translateX(calc(var(--uil1-size) * 0.129)) scale(0.578944);
+    opacity: 0.44;
+  }
+  20% {
+    transform: translateX(calc(var(--uil1-size) * 0.076)) scale(0.526312);
+    opacity: 0.37;
+  }
+  25% {
+    transform: translateX(0%) scale(0.47368);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateX(calc(var(--uil1-size) * -0.076)) scale(0.526312);
+    opacity: 0.37;
+  }
+  35% {
+    transform: translateX(calc(var(--uil1-size) * -0.129)) scale(0.578944);
+    opacity: 0.44;
+  }
+  40% {
+    transform: translateX(calc(var(--uil1-size) * -0.182)) scale(0.631576);
+    opacity: 0.51;
+  }
+  45% {
+    transform: translateX(calc(var(--uil1-size) * -0.235)) scale(0.684208);
+    opacity: 0.58;
+  }
+  50% {
+    transform: translateX(calc(var(--uil1-size) * -0.25)) scale(0.73684);
+    opacity: 0.65;
+  }
+  55% {
+    transform: translateX(calc(var(--uil1-size) * -0.235)) scale(0.789472);
+    opacity: 0.72;
+  }
+  60% {
+    transform: translateX(calc(var(--uil1-size) * -0.182)) scale(0.842104);
+    opacity: 0.79;
+  }
+  65% {
+    transform: translateX(calc(var(--uil1-size) * -0.129)) scale(0.894736);
+    opacity: 0.86;
+  }
+  70% {
+    transform: translateX(calc(var(--uil1-size) * -0.076)) scale(0.947368);
+    opacity: 0.93;
+  }
+  75% {
+    transform: translateX(0%) scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(calc(var(--uil1-size) * 0.076)) scale(0.947368);
+    opacity: 0.93;
+  }
+  85% {
+    transform: translateX(calc(var(--uil1-size) * 0.129)) scale(0.894736);
+    opacity: 0.86;
+  }
+  90% {
+    transform: translateX(calc(var(--uil1-size) * 0.182)) scale(0.842104);
+    opacity: 0.79;
+  }
+  95% {
+    transform: translateX(calc(var(--uil1-size) * 0.235)) scale(0.789472);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translateX(calc(var(--uil1-size) * 0.25)) scale(0.73684);
+    opacity: 0.65;
+  }
+}
+
+/* Загрузчик - 2 */
+
+.UI-Loader-3 {
+  background: rgb(255 255 255 / 70%);
+    backdrop-filter: blur(5px) saturate(200%);
+    --uib-color: var(--TEXT_COLOR);
+    --uib-size: 30px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.UI-Loader-3 .container {
+  --uib-speed: 2s;
+  --uib-bg-opacity: 0;
+  height: var(--uib-size);
+  width: var(--uib-size);
+  transform-origin: center;
+  animation: rotate var(--uib-speed) linear infinite;
+  will-change: transform;
+  overflow: visible;
+}
+.UI-Loader-3 .car {
+  fill: none;
+  stroke: var(--uib-color);
+  stroke-dasharray: 1, 200;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  animation: stretch calc(var(--uib-speed) * 0.75) ease-in-out infinite;
+  will-change: stroke-dasharray, stroke-dashoffset;
+  transition: stroke 0.5s ease;
+}
+.UI-Loader-3 .track {
+  fill: none;
+  stroke: var(--uib-color);
+  opacity: var(--uib-bg-opacity);
+  transition: stroke 0.5s ease;
+}
+
+@keyframes zoom {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes stretch {
+  0% {
+    stroke-dasharray: 0, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 75, 150;
+    stroke-dashoffset: -25;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+
+

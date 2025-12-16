@@ -1,0 +1,243 @@
+.MusicModal {
+    .UI-ModalContent {
+        max-width: 600px;
+        max-height: 80vh;
+        width: 100%;
+    }
+
+    .SearchContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+        margin-top: 40px;
+        margin-bottom: 70px;
+    }
+
+    .SearchInputWrapper {
+        position: relative;
+
+        .UI-Input {
+            width: 100%;
+            padding-right: 40px;
+            border: 1px solid var(--TEXT_COLOR);
+        }
+
+        .SearchButton {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--TEXT_COLOR);
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+    
+            svg {
+                width: 20px;
+                height: 20px;
+                fill: var(--TEXT_COLOR);
+            }
+        }
+    }
+
+    .SelectedCounter {
+        font-size: 14px;
+        color: var(--TEXT_COLOR_LITE);
+        margin-bottom: 5px;
+    }
+
+    .TrackList {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0;
+        background-color: transparent;
+    }
+
+    .EmptySearchMessage, .LoadingIndicator, .NoResults {
+        text-align: center;
+        padding: 20px;
+        color: var(--TEXT_COLOR_LITE);
+    }
+
+    .TabsContainer {
+        width: 100%;
+    }
+
+    .TabsHeader {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--BORDER_COLOR);
+        position: relative;
+    }
+
+    .TabButton {
+        flex: 1;
+        padding: 10px;
+        background: transparent;
+        border: none;
+        color: var(--TEXT_COLOR_LITE);
+        font-size: 14px;
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s;
+        z-index: 1;
+
+        &:hover {
+            color: var(--TEXT_COLOR);
+        }
+
+        &.Active {
+            color: var(--ACCENT_COLOR);
+        }
+    }
+
+    .TabIndicator {
+        position: absolute;
+        bottom: -1px;
+        height: 2px;
+        background-color: var(--ACCENT_COLOR);
+        transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+        z-index: 2;
+    }
+
+    .TabContent {
+        padding: 10px 0;
+    }
+
+    .EmptyTabMessage {
+        text-align: center;
+        padding: 20px;
+        color: var(--TEXT_COLOR_LITE);
+    }
+}
+
+.TrackItem {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    padding: 12px;
+    border-radius: var(--BR_BASE);
+    background-color: var(--BLOCK_COLOR);
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    &.Selected {
+        border: 1px solid var(--ACCENT_COLOR);
+        background-color: rgba(var(--ACCENT_COLOR_RGB), 0.1);
+    }
+
+    .TrackCover {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-right: 12px;
+        flex-shrink: 0;
+        
+        .UI-Neoimage {
+            width: 100%;
+            height: 100%;
+            
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+    }
+
+    .TrackInfo {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .TrackTitle {
+        font-weight: 500;
+        color: var(--TEXT_COLOR);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+        margin-bottom: 3px;
+    }
+
+    .TrackArtist {
+        font-size: 12px;
+        color: var(--TEXT_COLOR_LITE);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.DefaultCover {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-right: 12px;
+    flex-shrink: 0;
+    background: var(--NL_GRADIENT);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+    }
+}
+
+.AttachedTracks {
+    margin: 15px auto 0;
+    background-color: transparent;
+    border-radius: 0;
+    padding: 0;
+    width: 98%;
+
+    .TrackItem {
+        margin-bottom: 5px;
+        cursor: default;
+        
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .RemoveTrack {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: transparent;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--TEXT_COLOR);
+        padding: 0;
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+}

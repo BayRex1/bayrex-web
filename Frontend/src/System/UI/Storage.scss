@@ -1,0 +1,179 @@
+// Хранилище 
+.Storage-Container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    .Storage-Chart-Section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .Storage-Chart {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin-bottom: 5px;
+    }
+
+    .Storage-ChartSVG {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        position: relative;
+    }
+
+    .Storage-Chart-Segment {
+        transform-origin: center;
+        animation: segmentAppear 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        opacity: 0;
+        stroke: var(--BLOCK_COLOR);
+        stroke-width: 0.7;
+        transition: all 0.3s ease;
+        fill-opacity: 0.95;
+    }
+
+    .Storage-Chart circle.Storage-Chart-Segment {
+        fill-opacity: 1;
+    }
+
+    .Storage-Checkbox-Selected svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    @keyframes segmentAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.85) translateY(5px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .Storage-ChartTotalSize {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1em;
+        font-weight: 500;
+        font-family: var(--FF_TITLE);
+        color: var(--TEXT_COLOR);
+    }
+
+    .Storage-Title {
+        margin: 0 0 5px;
+        font-size: 1.1em;
+        text-align: center;
+    }
+
+    .Storage-Subtitle {
+        font-size: 0.9em;
+        opacity: 0.8;
+        text-align: center;
+    }
+
+    .Storage-Category {
+        width: 100%;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        padding: 5px 10px 5px 5px;
+    }
+
+    .Storage-Category-Icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+
+    .Storage-Category-Icon svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+        color: white;
+    }
+
+    .Storage-Category-Info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .Storage-Category-Name {
+        font-weight: 500;
+        font-size: 15px;
+        color: var(--TEXT_COLOR);
+    }
+
+    .Storage-Category-Size {
+        font-size: 13px;
+        color: var(--TEXT_COLOR_LITE);
+        margin-top: 2px;
+    }
+
+    .Storage-Category-Checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        margin-left: auto;
+    }
+
+    .Storage-Checkbox {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    .Storage-Checkbox-Selected {
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+        animation: checkboxPop 0.2s ease;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    .Storage-Note {
+        font-size: 0.8rem;
+        color: var(--TEXT_COLOR_LITE);
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    @keyframes checkboxPop {
+        0% {
+            transform: scale(0.8);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        100% {
+            transform: scale(1.05);
+        }
+    }
+}

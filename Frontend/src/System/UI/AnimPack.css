@@ -1,0 +1,255 @@
+/*/ Поебота для анимаций /*/
+
+.ParticleContainer {
+    position: fixed;
+    top: 0;
+    z-index: 50;
+}
+
+/* Комментарии */
+
+.UI-Particle,
+.UI-ImageParticle,
+.UI-TextParticle {
+    border-radius: 100px;
+    position: absolute;
+    animation: Disintegrate 1.5s forwards;
+}
+
+.UI-Particle {
+    background: var(--BLOCK_COLOR);
+}
+
+.UI-TextParticle {
+    background: var(--TEXT_COLOR);
+}
+
+@keyframes Disintegrate {
+    to {
+        opacity: 0;
+        transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
+    }
+}
+
+@keyframes fly {
+    0% {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)));
+        opacity: 0;
+    }
+}
+
+/*/ Анимации /*/
+
+/* Авторизация */
+
+@keyframes AUTH-SHOW_REG {
+    0% {
+        transform: translateX(150%) scale(0.5);
+        opacity: 0.1;
+        visibility: visible;
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+@keyframes AUTH-HIDE_REG {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    100% {
+        transform: translateX(150%) scale(0.5);
+        opacity: 0.1;
+        visibility: visible;
+    }
+}
+
+@keyframes AUTH-SHOW_LOGIN {
+    0% {
+        transform: translateX(-150%) scale(0.5);
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+@keyframes AUTH-HIDE_LOGIN {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    100% {
+        transform: translateX(-150%) scale(0.5);
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Панель навигации */
+
+@keyframes NAV_PANEL_BUTTONS-SHOW {
+    0% {
+        transform: rotate3d(10, -10, 1, 45deg)translate(25px, -100px)scale(0.3);
+        opacity: 0;
+        visibility: visible;
+    }
+
+    100% {
+        transform: rotate3d(1, 1, 1, 0deg)translate(0px, 0px)scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+@keyframes NAV_PANEL_BUTTONS-HIDE {
+    0% {
+        transform: rotate3d(1, 1, 1, 0deg)translate(0px, 0px)scale(1);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    100% {
+        transform: rotate3d(10, -10, 1, 45deg)translate(25px, -100px)scale(0.3);
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+@keyframes V2-ELEMENT-SHOW {
+    0% {
+        opacity: 0;
+        visibility: visible;
+        filter: blur(1px);
+    }
+
+    100% {
+        opacity: 1;
+        visibility: visible;
+        filter: blur(0px);
+    }
+}
+
+@keyframes V2-ELEMENT-HIDE {
+    0% {
+        opacity: 1;
+        visibility: visible;
+        filter: blur(1px);
+    }
+
+    100% {
+        opacity: 0;
+        visibility: hidden;
+        filter: blur(0px);
+    }
+}
+
+/* Другое */
+
+@keyframes ELEMENT-SHOW {
+    0% {
+        opacity: 0;
+        visibility: visible;
+        filter: blur(1px);
+        -webkit-box-shadow: 0px 0px 10px 0px rgb(17 17 17 / 0%);
+        -moz-box-shadow: 0px 0px 10px 0px rgb(17 17 17 / 0%);
+        box-shadow: 0px 0px 10px 0px rgb(17 17 17 / 0%);
+    }
+
+    100% {
+        opacity: 1;
+        visibility: visible;
+        filter: blur(0px);
+        box-shadow: var(--AIR_SHADOW);
+        -moz-box-shadow: var(--AIR_SHADOW);
+        -webkit-box-shadow: var(--AIR_SHADOW);
+    }
+}
+
+/* Файлы */
+
+/* Файлы - Удалить файл */
+
+@keyframes FILE_INPUT-DELETE {
+    0% {
+        transform: scale3d(1, 1, 1);
+    }
+
+    100% {
+        height: 0px;
+        transform: scale3d(1, 0, 1);
+    }
+}
+
+/* Подписка Gold */
+
+@keyframes INFO_SUB-SHOW {
+    0% {
+        transform: translateY(570px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0px);
+        opacity: 1;
+    }
+}
+
+@keyframes INFO_SUB_VIDEO-SHOW {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes INFO_SUB-HIDE {
+    0% {
+        transform: translateY(0px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(570px);
+        opacity: 0;
+    }
+}
+
+@keyframes INFO_SUB_VIDEO-HIDE {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes TEXT_PRELOAD-ANIM {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}

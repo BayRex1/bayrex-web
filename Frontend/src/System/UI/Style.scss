@@ -1,0 +1,6639 @@
+@font-face {
+    font-family: 'SF Pro Display Bold';
+    src: url('Fonts/SF Pro Display Bold.otf') format('opentype');
+    font-style: normal;
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'SF Pro Display Medium';
+    src: url('Fonts/SF Pro Display Medium.otf') format('opentype');
+    font-style: normal;
+    font-weight: normal;
+}
+
+:root {
+    --BODY_COLOR: rgb(242 241 246);
+    --BACKDROP_COLOR: rgba(0, 0, 0, 0.6);
+
+    --AIR_COLOR: rgb(255 255 255 / 90%);
+    --AIR_BLOCK_COLOR: rgb(195 191 209 / 30%);
+    --AIR_BLUR: saturate(180%) blur(20px);
+    --AIR_SHADOW: 0px 3px 10px -3px rgb(114 114 114 / 50%);
+
+    --AIR_CONTEXT_SHADOW_COLOR_START: rgb(47 46 55 / 0%);
+    --AIR_CONTEXT_SHADOW_COLOR_END: rgb(0 0 0 / 33%);
+
+    --BLOCK_COLOR: rgb(254 254 254);
+    --BLOCK_COLOR_LITE: rgb(254 254 254 / 55%);
+    --BLOCK_COLOR_LITE_TEXT: rgb(136 134 141);
+    --BLOCK_BLOCK_COLOR: rgb(243 242 246);
+    --BLOCK_BLOCK_COLOR_LITE: rgb(243 242 246 / 60%);
+    --BLOCK_SHADOW: 0px 1px 2px -1px rgb(219 218 225);
+
+    --BTN_BACKGROUND: rgb(243 242 246);
+    --BTN_TEXT_COLOR: rgb(112 111 124);
+    --BTN_CLOSE_COLOR: rgb(255 193 193 / 70%);
+
+    --INTERACTION_BTN_COLOR: rgb(244 243 246);
+    --INTERACTION_BTN_TEXT_COLOR: rgb(83 76 93 / 65%);
+
+    --INPUT_COLOR: rgb(243 242 246);
+
+    --ACCENT_COLOR: #9674ca;
+    --GRADIENT_SHADOW: 0px 0px 9px -1px rgb(154 112 199 / 67%);
+    --NL_GRADIENT: linear-gradient(20deg, rgb(127 110 176), rgb(161 157 177));
+    --GOLD_GRADIENT: linear-gradient(465deg, #fab31e, #fd9347);
+
+    --TITLE_COLOR: rgb(81 78 88);
+    --TEXT_COLOR: rgb(97 93 106);
+    --TEXT_COLOR_LITE: rgb(139 135 154 / 50%);
+
+    --FS_TITLE: 1em;
+    --FS_TEXT: 0.95em;
+    --FS_NAME: 1em;
+    --FS_D_OR_P: 0.8em;
+
+    --FF_TITLE: SF Pro Display Bold;
+
+    --C_TOP_MARGIN: 67px;
+    --BR_BASE: 10px/9px;
+    --PUSTOTA_WIDTH: 3px;
+    --BASE_MARGIN_BOTTOM: 5px;
+    --D_OR_P_COLOR: rgb(104 101 112 / 70%);
+
+    --REPLY_BG: rgb(150 116 202 / 20%);
+    --REPLY_SVG_COLOR: rgb(150 116 202 / 50%);
+
+    --CODE_BG: #d1d1d1;
+    --CODE_COLOR: black;
+}
+
+body {
+    background: var(--BODY_COLOR);
+    color: var(--TEXT_COLOR);
+    font-family: SF Pro Display Medium;
+    font-size: var(--FS_TEXT);
+    letter-spacing: 0.019em;
+    margin: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    -webkit-tap-highlight-color: transparent;
+    transition: .4s;
+}
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    scrollbar-width: none;
+}
+
+input:not([type="checkbox"]),
+textarea,
+select,
+button {
+    font-family: 'SF Pro Display Medium';
+    font-size: var(--FS_TEXT);
+    outline: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    outline: 2px solid rgb(178 171 206 / 0%);
+    outline-offset: 4px;
+}
+
+a {
+    color: var(--ACCENT_COLOR);
+    text-decoration: none;
+}
+
+input[type="radio"] {
+    -webkit-appearance: radio;
+    -moz-appearance: radio;
+    appearance: radio;
+    width: auto;
+    max-width: auto;
+}
+
+button {
+    background: var(--BTN_BACKGROUND);
+    color: var(--BTN_TEXT_COLOR);
+    border-radius: var(--BR_BASE);
+    font-size: 0.93em;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    margin: 0em;
+    padding-block: 1px;
+    padding-inline: 6px;
+}
+
+button:active {
+    filter: brightness(0.8);
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+// Элемент списка
+
+.UI-ListElement {
+    background: var(--AIR_BLOCK_COLOR);
+    color: var(--TEXT_COLOR);
+    border-radius: 12px;
+    padding: 7px 10px;
+    user-select: none;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .Avatar,
+    .PostAvatar,
+    .UI-MusicCover {
+        background: var(--AIR_BLOCK_COLOR);
+        margin-right: 8px;
+        text-shadow: 1px 1px 1px rgb(178 174 191);
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+
+    .PostAvatar {
+        border-radius: 100px 100px 10px 100px;
+    }
+
+    .Body {
+        width: 100%;
+        overflow: hidden;
+        gap: 1px;
+        display: flex;
+        flex-direction: column;
+
+        .Title {
+            font-size: 1.1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .Desc {
+            color: var(--D_OR_P_COLOR);
+            font-size: 0.9em
+        }
+
+        .Images {
+            display: inline-flex;
+            gap: 4px;
+            border-radius: 5px;
+            overflow: hidden;
+
+            .Image {
+                width: 30px;
+                height: 30px;
+                border-radius: 5px;
+                overflow: hidden;
+
+                img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+            }
+        }
+    }
+}
+
+.UI-ListElement:active {
+    filter: brightness(0.8);
+}
+
+// Глобальный интерфейс
+
+.UI-Blur {
+    background: rgb(119 119 119 / 50%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.Avatar {
+    background: var(--NL_GRADIENT);
+    border-radius: 100%;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    line-height: 0;
+    flex-shrink: 0;
+
+    .NonAvatar,
+    img {
+        width: 100%;
+        height: 100%;
+    }
+
+    img {
+        object-fit: cover;
+    }
+
+    .NonAvatar {
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .UI-PRELOAD {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+    }
+}
+
+
+// Интерфейс
+
+// Интерфейс - ЕБалл
+
+.UI-Eball {
+    background: linear-gradient(37deg, #623b9e, #da8aff);
+    color: #fff;
+    border-radius: 100%;
+    border: 1px solid #9b61cc;
+    width: 30px;
+    height: 30px;
+    text-shadow: 1px 1px 10px #41105c;
+    box-shadow: 0px 1px 5px -1px #8552ba;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+// Интерфейс - Логотип
+
+header {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    -webkit-backdrop-filter: var(--AIR_BLUR);
+    height: 60px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    box-shadow: 0px 2px 12px -9px rgb(112 112 127);
+}
+
+.UI-Logo {
+    width: 40px;
+    height: 40px;
+    margin: 0px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    background-image: url('/static_sys/Images/Logo.svg');
+    background-size: cover;
+}
+
+.UI-N_DIV {
+    width: 100%;
+    max-width: 1045px;
+    height: 100%;
+    margin: auto;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .AvatarContainer {
+        position: relative;
+        flex-shrink: 0;
+
+        .Avatar {
+            margin: 0px;
+            cursor: pointer;
+        }
+    }
+
+    .Avatar:active,
+    .UI-Logo:active {
+        filter: brightness(0.8);
+    }
+
+    .MiniPlayer {
+        flex-grow: 1;
+        max-width: 500px;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .UI-MusicPlayer {
+            width: 100%;
+
+            .Music-ControlButtons {
+                margin: 0;
+            }
+        }
+    }
+
+    .SwitchButton {
+        background: rgb(255 255 255 / 0%);
+        width: 30px;
+        flex-shrink: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            fill: var(--ACCENT_COLOR);
+            width: 25px;
+            height: 25px;
+        }
+    }
+}
+
+.Search-Container {
+    width: 100%;
+    max-width: 500px;
+    height: 34.7px;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-evenly;
+
+    .UI-Input {
+        flex: 1;
+        width: 100%;
+    }
+
+    .EBalls {
+        background: var(--AIR_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        margin-left: 10px;
+        padding: 5px;
+        user-select: none;
+        display: flex;
+        align-items: center;
+
+        .Count {
+            margin-left: 5px;
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+    }
+}
+
+.UI-N_L_AND_N {
+    color: var(--TEXT_COLOR);
+    font-size: 20px;
+    width: 100%;
+    max-width: 850px;
+    display: flex;
+    align-items: center;
+}
+
+.UI-N_L_AND_N .UI-Logo {
+    margin-right: 15px;
+}
+
+.Content {
+    width: 100%;
+    max-width: 1080px;
+    height: 100%;
+    margin: auto;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+.Content-Center {
+    align-items: center;
+}
+
+// Интерфейс - Обложка
+
+.UI-Cover {
+    background: var(--NL_GRADIENT);
+    border-radius: 5px;
+    width: 100%;
+    height: 150px;
+    position: relative;
+    margin-bottom: 30px;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .UI-PRELOAD {
+        width: 100%;
+        height: 100%;
+        border-radius: 0px;
+    }
+
+    .UI-PRELOAD::after {
+        filter: blur(40px);
+    }
+}
+
+// Интерфейс - Иконка приложения
+
+.UI-AppIcon {
+    background: var(--NL_GRADIENT);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    transition: .1s;
+    mask: url(data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20fillRule%3D%22evenodd%22%20stroke-linejoin%3D%22round%22%20stroke-miterlimit%3D%221.41%22%20clip-rule%3D%22evenodd%22%20version%3D%221.1%22%20viewBox%3D%220%200%20460%20460%22%20xml%3Aspace%3D%22preserve%22%3E%3Cpath%20d%3D%22M460%20316.1c0%205.5%200%2010.99-.04%2016.48-.03%204.63-.08%209.26-.2%2013.88a201.73%20201.73%200%200%201-2.66%2030.21c-1.71%2010-4.9%2019.68-9.47%2028.73a96.6%2096.6%200%200%201-42.23%2042.23%20101.86%20101.86%200%200%201-28.71%209.46c-10%201.65-20.1%202.54-30.22%202.66a649%20649%200%200%201-13.88.21c-5.5.03-10.99.03-16.48.03H143.89c-5.49%200-10.98%200-16.48-.03a648.8%20648.8%200%200%201-13.88-.2%20201.46%20201.46%200%200%201-30.22-2.67c-9.99-1.7-19.67-4.9-28.71-9.46a96.61%2096.61%200%200%201-42.23-42.22%20101.96%20101.96%200%200%201-9.47-28.74%20201.6%20201.6%200%200%201-2.66-30.2c-.12-4.63-.18-9.26-.2-13.89C0%20327.08%200%20321.6%200%20316.1V143.9c0-5.5%200-11%20.04-16.5.02-4.62.08-9.25.2-13.87a201.64%20201.64%200%200%201%202.66-30.2c1.71-10%204.9-19.68%209.47-28.74A96.6%2096.6%200%200%201%2054.6%2012.36%20101.96%20101.96%200%200%201%2083.3%202.9c10-1.64%2020.1-2.53%2030.22-2.66%204.63-.12%209.26-.18%2013.88-.2%205.5-.03%2011-.03%2016.48-.03H316.1c5.5%200%2011%200%2016.49.03a649%20649%200%200%201%2013.88.2c10.12.13%2020.22%201.02%2030.21%202.66%2010%201.71%2019.67%204.9%2028.72%209.46a96.58%2096.58%200%200%201%2042.24%2042.23%20101.92%20101.92%200%200%201%209.46%2028.73%20201.7%20201.7%200%200%201%202.66%2030.21c.12%204.63.18%209.26.2%2013.88.04%205.5.04%2010.99.04%2016.48V316.1z%22%2F%3E%3C%2Fsvg%3E%0A);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+// Интерфейс - Динамический остров
+
+.UI-DynamicIsland {
+    background: #000;
+    color: #FFF;
+    border-radius: 100px;
+    width: fit-content;
+    height: fit-content;
+    padding: 8px 15px;
+    margin: 10px auto;
+    box-shadow: var(--BLOCK_SHADOW);
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 100;
+    transition: 0.2s;
+    border: 1px solid #000000;
+    box-shadow: 1px 0px 10px 5px rgba(33, 33, 33, 0.332);
+
+    .DynamicContent {
+        gap: 15px;
+        display: flex;
+        align-items: center;
+
+        .Animation {
+            width: 40px;
+            height: 40px;
+        }
+
+        .UI-Loader_1 {
+            --uil1-color: #FFF;
+        }
+    }
+}
+
+// Интерфейс - Модальные окна
+
+// Интерфейс - Бэкдроп
+
+.UI-Backdrop {
+    background: var(--BACKDROP_COLOR);
+    inset: 0;
+    position: fixed;
+    z-index: 40;
+}
+
+.UI-Modal {
+    background: var(--BODY_COLOR);
+    border-radius: 16px;
+    max-width: 500px;
+    height: 95vh;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .UI-NavigatedHeader {
+        z-index: 10;
+    }
+}
+
+.UI-ModalContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 5px;
+
+    .Scroll {
+        margin-top: 50px;
+        margin-bottom: 70px;
+    }
+
+    .Footer {
+        background: var(--AIR_COLOR);
+        position: absolute;
+        z-index: 1;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        backdrop-filter: blur(20px);
+        padding: 15px;
+        border-top: 1px solid var(--AIR_BLOCK_COLOR);
+
+        .UI-FormButton {
+            width: 100%;
+        }
+    }
+}
+
+// Интерфейс - Кнопка формы
+
+.UI-Button,
+.UI-FormButton {
+    transition: 0.1s;
+    outline-offset: 4px;
+    padding: 10px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .UI-PRELOAD {
+        filter: saturate(500%);
+        opacity: 0.5;
+        inset: 0;
+        position: absolute;
+        border-radius: 0;
+    }
+
+    .UI-PRELOAD::after {
+        filter: blur(20px);
+    }
+}
+
+.UI-Button:hover,
+.UI-FormButton:hover {
+    outline-offset: 2px;
+}
+
+.UI-FormButton,
+.UI-Button--action {
+    background: var(--ACCENT_COLOR);
+    color: #FFF;
+    outline: solid 2px rgb(150 116 202 / 0%);
+}
+
+.UI-FormButton:hover,
+.UI-Button--action:hover {
+    outline: solid 2px rgb(150 116 202 / 50%);
+}
+
+.UI-Button--noActive {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.UI-Button--noActive:hover {
+    outline: none;
+}
+
+.UI-Button--noActive:active {
+    filter: none;
+}
+
+// Интерфейс - Текстовый инпут
+
+.UI-Input {
+    background: var(--INPUT_COLOR);
+    color: var(--TEXT_COLOR);
+    font-size: var(--FS_TEXT);
+    border-radius: 8px;
+    border: 0;
+    padding: 8px 12px;
+    outline: 2px solid rgb(178 171 206 / 0%);
+    outline-offset: 4px;
+    transition: .2s;
+}
+
+.UI-Input:-webkit-input-placeholder {
+    color: rgb(60 60 74 / 70%);
+}
+
+.UI-Input:hover,
+.UI-Input:focus {
+    outline: 2px solid rgb(243 242 246 / 80%);
+    outline-offset: 2px;
+}
+
+.UI-Input--transparent {
+    background: var(--AIR_BLOCK_COLOR);
+}
+
+.UI-Input--transparent:hover,
+.UI-Input--transparent:focus {
+    outline: 2px solid var(--AIR_BLOCK_COLOR);
+}
+
+// Интерфейс - Текстовый инпут с копированием
+
+.UI-CopyInput {
+    display: flex;
+    gap: 5px;
+
+    button {
+        background: var(--AIR_BLOCK_COLOR);
+        width: 40px;
+
+        svg {
+            fill: var(--TEXT_COLOR);
+            width: 20px;
+            height: 20px;
+            margin-top: 3px;
+        }
+    }
+}
+
+// Интерфейс -Блок кода
+
+.UI-Code {
+    background: rgb(39 29 49);
+    border-radius: var(--BR_BASE);
+    overflow: scroll;
+    margin: 5px;
+
+    .Body {
+        padding: 10px;
+
+        pre {
+            margin: 0;
+        }
+    }
+}
+
+// Интерфейс - Загрузка
+
+.UI-Loading {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .LoadingContent {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+
+        .Servers {
+            width: fit-content;
+            display: flex;
+            font-size: 1rem;
+            flex-direction: column;
+
+            .Server {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+            }
+        }
+
+        .Text {
+            text-align: center;
+            text-wrap: balance;
+        }
+    }
+}
+
+// Интерфейс - Прогресс загрузки
+
+.UI-DownloadProgress {
+    width: fit-content;
+    height: fit-content;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .Loader,
+    .Progress {
+        position: absolute;
+        inset: 0px;
+    }
+
+    .Loader {
+        background: rgba(0, 0, 0, 0.8);
+        margin: auto;
+        border-radius: 50%;
+        padding: 0;
+
+        .Icon {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            z-index: 1;
+
+            svg {
+                fill: #FFF;
+            }
+        }
+
+        .Circle {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    }
+
+    .Progress {
+        background: rgba(0, 0, 0, 0.8);
+        color: rgb(255 255 255 / 70%);
+        padding: 2px 6px;
+        line-height: 1;
+        border-radius: 10px;
+        width: fit-content;
+        height: fit-content;
+        bottom: -80px;
+        margin: auto;
+        gap: 5px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6em;
+
+        .Downloaded {
+            color: #FFF;
+        }
+    }
+}
+
+// Интерфейс - Эмодзи
+
+.UI-Emoji {
+    width: 1.3em;
+    height: 1.3em;
+    margin: 1px 1px -3.7px;
+    position: relative;
+    display: inline-block;
+
+    img {
+        width: 1.3em;
+        height: 1.3em;
+        position: absolute;
+        inset: 0;
+    }
+}
+
+// Интерфейс - Онлайн
+
+.UI-Online {
+    background: rgb(99 213 58);
+    border: solid var(--BLOCK_COLOR);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+/* Меню - Уведомления */
+
+.UI-NCounter {
+    background: var(--ACCENT_COLOR);
+    color: #FFF;
+    border-radius: 100px;
+    font-size: 0.6em;
+    min-width: 15px;
+    height: 15px;
+    padding: 2px;
+    position: absolute;
+    z-index: 3;
+    user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Notifications {
+    width: 100%;
+    max-width: 600px;
+    margin: auto;
+}
+
+.Notifications-New {
+    margin-bottom: 10px;
+
+    .Notifications-Notification {
+        outline: 1px solid var(--ACCENT_COLOR);
+        outline-offset: 2px;
+    }
+}
+
+.Notifications-Notification {
+    width: 100%;
+    padding: 7px 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .AvatarContainer {
+        width: fit-content;
+        margin-right: 10px;
+        position: relative;
+
+        .Avatar {
+            margin: 0px 5px 5px 0px;
+        }
+
+        svg {
+            fill: var(--ACCENT_COLOR);
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            filter: drop-shadow(0px 0px 4px rgb(0 0 0 / 33%));
+        }
+    }
+
+    .NotificationContent {
+        text-align: left;
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .Title {
+        font-size: 1em;
+        overflow: hidden;
+        text-wrap: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .Text {
+        color: var(--D_OR_P_COLOR);
+        font-size: 0.889em;
+        text-wrap: balance;
+        word-wrap: break-word;
+    }
+
+    .Date {
+        color: var(--D_OR_P_COLOR);
+        font-size: 0.8em;
+        position: absolute;
+        top: 8px;
+        right: 15px;
+    }
+}
+
+// Интерфейс - изображение будущего
+
+.UI-Neoimage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+// Интерфейс - Боковая навигация
+
+.UI-L_NAV {
+    width: 100%;
+    max-width: 200px;
+    padding-left: 10px;
+    text-wrap: nowrap;
+
+    button {
+        background: var(--BLOCK_COLOR_LITE);
+        color: var(--BLOCK_COLOR_LITE_TEXT);
+        font-size: var(--FS_TEXT);
+        width: 100%;
+        height: 35px;
+        border-radius: var(--BR_BASE);
+        margin-bottom: 5px;
+        padding: 5px 10px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        transition: .2s;
+
+        .GoldText {
+            background-image: var(--GOLD_GRADIENT);
+            -webkit-background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .GoldText .icon-Nav_Sub::before {
+            background-image: var(--GOLD_GRADIENT);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .UI-LN_ICON {
+            margin-right: 7px;
+            width: 20px;
+            height: 20px;
+            position: relative;
+
+            svg {
+                fill: var(--BLOCK_COLOR_LITE_TEXT);
+                width: 100%;
+                position: absolute;
+                z-index: 1;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+        }
+    }
+
+    .ActiveButton {
+        background: var(--BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+        box-shadow: var(--BLOCK_SHADOW);
+
+        .UI-LN_ICON {
+            svg {
+                fill: var(--TEXT_COLOR);
+            }
+        }
+    }
+
+    .UI-NCounter {
+        right: 5px;
+    }
+}
+
+// Интерфейс - Квадратные кнопки
+
+.UI-BoxButtons {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.UI-BoxButton {
+    background: var(--BLOCK_COLOR);
+    color: var(--TEXT_COLOR);
+    border-radius: var(--BR_BASE);
+    font-size: 0.9em;
+    padding: 5px;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--BLOCK_BLOCK_COLOR);
+
+    svg {
+        fill: var(--TEXT_COLOR);
+        width: 30px;
+        height: 30px;
+    }
+}
+
+// Интерфейс - Выбор эмодзи
+
+.UI-EmojiPicker {
+    background: var(--AIR_COLOR);
+    border-radius: var(--BR_BASE);
+    backdrop-filter: var(--AIR_BLUR);
+    box-shadow: var(--AIR_SHADOW);
+    padding: 5px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 300px;
+    overflow: scroll;
+    position: fixed;
+    z-index: 20;
+    position: fixed;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    &.sidebar-emoji-picker {
+        max-width: none;
+        width: 100% !important;
+    }
+
+    .Categories {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+
+    .Category {
+        min-width: unset;
+        flex: 1;
+        background: none;
+        border: 1px solid var(--AIR_BLOCK_COLOR);
+        padding: 3px 7px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-radius: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            fill: var(--TEXT_COLOR);
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .Category:hover {
+        background-color: var(--AIR_BLOCK_COLOR);
+    }
+
+    .Selected {
+        background: var(--AIR_BLOCK_COLOR);
+    }
+
+    .Grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+        gap: 5px;
+        width: 100%;
+    }
+
+    .EmojiItem {
+        font-size: 24px;
+        cursor: pointer;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+
+    .EmojiItem:hover {
+        transform: scale(1.2);
+    }
+
+    .SelectedEmoji {
+        margin-top: 20px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+}
+
+// Интерфейс - Материал вкладки
+
+.UI-MaterialTabs {
+    width: 100%;
+}
+
+.UI-MaterialTabs-Header {
+    position: relative;
+    display: flex;
+}
+
+.UI-MaterialTabs-Button {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.UI-MaterialTabs-Button.active {
+    color: var(--ACCENT_COLOR)
+}
+
+.UI-MaterialTabs-Indicator {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    border-radius: 10px;
+    background: var(--ACCENT_COLOR);
+    transition: left 0.3s ease, width 0.3s ease;
+}
+
+.UI-MaterialTabs-Content {
+    display: flex;
+    padding: 10px;
+}
+
+// Интерфейс - Тело страницы
+
+.UI-PAGE_BODY {
+    flex: 1;
+    padding: 0px 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+
+.UI-ScrollView {
+    width: 100%;
+    height: 100%;
+    padding: 0px 2px;
+    overflow: scroll;
+}
+
+.UI-ErrorMessage {
+    background: var(--BLOCK_COLOR_LITE);
+    color: var(--BLOCK_COLOR_LITE_TEXT);
+    border-radius: var(--BR_BASE);
+    width: fit-content;
+    text-align: center;
+    padding: 10px;
+    margin: 70px auto;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .Emoji {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+.UI-UniversalPanel {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    -webkit-backdrop-filter: var(--AIR_BLUR);
+    font-size: var(--FS_TEXT);
+    min-width: 250px;
+    max-width: 400px;
+    border-radius: 15px;
+    margin: 3px 5px;
+    padding: 10px 15px;
+    position: absolute;
+    z-index: 4;
+    overflow: hidden;
+    gap: var(--PUSTOTA_WIDTH);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--AIR_SHADOW);
+}
+
+.UI-UniversalPanel .Item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.UI-UniversalPanel .UI-Switch,
+.UI-UniversalPanel .Close {
+    margin-left: 5px;
+    position: relative;
+}
+
+.UI-UniversalPanel .Close {
+    background: var(--BTN_CLOSE_COLOR);
+    width: 30px;
+    height: 30px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.UI-C_L,
+.UI-C_R {
+    overflow: hidden;
+}
+
+.UI-C_L {
+    width: 100%;
+    max-width: 500px;
+    margin-right: 5px;
+}
+
+.UI-C_R {
+    width: 100%;
+    max-width: 350px;
+    margin-left: 3px;
+}
+
+// Интерфейс - Раздел
+
+.UI-PartitionName {
+    color: rgb(156 153 167);
+    font-size: 0.78em;
+    margin: 10px 0px 0px 0px;
+    padding: 0px 14px 4px 14px;
+}
+
+// Заголовок с навигацией
+
+.UI-BackButton {
+    background: #fff0;
+    color: var(--TEXT_COLOR);
+    fill: var(--TEXT_COLOR);
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+
+    svg {
+        width: 40px;
+        height: 30px;
+        margin-left: -15px;
+        margin-right: -5px;
+    }
+}
+
+.UI-NavigatedHeader {
+    width: 100%;
+    height: 45px;
+    inset: 0;
+
+    .BG,
+    .Body {
+        position: absolute;
+        inset: 0;
+    }
+
+    .BG {
+        background: var(--AIR_COLOR);
+        backdrop-filter: var(--AIR_BLUR);
+        z-index: 1;
+    }
+
+    .Body {
+        z-index: 2;
+        display: flex;
+        align-items: center;
+
+        .UI-BackButton {
+            position: absolute;
+        }
+
+        .Title {
+            color: var(--TEXT_COLOR);
+            width: fit-content;
+            height: fit-content;
+            position: absolute;
+            inset: 0;
+            margin: auto;
+        }
+
+        .Dots {
+            border: 1px solid var(--AIR_BLOCK_COLOR);
+            border-radius: 100px;
+            position: absolute;
+            right: 0;
+            margin-right: 10px;
+            padding: 4px;
+            display: flex;
+
+            svg {
+                width: 15px;
+                height: 15px;
+                fill: var(--TEXT_COLOR);
+            }
+        }
+
+        .UI-GovernButtons {
+            top: 40px;
+        }
+    }
+}
+
+.UI-PB_Content {
+    margin: 40px 5px 30px 5px;
+
+    .UI-FormButton {
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .UI-Input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px
+    }
+}
+
+.UI-PB_Image {
+    width: 100px;
+    margin: 50px auto 20px auto;
+    display: block;
+}
+
+.UI-PB_ImageSVG {
+    margin: 50px auto 10px;
+    display: flex;
+    justify-content: center;
+
+    svg {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+.UI-PB_ImageSVG .true {
+    fill: var(--ACCENT_COLOR);
+}
+
+.UI-PB_ImageSVG .false {
+    fill: var(--D_OR_P_COLOR);
+}
+
+.UI-PB_TitleText {
+    width: 90%;
+    font-size: 1.1rem;
+    font-family: var(--FF_TITLE);
+    margin: 10px auto 20px auto;
+    text-align: center;
+    line-height: 1.4;
+    color: var(--TEXT_COLOR);
+}
+
+.UI-PB_InputText {
+    color: rgb(163 160 172);
+    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    text-wrap: balance;
+}
+
+.UI-PB_Column {
+    gap: 2px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--BR_BASE);
+    box-shadow: var(--BLOCK_SHADOW);
+}
+
+.UI-PB_C_Element {
+    background: var(--BLOCK_COLOR);
+    padding: 5px 10px;
+    font-size: 0.95em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.UI-PB_C_Element svg {
+    width: 25px;
+    height: 25px;
+}
+
+.UI-PB_C_Element .true {
+    fill: var(--ACCENT_COLOR);
+}
+
+.UI-PB_C_Element .false {
+    fill: var(--D_OR_P_COLOR);
+}
+
+// Интерфейс - Базовые элементы
+
+.UI-Block {
+    background: var(--BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    margin-bottom: var(--BASE_MARGIN_BOTTOM);
+    padding: 10px;
+    box-shadow: var(--BLOCK_SHADOW);
+
+    .BigText {
+        margin: 10px 5px 10px 5px;
+        font-size: 0.95em;
+
+        h3 {
+            font-size: 1em;
+            font-family: var(--FF_TITLE);
+            font-weight: normal;
+        }
+
+        strong {
+            color: var(--TITLE_COLOR);
+            font-weight: normal;
+        }
+
+        table {
+            background: var(--BLOCK_BLOCK_COLOR);
+            border-radius: var(--BR_BASE);
+            width: 100%;
+            border-collapse: collapse;
+
+            thead {
+                th {
+                    padding: 5px;
+                    font-style: normal;
+                    font-weight: normal;
+                }
+            }
+
+            tbody {
+                td {
+                    padding: 5px;
+                }
+            }
+        }
+
+        ul {
+            padding: 0px 25px;
+        }
+
+        p {
+            margin: 0px 0px 5px;
+        }
+    }
+}
+
+.UI-Deleted {
+    opacity: 0.7;
+}
+
+.UI-InfoBlock {
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    svg {
+        fill: var(--TEXT_COLOR);
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+    }
+}
+
+.UI-Title {
+    color: var(--TITLE_COLOR);
+    font-family: var(--FF_TITLE);
+    font-size: var(--FS_TITLE);
+    width: fit-content;
+    margin: 8px 0px 12px 5px;
+}
+
+.UI-B_CONTENT {
+    color: var(--TEXT_COLOR);
+    font-size: 0.9em;
+    line-height: 1.3em;
+    margin: 5px;
+}
+
+.UI-B_FIRST {
+    margin-top: var(--C_TOP_MARGIN);
+}
+
+.UI-PRELOAD {
+    background: rgb(197 193 209);
+    border-radius: 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.UI-PRELOAD::after {
+    background: rgb(236 235 240);
+    filter: blur(10px);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    animation: TEXT_PRELOAD-ANIM 1s infinite ease-out;
+}
+
+.UI-EmailInfo {
+    color: var(--TEXT_COLOR_LITE);
+    font-size: 0.8em;
+    position: sticky;
+    z-index: 1;
+    margin-top: 10px;
+    margin-left: 10px;
+}
+
+.UI-UserIcons {
+    height: 100%;
+    margin: 0.4px 0px 0px 1px;
+    display: flex;
+    align-items: center;
+    width: auto;
+    flex-shrink: 0;
+}
+
+.UI-UserIcons img,
+.UI-UserIcons svg {
+    width: 15px;
+    height: 15px;
+    margin-left: 3px;
+}
+
+.UI-UserIcons svg {
+    fill: var(--ACCENT_COLOR);
+}
+
+// Интерфейс - кнопка добавить
+
+.UI-AddButton {
+    background: var(--BLOCK_COLOR);
+    padding: 8px 15px;
+    margin-left: 10px;
+    text-wrap: nowrap;
+    position: sticky;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--BLOCK_SHADOW);
+
+    svg {
+        fill: var(--BTN_TEXT_COLOR);
+        width: 25px;
+        height: 25px;
+        margin-right: 5px;
+        margin-left: -5px;
+    }
+}
+
+// Интерфейс - окна
+
+.UI-Windows {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.UI-Window_BG {
+    background: var(--BACKDROP_COLOR);
+    inset: 0;
+    position: fixed;
+    z-index: 40;
+}
+
+.UI-Window {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    -webkit-backdrop-filter: var(--AIR_BLUR);
+    border-radius: 13px;
+    height: fit-content;
+    width: 270px;
+    padding: 10px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 41;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.UI-Window input {
+    background: var(--AIR_BLOCK_COLOR);
+    width: 100%;
+    height: 35px;
+    padding: 0px 10px;
+    margin-top: 10px;
+}
+
+.UI-Window input:hover,
+.UI-Window input:focus {
+    outline: 2px solid var(--AIR_BLOCK_COLOR);
+}
+
+.UI-Window_content {
+    width: 100%;
+    padding: 5px;
+    margin-top: 5px;
+    text-align: center;
+}
+
+.UI-Window_title {
+    font-family: var(--FF_TITLE);
+    font-size: 1.05rem;
+}
+
+.UI-Window_text {
+    color: var(--TEXT_COLOR);
+    font-size: 1rem;
+    margin-top: 15px;
+    text-wrap: balance;
+    word-wrap: break-word;
+    white-space: pre-line;
+}
+
+.UI-Window_BTNS {
+    width: 96%;
+    height: 30px;
+    margin: 13px 5px 5px 5px;
+    gap: 10px;
+    display: flex;
+}
+
+.UI-Window_BTN_NOACT {
+    background: var(--AIR_BLOCK_COLOR);
+    color: var(--TEXT_COLOR);
+}
+
+.UI-E_IMG {
+    filter: contrast(0.2);
+    width: 400px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+// Интерфейс - выбор
+
+.UI-DropdownSelect {
+    background: var(--BLOCK_BLOCK_COLOR);
+    padding: 10px 30px 10px 10px;
+    border-radius: var(--BR_BASE);
+    text-wrap: nowrap;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    svg {
+        fill: var(--TEXT_COLOR);
+        position: absolute;
+        width: 33px;
+        height: 15px;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+    }
+}
+
+.UI-DS_List {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    border-radius: var(--BR_BASE);
+    font-size: 1.1em;
+    margin-top: 5px;
+    padding: 5px;
+    position: absolute;
+    gap: 5px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+
+    .Selected {
+        background: var(--AIR_BLOCK_COLOR);
+    }
+
+    button {
+        background: #ffffff00;
+        padding: 5px 15px;
+        border-radius: var(--BR_BASE);
+        transition: .2s;
+    }
+}
+
+// Интерфейс - Копирование текста
+
+.UI-CopyTextBox {
+    position: relative;
+    background-color: var(--BLOCK_BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    padding: 5px;
+    width: fit-content;
+    max-width: 100%;
+    white-space: pre-wrap;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 1em;
+    gap: 10px;
+
+    .TextContent {
+        margin: 0;
+        word-break: break-word;
+    }
+
+    .CopyButton {
+        background: none;
+        padding: 5px;
+        cursor: pointer;
+        flex: 0 1 auto;
+    }
+}
+
+// Интерфейс - Подключение приложения
+
+.UI-ConnectBlock {
+    height: fit-content;
+    margin: auto;
+    max-width: 500px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+
+    .ConnectLogo {
+        width: 90px;
+        height: 90px;
+        position: relative;
+        margin: 10px 0px;
+
+        .AppLogo {
+            width: 85%;
+            height: 85%;
+            border-radius: 100%;
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            overflow: hidden;
+
+            img {
+                object-fit: cover;
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        .Avatar {
+            position: absolute;
+            right: 0;
+            top: 0;
+            outline: 4px solid var(--BLOCK_COLOR);
+            outline-offset: 0px;
+            z-index: 1;
+        }
+    }
+
+    .UI-Title {
+        width: 50%;
+        margin: 10px auto;
+        text-wrap: balance;
+    }
+
+    .Info {
+        font-size: 0.95em;
+        margin-top: 10px;
+    }
+
+    .UI-Description {
+        margin-top: 10px;
+    }
+
+    .Buttons {
+        width: 100%;
+        height: 30px;
+        margin-top: 8px;
+        gap: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+
+        button {
+            width: 100%;
+            height: 100%;
+        }
+    }
+}
+
+// Интерфейс - Окно действий
+
+.UI-ActionWindow {
+    background: var(--BODY_COLOR);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    max-width: 850px;
+    height: fit-content;
+    margin: auto;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+
+    .TopBar {
+        padding: 10px 15px 0px 15px;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .Title {
+            font-size: var(--FS_TITLE);
+            font-family: var(--FF_TITLE);
+        }
+
+        button {
+            background: rgb(255 255 255 / 0%);
+            padding: 0px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                fill: var(--BTN_TEXT_COLOR);
+                width: 25px;
+                height: 25px;
+            }
+        }
+    }
+}
+
+.UI-AW_Content {
+    padding: 10px;
+    user-select: none;
+
+    input,
+    textarea {
+        background: var(--AIR_BLOCK_COLOR);
+        padding: 10px;
+        user-select: auto;
+    }
+
+    textarea {
+        height: 100%;
+        resize: none;
+    }
+
+    input:hover,
+    input:focus,
+    textarea:hover,
+    textarea:focus {
+        outline: 2px solid var(--AIR_BLOCK_COLOR);
+    }
+}
+
+// Интерфейс - Кнопка переключатель
+
+.UI-Switch {
+    background: var(--BTN_BACKGROUND);
+    border: 1px solid rgb(89 93 105 / 10%);
+    border-radius: 100px;
+    padding: 4px;
+    width: 55px;
+    height: 25px;
+    min-width: 55px;
+    cursor: pointer;
+    position: relative;
+    transition: .300ms;
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+
+    input {
+        display: none;
+    }
+}
+
+.UI-Switch::after {
+    content: "";
+    background: #FFF;
+    border-radius: 100px;
+    height: 20px;
+    width: 20px;
+    margin: auto;
+    transition-duration: 300ms;
+    position: absolute;
+    left: 0;
+    right: 0;
+    transform: translateX(-14px);
+    box-shadow: 0px 0px 10px 1px rgb(0 0 0 / 33%);
+}
+
+.UI-Switch-On {
+    background: var(--ACCENT_COLOR);
+    border: 0px solid rgba(255, 255, 255, 0);
+}
+
+.UI-Switch-On::after {
+    transform: translateX(14px);
+}
+
+// Интерфейс - Кнопки
+
+.UI-Buttons {
+    border-radius: var(--BR_BASE);
+    margin-bottom: 7px;
+    overflow: hidden;
+    gap: 1px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--BLOCK_SHADOW);
+
+    button {
+        background: var(--BLOCK_COLOR);
+        border-radius: 0;
+        text-align: left;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+
+        .Icon {
+            background: rgb(255 82 82);
+            border-radius: 5px;
+            margin-right: 8px;
+            padding: 4px;
+            display: flex;
+
+            svg {
+                fill: #FFF;
+                width: 15px;
+                height: 15px;
+            }
+        }
+    }
+}
+
+.UI-Send {
+    background: var(--ACCENT_COLOR);
+    width: 50px;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+// Интерфейс - Вкладки
+
+.UI-Tabs {
+    background: var(--BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 37px;
+    padding: 5px;
+    margin-bottom: var(--BASE_MARGIN_BOTTOM);
+    gap: var(--PUSTOTA_WIDTH);
+    display: inline-flex;
+    align-items: center;
+    overflow: scroll;
+    text-wrap: nowrap;
+
+    .Tab {
+        background: var(--BLOCK_COLOR);
+        color: rgb(104 101 112 / 70%);
+        border-radius: 7px;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transition: .2s;
+    }
+
+    .ActiveTab {
+        background: var(--BLOCK_BLOCK_COLOR);
+        color: var(--BTN_TEXT_COLOR);
+        box-shadow: 0px 0px 3px rgb(219 218 225);
+    }
+}
+
+// Интерфейс - Кнопки ГитХаб
+
+.UI-GitHubButton {
+    background: #000000;
+    color: #FFF;
+    fill: #FFF;
+    padding: 5px 8px;
+    font-size: 1.1em;
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 25px;
+        height: 25px;
+        margin-right: 10px;
+    }
+}
+
+// Интерфейс - Кнопки действий
+
+.UI-GovernButton {
+    fill: var(--BTN_TEXT_COLOR);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+.UI-GovernButtons {
+    font-size: 1rem;
+    background: var(--AIR_COLOR);
+    -webkit-backdrop-filter: saturate(600%) blur(10px);
+    backdrop-filter: saturate(600%) blur(10px);
+    width: fit-content;
+    border-radius: var(--BR_BASE);
+    padding: 5px;
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+
+    .Container {
+        border-radius: 8px;
+        overflow: hidden;
+        gap: var(--PUSTOTA_WIDTH);
+        display: flex;
+        flex-direction: column;
+
+        button {
+            background: var(--AIR_BLOCK_COLOR);
+            border-radius: 0px;
+            text-shadow: 0px 0px 5px var(--AIR_BLOCK_COLOR);
+            width: 100%;
+            text-wrap: nowrap;
+            padding: 5px 5px 5px 26px;
+            position: relative;
+            display: flex;
+
+            svg {
+                fill: var(--BTN_TEXT_COLOR);
+                width: 1rem;
+                height: 1rem;
+                margin: auto;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 5px;
+            }
+        }
+    }
+}
+
+// Интерфейс - Описание
+
+.UI-Description {
+    background: var(--BLOCK_BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    margin-top: 5px;
+    width: 100%;
+    padding: 8px 7px;
+    text-align: left;
+
+    .Title {
+        color: var(--D_OR_P_COLOR);
+        font-size: 0.85em;
+        margin-bottom: 4px;
+    }
+
+    .Text {
+        word-wrap: break-word;
+        white-space: pre-line;
+        user-select: text;
+
+        a {
+            user-select: none;
+        }
+    }
+}
+
+// Интерфейс - Реклама
+
+.UI-AD_N2-B {
+    background: var(--NL_GRADIENT);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 7px;
+}
+
+.UI-AD_C_TOP {
+    width: 100%;
+    position: absolute;
+    top: 0;
+}
+
+.UI-AD-T {
+    color: #ffffffe3;
+    font-size: 1.4em;
+    text-shadow: #474747 1px 0 10px;
+    margin: 10px;
+    position: absolute;
+    top: 40px;
+}
+
+.UI-AD_C_BOTTOM {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.UI-AD_TITLE {
+    background: var(--AIR_COLOR);
+    backdrop-filter: saturate(200%) blur(10px);
+    -webkit-backdrop-filter: saturate(200%) blur(10px);
+    color: var(--TITLE_COLOR);
+    width: fit-content;
+    border-radius: 4px;
+    padding: 2px 5px;
+    margin: 7px;
+}
+
+.UI-AD_BTN {
+    background: var(--AIR_COLOR);
+    backdrop-filter: saturate(200%) blur(10px);
+    -webkit-backdrop-filter: saturate(200%) blur(10px);
+    color: var(--TITLE_COLOR);
+    width: 100%;
+    margin: 7px;
+    padding: 5px 0;
+    text-align: center;
+    border-radius: 8px;
+    outline: 2px solid rgb(178 171 206 / 0%);
+    outline-offset: 4px;
+    transition: .1s;
+}
+
+.UI-AD_BTN:hover {
+    outline: 2px solid rgb(255 255 255 / 50%);
+    outline-offset: 2px;
+}
+
+.UI-AD_BTN:active {
+    filter: brightness(0.8);
+}
+
+.UI-AD_IMG {
+    width: 100%;
+}
+
+// Интерфейс - Плеер
+
+.UI-Slider {
+    background: var(--AIR_BLOCK_COLOR);
+    border-radius: 2px;
+    width: 100%;
+    height: 5px;
+    margin-top: 7px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: .2s;
+    position: relative;
+
+    .Progress {
+        background: var(--BLOCK_COLOR_LITE_TEXT);
+        width: 0%;
+        height: 100%;
+        transition: .2s;
+
+        &.Vertical {
+            width: 100%;
+            height: 0;
+            bottom: 0;
+            position: absolute;
+        }
+    }
+
+    &.Vertical {
+        height: 100px;
+        width: 5px;
+
+        &:hover {
+            height: 100px;
+            width: 10px;
+        }
+    }
+}
+
+.UI-Slider:hover {
+    height: 10px;
+    border-radius: 15px;
+}
+
+.UI-VolumeControl__button {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.UI-VolumeControl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .UI-VolumeControl__button {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+    }
+
+    &__slider {
+        position: absolute;
+        background: var(--AIR_COLOR);
+        padding: 7px;
+        border-radius: 6px;
+        margin-top: -190px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        box-shadow: var(--AIR_SHADOW);
+
+        .UI-Slider {
+            margin: 0;
+        }
+
+        svg {
+            opacity: 0.5;
+            transform: scale(0.9);
+        }
+    }
+}
+
+.UI-PlayButton {
+    fill: var(--INTERACTION_BTN_TEXT_COLOR);
+    margin: 0px 10px;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 70%;
+        height: 70%;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+    }
+}
+
+// Интерфейс - Ссылки
+
+.UI-Links {
+    border-radius: var(--BR_BASE);
+    margin-top: 5px;
+    width: 100%;
+    display: flex;
+    overflow-x: scroll;
+
+    button {
+        background: var(--BLOCK_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        width: fit-content;
+        margin-right: 5px;
+        padding: 4px 9px;
+        font-size: 0.85em;
+        text-wrap: nowrap;
+        display: flex;
+        align-items: center;
+
+        img,
+        svg {
+            width: 17px;
+            height: 17px;
+            margin-right: 5px;
+        }
+
+        svg {
+            fill: var(--BTN_TEXT_COLOR);
+        }
+    }
+}
+
+// Интерфейс - Медиа инпуты
+
+.UI-AvatarInput,
+.UI-CoverInput {
+    width: fit-content;
+    height: fit-content;
+    position: relative;
+
+    input {
+        opacity: 0;
+        position: absolute;
+        inset: 0;
+        cursor: pointer;
+    }
+}
+
+// Интерфейс - Обложка песни/плейлиста
+
+.UI-MusicCover {
+    border-radius: 10px;
+    flex-shrink: 0;
+    position: relative;
+
+    .Cover,
+    .NoneCover {
+        border-radius: 10px;
+        width: 100%;
+        height: 100%;
+    }
+
+    .Cover,
+    .CoverShadow {
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .NoneCover {
+        background: rgb(212 205 223);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            fill: var(--ACCENT_COLOR);
+            width: 70%;
+            height: 70%;
+        }
+    }
+
+    .CoverShadow {
+        background: rgb(255 255 255 / 0%);
+        border-radius: 0px;
+        filter: blur(10px);
+        width: 95%;
+        height: 95%;
+        position: absolute;
+        top: 5px;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: -1;
+        margin: auto;
+    }
+
+    .UI-PRELOAD {
+        border-radius: 10px;
+        width: 150px;
+        height: 150px;
+    }
+
+    .UI-PRELOAD::after {
+        filter: blur(27px);
+    }
+}
+
+// Регистрация и вход
+
+.Auth-Body {
+    width: 900px;
+    height: 600px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Auth-Body .Left,
+.Right {
+    height: 100%;
+    min-height: 100%;
+    position: relative;
+}
+
+.Auth-Body .Left {
+    width: 45%;
+    min-width: 45%;
+}
+
+.Auth-Body .Right {
+    width: 55%;
+    min-width: 55%;
+}
+
+.Auth-Body .LogoAndTitle {
+    width: fit-content;
+    height: fit-content;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.Auth-Body .LogoAndTitle svg {
+    width: 100px;
+    margin-bottom: 20px;
+}
+
+.Auth-Body .LogoAndTitle .Title {
+    text-align: center;
+    width: 70%;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.Auth-Body .LogoAndTitle .Title span {
+    font-family: var(--FF_TITLE);
+}
+
+.Auth-Body .Watermark {
+    color: rgb(139 135 154 / 50%);
+    font-size: 0.8em;
+    position: absolute;
+    bottom: 0;
+    margin: 5px 10px;
+}
+
+.Auth-Body .LastUsers {
+    width: 80%;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.Auth-Body .LastUsers .User {
+    background: rgb(255 255 255 / 0%);
+    padding: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.Auth-Body .LastUsers .Name {
+    color: rgb(150 150 150);
+    font-size: 0.8em;
+    width: 50px;
+    margin-top: 5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.Auth-Body .LastUsers .Name .UI-PRELOAD {
+    width: 40px;
+    height: 15px;
+    margin: auto;
+}
+
+.Auth-Body .Login,
+.Reg,
+.Auth-Container {
+    padding: 15px;
+    width: 70%;
+    height: fit-content;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    display: flex;
+    user-select: none;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.Auth-Body .Login {
+    z-index: 2;
+    opacity: 1;
+    visibility: visible;
+}
+
+.Auth-Body .Reg,
+.Auth-Container {
+    z-index: 1;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.Reg {
+    .PasswordInput {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+        margin-bottom: 10px;
+
+        .UI-Input {
+            width: 100%;
+            margin: 0;
+        }
+
+        button {
+            background: var(--INPUT_COLOR);
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                fill: var(--TEXT_COLOR);
+                width: 25px;
+                height: 25px;
+            }
+        }
+    }
+}
+
+.Form_Container-Text {
+    color: var(--TITLE_COLOR);
+    font-family: var(--FF_TITLE);
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.Authorization-Form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+
+    .UI-Input {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .UI-FormButton {
+        border-radius: 14px;
+    }
+}
+
+.Authorization-BTN_2 {
+    background: var(--BLOCK_COLOR);
+    color: var(--ACCENT_COLOR);
+    font-size: var(--FS_TEXT);
+    margin-top: 10px;
+    border-radius: 14px;
+    padding: 5px 10px;
+}
+
+.Authorization-Accept_R {
+    color: rgb(139 135 154 / 70%);
+    font-size: 0.9em;
+    margin: 5px 0px 13px 0px;
+    display: flex;
+    align-items: center;
+}
+
+.Authorization-Accept_R_BTN {
+    background: var(--ACCENT_COLOR);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    cursor: pointer;
+}
+
+// Статус бар - Поиск
+
+.Search-Result {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    -webkit-backdrop-filter: var(--AIR_BLUR);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    max-width: 500px;
+    height: 50vh;
+    margin: var(--C_TOP_MARGIN) auto auto auto;
+    padding: 38px 0px 0px 0px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    box-shadow: var(--AIR_SHADOW);
+    -moz-box-shadow: var(--AIR_SHADOW);
+    -webkit-box-shadow: var(--AIR_SHADOW);
+
+    .Category {
+        width: 100%;
+        margin-top: 10px;
+        font-size: 1.1em;
+        position: absolute;
+        top: 0;
+        z-index: 1;
+        flex: 1;
+        overflow: scroll;
+
+        .BUTTons {
+            padding: 0px 10px;
+            display: inline-flex;
+        }
+
+        button {
+            background-color: rgb(170 170 170 / 0%);
+            color: rgb(112 111 124 / 70%);
+            border-radius: 6px;
+            padding: 3px 10px;
+            transition: background-color 0.2s;
+        }
+
+        .Active {
+            background-color: var(--AIR_BLOCK_COLOR);
+            color: var(--BTN_TEXT_COLOR);
+        }
+    }
+
+    .UI-ScrollView {
+        border-radius: var(--BR_BASE);
+        padding: 0;
+        margin: 0px 10px auto 10px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 4%, rgb(0, 0, 0) 96%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    .Results {
+        padding: 11px 0px;
+        gap: var(--PUSTOTA_WIDTH);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .Error {
+        color: var(--TEXT_COLOR);
+        text-align: center;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        bottom: 50%;
+    }
+}
+
+.UI-NavPanel {
+    background: var(--AIR_COLOR);
+    border-radius: var(--BR_BASE);
+    backdrop-filter: var(--AIR_BLUR);
+    padding: 8px;
+    transform: rotate3d(10, -10, 1, 45deg)translate(25px, -100px)scale(0.3);
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    right: 0;
+    box-shadow: var(--AIR_SHADOW);
+
+    .Layer {
+        gap: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    button {
+        background: var(--AIR_BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+        font-size: var(--FS_TITLE);
+        border-radius: var(--BR_BASE);
+        text-wrap: nowrap;
+        width: 100%;
+        padding: 10px;
+    }
+
+    .AccountContainer {
+        display: flex;
+        gap: 5px;
+
+        .Account {
+            padding: 5px;
+            display: flex;
+            align-items: center;
+
+            .Avatar {
+                margin-right: 10px;
+            }
+
+            .Name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100px;
+            }
+        }
+
+        .Delete {
+            background: var(--BTN_CLOSE_COLOR);
+            width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                width: 18px;
+                height: 19px;
+                fill: red;
+            }
+        }
+    }
+}
+
+// Музыкальный плеер
+
+.UI-MusicPlayer {
+    margin: 10px 13px;
+    display: flex;
+    align-items: center;
+
+    .UI-MusicCover {
+        background: var(--AIR_BLOCK_COLOR);
+    }
+
+    .Metadata {
+        flex-grow: 1;
+        margin: 0px 15px 0px;
+        overflow: hidden;
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+
+        .Name,
+        .Author {
+            width: fit-content;
+            max-width: 100%;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .Author {
+            color: var(--D_OR_P_COLOR);
+            font-size: 0.9em;
+        }
+    }
+
+    .Metadata:hover {
+        cursor: pointer;
+    }
+
+    .SliderContainer {
+        width: 100%;
+        margin-top: 5px;
+        gap: 5px;
+        display: flex;
+        align-items: center;
+
+        .UI-Slider {
+            margin: 0;
+        }
+
+        .Duration {
+            font-size: 0.6em;
+            opacity: 0.7;
+        }
+    }
+}
+
+/* Главная страница */
+
+.HomePage {
+    .UI-C_R {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+
+.HomePage-OnlineUsers {
+    padding: 10px 0 10px 0;
+
+    .UI-Title {
+        font-size: 0.7em;
+        margin: 0 10px 10px;
+        opacity: 0.8;
+    }
+
+    .Scroll {
+        overflow: scroll;
+    }
+
+    .Users {
+        margin: 0 10px 0 10px;
+        gap: 10px;
+        font-size: 30px;
+        display: flex;
+        flex-direction: row;
+
+        .User {
+            position: relative;
+
+            .UI-Online {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                margin: 0;
+            }
+        }
+    }
+}
+
+.HomePage .UI-C_L .Posts {
+    margin-bottom: 20px;
+}
+
+.HomePage .Posts .UI-Loading .UI-Loader_1 {
+    --uil1-size: 30px;
+}
+
+/* Пост */
+
+.Post-Page {
+
+    .UI-C_L,
+    .UI-C_R {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+.Post,
+.Comment {
+    width: 100%;
+    padding: 10px 10px 40px;
+    position: relative;
+    transition: .5s;
+
+    .TopBar {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+
+        .Avatar {
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .Info {
+            color: rgb(89 93 105);
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+
+            .InfoBody {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .UI-NameBody {
+                display: flex;
+                align-items: center;
+                min-width: 0;
+
+                .UI-UserIcons {
+                    .Icon {
+                        width: 17px;
+                        height: 17px;
+                    }
+                }
+            }
+
+            .Name {
+                color: var(--TEXT_COLOR);
+
+                .UI-PRELOAD {
+                    width: 100px;
+                    height: 13px;
+                    margin-bottom: 3px;
+                }
+            }
+
+            .Date {
+                color: var(--D_OR_P_COLOR);
+                font-size: var(--FS_D_OR_P);
+                line-height: 1.5em;
+
+                .UI-PRELOAD {
+                    width: 80px;
+                    height: 13px;
+                }
+            }
+        }
+
+        .GovernButton {
+            border-radius: 100px;
+            width: 25px;
+            height: 25px;
+            padding: 0;
+            margin-right: 3px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                fill: var(--INTERACTION_BTN_TEXT_COLOR);
+                width: 15px;
+                height: 15px;
+            }
+        }
+    }
+}
+
+.Post,
+.Comment {
+    .Text {
+        color: var(--TEXT_COLOR);
+        width: fit-content;
+        max-width: 100%;
+        overflow: hidden;
+        line-height: 1.3em;
+        word-wrap: break-word;
+        white-space: pre-line;
+        position: relative;
+
+        .UI-PRELOAD {
+            height: 40px;
+            border-radius: var(--BR_BASE);
+        }
+
+        .UI-PRELOAD::after {
+            filter: blur(40px);
+        }
+
+        .ShowMore {
+            position: absolute;
+            top: 100%;
+            height: 100%;
+            width: 100%;
+            box-shadow: 0px -13px 15px 20px var(--BLOCK_COLOR);
+
+            button {
+                background: rgb(255 255 255 / 0%);
+                font-size: 1.1em;
+                position: absolute;
+                top: -25px;
+                left: 0;
+                right: 0;
+            }
+        }
+    }
+}
+
+.Post .InteractionContainer {
+    border-radius: var(--BR_BASE);
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.Post .InteractionContainer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    box-shadow: -5px 0px 10px 10px var(--BLOCK_COLOR);
+}
+
+.Post .InteractionScroll {
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    display: flex;
+}
+
+.Post .InteractionButtons {
+    height: 100%;
+    padding: 10px;
+    display: flex;
+    transition: .2s;
+}
+
+.Post .InteractionButton {
+    background: var(--INTERACTION_BTN_COLOR);
+    color: var(--INTERACTION_BTN_TEXT_COLOR);
+    fill: var(--INTERACTION_BTN_TEXT_COLOR);
+    border-radius: 30px;
+    width: fit-content;
+    min-width: fit-content;
+    height: 30px;
+    padding: 0px 10px;
+    margin-right: 7px;
+    font-size: 0.8em;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    transition: .3s;
+}
+
+.Post .InteractionButton svg {
+    width: 19px;
+    height: 19px;
+}
+
+.Post .InteractionButtons .InteractionButton .UI-PRELOAD {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border-radius: 0px;
+}
+
+.Post .InteractionButtons .InteractionButton .UI-PRELOAD::after {
+    filter: blur(20px);
+}
+
+.Post .InteractionButtons .Like {
+    margin-right: 2px;
+    border-radius: 100px 0px 0px 100px;
+}
+
+.Post .InteractionButtons .Dislike {
+    border-radius: 0px 100px 100px 0px;
+}
+
+.Post .InteractionButtons .Liked {
+    background: rgb(203 169 255 / 20%);
+    color: var(--ACCENT_COLOR);
+    fill: var(--ACCENT_COLOR);
+}
+
+.Post .ShareImposition {
+    background: var(--BLOCK_COLOR);
+    color: var(--INTERACTION_BTN_TEXT_COLOR);
+    width: 100%;
+    height: 30px;
+    padding: 10px;
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Post .ShareImposition .Interaction {
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.Post .ShareImposition .Interaction .Back svg {
+    margin-left: -5px;
+    margin-right: -1px;
+}
+
+.Post .ShareImposition .Interaction .URL {
+    background: var(--INTERACTION_BTN_COLOR);
+    color: var(--INTERACTION_BTN_TEXT_COLOR);
+    border-radius: 100px 0px 0px 100px;
+    margin-right: 2px;
+    width: 100%;
+    height: 100%;
+    padding: 0px 10px;
+    font-size: var(--FS_TEXT);
+    display: flex;
+    align-items: center;
+}
+
+.Post .ShareImposition .Interaction .URL input {
+    background: rgb(255 255 255 / 0%);
+    color: var(--INTERACTION_BTN_TEXT_COLOR);
+    width: 100%;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.Post .ShareImposition .Interaction .CopyURL {
+    background: var(--INTERACTION_BTN_COLOR);
+    border-radius: 0px 100px 100px 0px;
+    width: 60px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Post .ShareImposition .Interaction .CopyURL svg {
+    fill: var(--INTERACTION_BTN_TEXT_COLOR);
+    width: 18px;
+    height: 18px;
+}
+
+.UI-ImageView {
+    background: rgb(0 0 0 / 70%);
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    inset: 0;
+
+    .TopBar,
+    .BottomBar {
+        background: rgb(24 24 24 / 50%);
+        padding: 10px;
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .TopBar {
+        border-bottom: 1px solid rgb(255 255 255 / 20%);
+        top: 0;
+
+        .Metadata {
+            width: 100%;
+            color: rgb(255, 255, 255, 0.9);
+            text-align: center;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            white-space: nowrap;
+            text-shadow:
+                -1px -1px 0 black,
+                1px -1px 0 black,
+                -1px 1px 0 black,
+                1px 1px 0 black;
+
+            .Name {
+                max-width: 100%;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+            .Govern {
+                position: relative;
+
+                .Dots {
+                    background: none;
+                    fill: #FFF;
+                    margin-left: 10px;
+
+                    svg {
+                        width: 16px;
+                        height: 16px;
+                    }
+                }
+
+                .UI-GovernButtons {
+                    background: rgb(24 24 24 / 50%);
+                    top: 40px;
+                    right: 0;
+                    --AIR_CONTEXT_SHADOW_COLOR_START: rgb(28 27 33 / 30%);
+                    --AIR_CONTEXT_SHADOW_COLOR_END: rgb(28 27 33 / 70%);
+
+                    button {
+                        background: rgb(113 110 122 / 30%);
+                        color: #FFF;
+                        text-shadow: none;
+
+                        svg {
+                            fill: #FFF;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .BottomBar {
+        width: fit-content;
+        max-width: 100%;
+        border: 1px solid rgb(255 255 255 / 20%);
+        bottom: 5px;
+        border-radius: 14px;
+        padding: 5px 0px;
+        overflow: hidden;
+        margin: auto;
+
+        .Scroll {
+            width: 100%;
+            height: 100%;
+            overflow: scroll;
+        }
+
+        .Images {
+            width: fit-content;
+            gap: 5px;
+            margin: 1px 6px;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .Image {
+            flex-shrink: 0;
+            border-radius: var(--BR_BASE);
+            width: 40px;
+            height: 40px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: .2s;
+
+            img {
+                background: rgb(255 255 255 / 50%);
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                pointer-events: none;
+            }
+        }
+
+        .Image:hover {
+            transform: scale(1.05);
+        }
+
+        .Selected {
+            transform: scale(1.05);
+            border: 1px solid rgb(255 255 255 / 50%);
+        }
+    }
+
+
+    .ImageBox {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+
+        img,
+        .UI-Neoimage img {
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 120px);
+            width: auto;
+            height: auto;
+            z-index: 1;
+            transition: transform 0.1s;
+        }
+
+        .UI-Neoimage {
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 120px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+}
+
+/* Контент пользователей */
+
+.UserContent-Video {
+    width: 100%;
+    max-height: 300px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+
+    .Settings,
+    .VideoInfo {
+        background: rgb(0 0 0 / 30%);
+        backdrop-filter: blur(20px) saturate(200%);
+        border-radius: var(--BR_BASE);
+        position: absolute;
+    }
+
+    .VideoInfo {
+        color: #FFF;
+        fill: #FFF;
+        padding: 4px 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        top: 5px;
+        left: 5px;
+        font-size: 0.7em;
+
+        svg {
+            width: 10px;
+            height: 10px;
+        }
+    }
+
+    .Settings {
+        bottom: 45px;
+        right: 5px;
+        z-index: 1;
+        box-shadow: 0px 2px 5px -1px rgb(0 0 0 / 38%);
+
+        .Volume {
+            width: 300px;
+            padding: 8px;
+            gap: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            svg {
+                width: 20px;
+                height: 20px;
+                fill: #FFF;
+                flex-shrink: 0;
+            }
+        }
+    }
+
+    .UI-Slider {
+        background: rgb(255 255 255 / 35%);
+        margin: 0;
+
+        .Progress {
+            background: #FFF;
+        }
+    }
+
+    .Controls {
+        background: linear-gradient(to top, rgb(24 24 24 / 50%) 10%, transparent 90%);
+        width: 100%;
+        height: 50px;
+        padding: 10px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        gap: 10px;
+        display: flex;
+        align-items: center;
+        border-radius: 0px 0px 10px 10px;
+
+        .Slider {
+            width: 100%;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            ;
+
+            .Duration {
+                color: rgb(255 255 255 / 35%);
+                width: 100%;
+                margin-top: 2px;
+                font-size: 0.7em;
+                padding: 0px 10px;
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+
+        .UI-PlayButton {
+            background: rgb(255 255 255 / 0%);
+            fill: #FFF;
+            margin: 0;
+        }
+
+        .FullscreenButton,
+        .SettingsButton,
+        .DownloadButton {
+            background: rgba(255, 255, 255, 0);
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                fill: #FFF;
+                width: 80%;
+                height: 80%;
+            }
+        }
+    }
+
+    .Blur {
+        width: 100%;
+        height: 70px;
+        backdrop-filter: blur(20px) saturate(200%);
+        mask-image: linear-gradient(to top, rgba(0, 0, 0) 30%, rgb(0, 0, 0, 0.0) 100%);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 0px 0px 10px 10px;
+    }
+
+    video {
+        background: #000;
+        border-radius: var(--BR_BASE);
+        width: 100%;
+        height: 100%;
+        max-height: 300px;
+    }
+}
+
+.UserContent-Stack {
+
+    .Stack {
+        position: relative;
+    }
+
+    .ShadowLayer,
+    .Layer {
+        background: var(--INTERACTION_BTN_COLOR);
+        border-radius: 10px;
+    }
+
+    .ShadowLayer {
+        position: absolute;
+        inset: 0;
+    }
+
+    .Layer {
+        padding: 10px;
+    }
+}
+
+.UserContent-File {
+    width: 100%;
+    display: flex;
+    align-items: center;
+
+    svg {
+        fill: var(--TEXT_COLOR);
+        width: 35px;
+        height: 35px;
+    }
+
+    .FileInfo {
+        width: 100%;
+        margin-left: 7px;
+
+        .FileName {
+            margin-bottom: 2px;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .FileSize {
+            color: var(--INTERACTION_BTN_TEXT_COLOR);
+            font-size: 0.8em;
+        }
+    }
+
+    button {
+        background: var(--BLOCK_COLOR_LITE_TEXT);
+        color: #FFF;
+        padding: 5px 10px;
+        border-radius: 100px;
+    }
+
+    .FilesCount {
+        font-size: 0.9em;
+        display: flex;
+        flex-shrink: 0;
+    }
+}
+
+
+.UserContent-Audio {
+    padding: 5px;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+
+    .Error {
+        color: var(--TEXT_COLOR);
+        margin-left: 10px;
+        font-size: 0.9em;
+    }
+
+    .UI-PRELOAD {
+        border-radius: 0;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .UI-PRELOAD::after {
+        filter: blur(40px);
+    }
+
+    .Player {
+        width: 100%;
+        margin: 0px 10px;
+
+        .Metadata {
+            color: var(--INTERACTION_BTN_TEXT_COLOR);
+            font-size: 0.95em;
+
+            .Title {
+                color: var(--BTN_TEXT_COLOR);
+            }
+
+            .Artist {
+                font-size: 0.9em;
+            }
+        }
+
+        .SliderContainer {
+            gap: 5px;
+            display: flex;
+            align-items: center;
+
+            .Time {
+                opacity: 0.5;
+                color: var(--TEXT_COLOR);
+                font-size: 0.54em;
+            }
+
+            .UI-Slider {
+                margin-top: 0px;
+            }
+
+            .Progress {
+                background: var(--INTERACTION_BTN_TEXT_COLOR);
+            }
+        }
+    }
+
+    .SongsCount {
+        color: var(--TEXT_COLOR);
+        font-size: 0.9em;
+        display: flex;
+        flex-shrink: 0;
+    }
+}
+
+.UserContent-Image {
+    background: var(--NL_GRADIENT);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: auto;
+    min-height: 100px;
+    max-height: 300px;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .Error {
+        background: var(--AIR_COLOR);
+        width: 100%;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .Emoji {
+            width: 100px;
+            height: 100px;
+        }
+    }
+
+    .IMG {
+        width: 100%;
+        height: 100%;
+        max-height: 300px;
+        position: static;
+        object-fit: contain;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    .BlurIMG {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        z-index: 0;
+    }
+
+    .UI-Neoimage {
+        max-width: 100%;
+        width: auto;
+        height: auto;
+
+        img {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 300px;
+        }
+    }
+}
+
+.UserContent-Image .Blur,
+.UserContent-Image .Censoring,
+.UserContent-Images .Censoring {
+    background: rgb(201 201 201 / 28%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.UserContent-Images .Censoring,
+.UserContent-Image .Censoring {
+    z-index: 3;
+    display: flex;
+    align-items: center;
+}
+
+.UserContent-Images .Censoring .Info,
+.UserContent-Image .Censoring .Info {
+    margin: auto;
+    text-align: center;
+}
+
+.UserContent-Images .Censoring .Info .Text,
+.UserContent-Image .Censoring .Info .Text {
+    color: #FFF;
+    text-shadow: 0px 0px 5px rgb(0 0 0 / 50%);
+}
+
+.UserContent-Images .Censoring .Info .ShowButton,
+.UserContent-Image .Censoring .Info .ShowButton {
+    background: var(--AIR_COLOR);
+    color: var(--TEXT_COLOR);
+    border-radius: var(--BR_BASE);
+    padding: 5px 16px;
+    box-shadow: 0px 0px 5px rgb(0 0 0 / 30%);
+}
+
+.UserContent-Images {
+    background: var(--BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--PUSTOTA_WIDTH);
+}
+
+.UserContent-Images .P1 {
+    grid-row: 1 / 3;
+}
+
+.UserContent-Images .P2 {
+    grid-row: 1 / 1;
+}
+
+.UserContent-Images .P2:not(:has(+ .P3)) {
+    grid-row: 1 / 3;
+}
+
+.UserContent-Images .P3 {
+    grid-row: 2 / 2;
+}
+
+.UserContent-Images img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+}
+
+.UserContent-Images .P1,
+.UserContent-Images .P2,
+.UserContent-Images .P3 {
+    background: var(--NL_GRADIENT);
+    cursor: pointer;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.UserContent-Images .Blured img {
+    filter: blur(2px) brightness(0.5);
+    transform: scale(1.1);
+}
+
+.UserContent-Images .Count {
+    color: rgb(255 255 255 / 60%);
+    font-size: 3em;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Комментарии */
+
+.Comment {
+    position: relative;
+    padding: 10px;
+
+    .UI-GovernButtons {
+        z-index: 3;
+    }
+
+    .Reply {
+        background: var(--REPLY_BG);
+        border-radius: var(--BR_BASE);
+        padding: 8px;
+        user-select: none;
+        position: relative;
+
+        svg {
+            fill: var(--REPLY_SVG_COLOR);
+            width: 40px;
+            position: absolute;
+            top: -5px;
+            right: 0;
+        }
+
+        .Userdata {
+            display: flex;
+            align-items: center;
+
+            .Avatar {
+                margin-right: 10px;
+            }
+        }
+
+        .ReplyText {
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    }
+}
+
+.Post-Add_comment {
+    border-radius: var(--BR_BASE);
+    margin-bottom: var(--BASE_MARGIN_BOTTOM);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--BLOCK_SHADOW);
+}
+
+.Post-Add_comment .Reply {
+    padding: 5px 0px 3px 10px;
+    display: flex;
+
+    .ReplyContent {
+        width: 100%;
+        font-size: 0.9em;
+        min-width: 0;
+
+        .Name {
+            display: flex;
+            align-items: center;
+
+            .UI-UserIcons {
+                width: auto;
+            }
+        }
+
+        .Text {
+            min-width: 0;
+            width: 100%;
+            color: var(--D_OR_P_COLOR);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .Close {
+        background: rgb(255 255 255 / 0%);
+        width: 50px;
+        position: relative;
+        padding: 0;
+
+        svg {
+            width: 25px;
+            height: 25px;
+        }
+    }
+}
+
+.Post-Add_comment .Input {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.Post-Add_comment button,
+.Post-Add_comment label {
+    width: 50px;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Post-Add_comment .AddFile {
+    background: var(--BLOCK_COLOR);
+}
+
+.Post-Add_comment .AddFile svg {
+    fill: var(--TEXT_COLOR);
+    width: 21px;
+    height: 21px;
+}
+
+.Post-Add_comment input {
+    background: var(--BLOCK_COLOR);
+    border-radius: 0;
+    width: 100%;
+    padding: 10px 15px;
+}
+
+.Post-Add_comment input:hover,
+.Post-Add_comment input:focus {
+    outline: 2px solid rgb(243 242 246 / 0%);
+    outline-offset: 2px;
+}
+
+.Post-Add_comment label:active {
+    filter: brightness(0.8);
+}
+
+// Разные формы бубубубубу
+
+.MultiForm {
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+
+    .UI-CoverInput {
+        width: 100%;
+        margin-bottom: 10px;
+
+        .UI-Cover {
+            height: 130px;
+            margin: 0;
+        }
+    }
+
+    .UI-AppIcon {
+        width: 75px;
+        height: 75px;
+        font-size: 37.5px;
+    }
+
+    .UI-AppIcon {
+        width: 105px;
+        height: 105px;
+    }
+
+    .Avatar,
+    .UI-AppIcon,
+    .UI-Cover {
+        position: relative;
+        margin-bottom: 10px;
+
+        input {
+            cursor: pointer;
+            opacity: 0;
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        svg {
+            fill: #FFF;
+            width: 37.5px;
+            height: 100%;
+            margin: auto;
+            display: block;
+            filter: drop-shadow(2px 4px 6px rgb(0 0 0 / 50%));
+        }
+    }
+
+    .Inputs {
+        width: 350px;
+        margin-top: 10px;
+        padding: 10px;
+        gap: 7px;
+        display: flex;
+        flex-direction: column;
+
+        .UI-Input {
+            width: 100%;
+        }
+
+        .ChangeContainer {
+            width: 100%;
+        }
+
+        .InputContainer {
+            display: flex;
+            align-items: center;
+
+            .UI-Input {
+                margin-left: 10px;
+            }
+        }
+
+        textarea {
+            resize: none;
+        }
+    }
+
+    .UI-FormButton {
+        margin: 10px 0px;
+    }
+}
+
+.EditApp {
+    .Info {
+        opacity: 0.7;
+        font-size: 0.8em;
+        margin: 5px 10px 0px 10px;
+    }
+}
+
+/* Добавить пост */
+
+.UI-AddPost {
+    position: relative;
+    user-select: none;
+
+    .UI-Input {
+        width: 100%;
+    }
+
+    &.dragging {
+        outline: 2px dashed var(--ACCENT_COLOR);
+        background-color: rgba(var(--ACCENT_COLOR_RGB), 0.05);
+        transition: all 0.2s ease;
+        animation: pulseBorder 1.5s infinite alternate;
+
+        &::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--ACCENT_COLOR);
+            font-size: 1.2em;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .UI-Input,
+        .Buttons,
+        .EmojiPicker {
+            opacity: 0.5;
+        }
+    }
+
+    .AddPostActionButtons {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+
+        .ClearButton,
+        .GoToChannelButton {
+            background-color: var(--AIR_BLOCK_COLOR);
+            color: var(--TEXT_COLOR);
+            padding: 5px 10px;
+            font-size: 0.9em;
+            border-radius: var(--BR_BASE);
+
+            &:hover {
+                background-color: var(--AIR_BLOCK_COLOR_ACTIVE);
+            }
+        }
+    }
+
+    .SelectedChannelInfo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        padding: 5px 10px;
+        background-color: var(--AIR_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        width: fit-content;
+
+        .ChannelName {
+            font-size: 0.9em;
+            color: var(--TEXT_COLOR);
+        }
+    }
+
+    .Buttons {
+        margin: 14px 0px 0px 0px;
+        display: flex;
+        justify-content: space-between;
+        flex-direction: row-reverse;
+        align-items: center;
+
+        input {
+            display: none;
+        }
+
+        .Send {
+            height: 30px;
+            padding: 0px 16px;
+        }
+
+        .AddFileButtons {
+            display: inline-flex;
+
+            button,
+            label {
+                background: var(--BTN_BACKGROUND);
+                border-radius: var(--BR_BASE);
+                width: 30px;
+                height: 30px;
+                padding: 0px 6px;
+                margin-right: 4px;
+                position: relative;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            label:active {
+                filter: brightness(0.8);
+            }
+
+            .Close:active {
+                filter: brightness(0.8);
+            }
+        }
+    }
+
+    .Buttons .AddFileButtons svg,
+    .UI-UniversalPanel .Close svg {
+        fill: var(--BTN_TEXT_COLOR);
+        width: 20px;
+        position: absolute;
+        z-index: 1;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .SelectAccount {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        overflow: hidden;
+
+        .Avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+    }
+}
+
+.AddPost-SelectFrom {
+    right: 0;
+}
+
+.AddPost-SelectFrom .Title {
+    font-size: 0.8em;
+}
+
+.AddPost-SelectFrom .Accounts {
+    margin-top: 5px;
+    gap: 5px;
+    display: flex;
+    flex-direction: column;
+
+    .Avatar {
+        margin-right: 10px;
+    }
+
+    .Account {
+        background: rgb(255 255 255 / 0%);
+        border-radius: 14px;
+        font-size: 1em;
+        padding: 5px 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+
+    .Selected {
+        background: var(--AIR_BLOCK_COLOR);
+    }
+}
+
+
+.PostContent {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.AttachedFiles {
+    display: flex;
+    margin-top: 10px;
+    transition: height 0.3s ease, opacity 0.3s ease;
+
+    .ScrollContainer {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 10px;
+        width: 100%;
+        overflow-x: auto;
+        padding: 10px 0;
+        scrollbar-width: thin;
+
+        &::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color: var(--ACCENT_COLOR);
+            border-radius: 6px;
+        }
+    }
+}
+
+.Post-FilePreview {
+    flex-shrink: 0;
+    height: 120px;
+    width: 160px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--BLOCK_COLOR);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+
+    &.ImageFile,
+    &.VideoFile {
+
+        .ImagePreview,
+        .VideoThumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .Metadata {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px;
+            color: white;
+            font-size: 0.8em;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.2s ease;
+
+            .Size {
+                opacity: 0.8;
+                font-size: 0.9em;
+            }
+        }
+
+        .RemoveFile {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .VideoPreview {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+
+            &::before,
+            &::after {
+                display: none;
+            }
+
+            .VideoThumbnail {
+                opacity: 1;
+                filter: none;
+                background: transparent;
+            }
+
+            .PlayButton {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 40px;
+                height: 40px;
+                background: none;
+                box-shadow: none;
+                backdrop-filter: none;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                svg,
+                .VideoPlayIcon {
+                    width: 32px;
+                    height: 32px;
+                    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+
+                    path {
+                        fill: #fff !important;
+                    }
+                }
+            }
+        }
+    }
+
+    &:not(.ImageFile):not(.VideoFile) {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        width: 200px;
+
+        .Icon {
+            margin-right: 10px;
+            width: 40px;
+            height: 40px;
+
+            svg {
+                fill: var(--TEXT_COLOR);
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        .Metadata {
+            overflow: hidden;
+
+            .Size {
+                font-size: 0.9em;
+            }
+        }
+    }
+
+    .RemoveFile {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--ACCENT_COLOR);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.2s ease;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+        svg {
+            fill: white;
+            width: 12px;
+            height: 12px;
+        }
+    }
+
+    &:hover {
+        .RemoveFile {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        &.ImageFile .Metadata,
+        &.VideoFile .Metadata {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media only screen and (max-width: 768px),
+    only screen and (hover: none) {
+        .ScrollContainer & {
+
+            &.ImageFile .Metadata,
+            &.VideoFile .Metadata {
+                opacity: 1 !important;
+                transform: translateY(0) !important;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 5;
+                visibility: visible !important;
+                display: block !important;
+            }
+
+            .RemoveFile {
+                opacity: 1 !important;
+                transform: scale(1) !important;
+                width: 28px;
+                height: 28px;
+                top: 8px;
+                right: 8px;
+                z-index: 10;
+                visibility: visible !important;
+                display: flex !important;
+
+                svg {
+                    width: 14px;
+                    height: 14px;
+                }
+            }
+        }
+    }
+}
+
+.AddPost.dragging,
+.DragDropArea.dragging {
+    outline: 2px dashed var(--ACCENT_COLOR) !important;
+    background-color: rgba(var(--ACCENT_COLOR_RGB), 0.05) !important;
+    transition: all 0.2s ease !important;
+    animation: pulseBorder 1.5s infinite alternate !important;
+    position: relative;
+
+    &::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--ACCENT_COLOR);
+        font-size: 1.2em;
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .UI-Input,
+    .Buttons,
+    .EmojiPicker {
+        opacity: 0.5;
+    }
+}
+
+body.dragging .AddPost,
+body.dragging .DragDropArea {
+    outline: 2px dashed var(--ACCENT_COLOR) !important;
+    background-color: rgba(var(--ACCENT_COLOR_RGB), 0.05) !important;
+    transition: all 0.2s ease !important;
+    animation: pulseBorder 1.5s infinite alternate !important;
+}
+
+@keyframes pulseBorder {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--ACCENT_COLOR_RGB), 0.2);
+    }
+
+    100% {
+        box-shadow: 0 0 0 10px rgba(var(--ACCENT_COLOR_RGB), 0);
+    }
+}
+
+.ParticleContainer {
+    position: fixed;
+    top: 0;
+    z-index: 50;
+}
+
+.UI-Particle,
+.UI-ImageParticle,
+.UI-TextParticle {
+    border-radius: 100px;
+    position: absolute;
+    animation: Disintegrate 1.5s forwards;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.UI-ImageParticle {
+    overflow: hidden;
+}
+
+@keyframes Disintegrate {
+    0% {
+        opacity: 1;
+        transform: translate(0px, 0px) rotate(0deg) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px)) rotate(calc(var(--x) * 1deg)) scale(0.1);
+    }
+}
+
+
+/* Профиль */
+
+.Profile-Page {
+    margin: auto;
+
+    .UI-C_L,
+    .UI-C_R {
+        width: 100%;
+        max-width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .UI-C_L {
+        max-width: 40%;
+        margin-right: 0px;
+
+        .UI-ScrollView {
+            max-width: 400px;
+        }
+    }
+
+    .UI-C_R {
+        margin-left: 0px;
+    }
+
+    .UI-ScrollView .Posts {
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .UI-Tabs {
+        .Tab {
+            background: var(--BLOCK_COLOR);
+        }
+
+        .ActiveTab {
+            background: var(--BTN_BACKGROUND);
+            box-shadow: 0px 0px 0px rgb(255 255 255 / 0%);
+        }
+    }
+}
+
+.Profile-Posts .UI-Loading .UI-Loader_1 {
+    --uil1-size: 30px;
+}
+
+.UI-NameBody {
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+
+    .Name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .UI-UserIcons {
+        .Icon {
+            width: 17px;
+            height: 17px;
+        }
+    }
+}
+
+.Profile-InfoBlock {
+    height: fit-content;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+
+    .AvatarContainer {
+        width: fit-content;
+        position: absolute;
+        top: 98px;
+        left: 0;
+        right: 0;
+        margin: auto;
+
+        .Avatar {
+            border: 4px solid var(--BLOCK_COLOR);
+        }
+
+        .UI-Online {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .UI-NameBody {
+        margin: 15px 10px 2px 10px;
+    }
+
+    .Name {
+        font-family: var(--FF_TITLE);
+        font-size: var(--FS_TITLE);
+    }
+
+    .Username {
+        color: var(--TEXT_COLOR);
+        font-size: var(--FS_TEXT);
+        margin: 2px 10px 15px 10px;
+    }
+}
+
+.Profile-InfoBlock .UI-UserIcons img,
+.Profile-InfoBlock .UI-UserIcons svg {
+    width: 17px;
+    height: 17px;
+    margin-left: 3px;
+    cursor: pointer;
+}
+
+.Profile-InfoBlock .ButtonsContainer {
+    width: fit-content;
+    position: relative;
+}
+
+.Profile-InfoBlock .ButtonsContainer .Buttons {
+    font-size: 1em;
+    height: 33px;
+    margin: 0px 0px 15px 0px;
+    border-radius: var(--BR_BASE);
+    overflow: hidden;
+    position: relative;
+    gap: 2px;
+    display: flex;
+}
+
+.Profile-InfoBlock .ButtonsContainer .Buttons .Button,
+.SubButton {
+    border-radius: 0px;
+    height: 100%;
+    padding: 0px 15px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Profile-InfoBlock .ButtonsContainer .Buttons .SubButton {
+    background: var(--ACCENT_COLOR);
+    color: #FFF;
+    letter-spacing: 0.03em;
+}
+
+.Profile-InfoBlock .ButtonsContainer .Buttons .Button svg {
+    fill: var(--BTN_TEXT_COLOR);
+    width: 20px;
+    height: 20px;
+}
+
+.Profile-InfoBlock .UI-GovernButtons {
+    top: 35px;
+    right: 0;
+}
+
+.Profile-InfoBlock .Info {
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 50px;
+    overflow: hidden;
+    display: flex;
+    gap: var(--PUSTOTA_WIDTH);
+}
+
+.Profile-InfoBlock .Info .Container {
+    background: var(--BLOCK_BLOCK_COLOR);
+    border-radius: 0px;
+    font-size: 1em;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.Profile-InfoBlock .Info .Value {
+    font-family: var(--FF_TITLE);
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.Profile-InfoBlock .Info .Title {
+    font-size: 0.85em;
+    color: var(--D_OR_P_COLOR);
+}
+
+/* Интерфейс - Применить изменения */
+
+.UI-QuestionModal {
+    width: 100%;
+    position: relative;
+    left: 0;
+    right: 0;
+    z-index: 2;
+
+    .Question {
+        background: var(--AIR_COLOR);
+        backdrop-filter: var(--AIR_BLUR);
+        -webkit-backdrop-filter: var(--AIR_BLUR);
+        border-radius: var(--BR_BASE);
+        width: 100%;
+        padding: 10px;
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .Apply {
+        background: var(--ACCENT_COLOR);
+        color: #FFF;
+        border-radius: 10px;
+        width: 100%;
+        height: 30px;
+        text-align: center;
+        margin-right: 5px;
+    }
+
+    .Back {
+        background: var(--BODY_COLOR);
+        color: var(--TEXT_COLOR);
+        margin-left: 5px;
+        border-radius: 10px;
+        width: 100%;
+        height: 30px;
+        text-align: center;
+        border: 1px solid rgb(89 93 105 / 10%);
+    }
+}
+
+// Интерфейс - Подарки
+
+.UI-Gift {
+    margin-bottom: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+
+    .Ribbon {
+        z-index: 1;
+        position: absolute;
+        top: 10px;
+        left: -30px;
+        transform: rotate(-45deg);
+        background: var(--ACCENT_COLOR);
+        color: white;
+        font-size: 12px;
+        text-align: center;
+        white-space: nowrap;
+        pointer-events: none;
+        padding: 2px 40px;
+        box-sizing: border-box;
+        min-width: max-content;
+    }
+
+    .Image {
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        width: 100%;
+        height: auto;
+        max-width: 100px;
+        position: relative;
+
+        .Preview,
+        img,
+        .NeoImage {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    }
+
+    .Metadata {
+        width: 100%;
+        text-align: center;
+        margin-top: 5px;
+
+        .Name {
+            font-family: var(--FF_TITLE);
+            margin-bottom: 4px;
+        }
+
+        .Description {
+            font-size: 0.8em;
+        }
+    }
+
+    .Sender {
+        font-size: 0.8em;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-self: center;
+        gap: 5px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        width: auto;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .Pay {
+        margin-top: 10px;
+        border-radius: 100px;
+        padding: 5px 10px;
+        gap: 5px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        .UI-Eball {
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+        }
+    }
+}
+
+/* Панель управления */
+
+.Dashboard-Blocks {
+    margin-bottom: 7px;
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.Dashboard-Block {
+    height: 150px;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.Dashboard-Block svg {
+    fill: rgb(220 217 233);
+    width: 120px;
+    height: 105px;
+    position: absolute;
+    right: -20px;
+    bottom: -10px;
+}
+
+.Dashboard-B_Text {
+    color: var(--TITLE_COLOR);
+    font-family: var(--FF_TITLE);
+    font-size: var(--FS_TITLE);
+}
+
+.Dashboard-B_Count {
+    color: var(--TEXT_COLOR);
+    font-size: 40px;
+    position: absolute;
+    z-index: 1;
+    bottom: 10px;
+}
+
+.Dashboard-BL_CNT {
+    width: 50%;
+}
+
+.Dashboard-SUB_BTN {
+    background: var(--BTN_BACKGROUND);
+    color: var(--TEXT_COLOR);
+    width: 95%;
+    height: 35px;
+    margin: 5px auto;
+    display: block;
+    border-radius: var(--BR_BASE);
+}
+
+.Dashboard-SUB_LIST {
+    width: 95%;
+    height: 390px;
+    margin: 10px auto;
+    overflow: auto;
+    border-radius: var(--BR_BASE);
+}
+
+.Dashboard-SUB_KEY {
+    height: 35px;
+    border-radius: var(--BR_BASE);
+    padding: 10px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.Dashboard-SK_A {
+    background: linear-gradient(90deg, var(--BTN_BACKGROUND) 60%, rgb(255 219 219) 100%);
+}
+
+.Dashboard-SK_NA {
+    background: linear-gradient(90deg, var(--BTN_BACKGROUND) 60%, rgb(209, 255, 202) 100%);
+}
+
+.Dashboard-BC {
+    display: flex;
+    gap: 7px;
+}
+
+.Dashboard-BC .Button {
+    border-radius: var(--BR_BASE);
+    padding: 8px 15px;
+}
+
+.Dashboard-Search {
+    display: flex;
+    padding: 5px;
+}
+
+.Dashboard-Search input {
+    padding: 8px 13px;
+    width: 100%;
+    height: 100%;
+}
+
+.Dashboard-Search button {
+    background: var(--ACCENT_COLOR);
+    color: var(--BLOCK_COLOR);
+    width: 40px;
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        fill: var(--BLOCK_COLOR);
+    }
+}
+
+/* Панель управления - Пользователи */
+
+.Dashboard-Users {
+    margin-bottom: 100px;
+}
+
+.Dashboard-User {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.Dashboard-User .BaseInfo {
+    margin-left: 10px;
+}
+
+.Dashboard-User .Name {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.Dashboard-User .Username {
+    color: var(--D_OR_P_COLOR);
+    font-size: var(--FS_TEXT);
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.Dashboard-User .LiteInfo {
+    color: var(--D_OR_P_COLOR);
+    position: absolute;
+    left: 220px;
+    display: flex;
+}
+
+.Dashboard-User .LiteInfo .Text {
+    color: var(--D_OR_P_COLOR);
+    font-size: 0.9em;
+    margin: 0px 0px 0px 20px;
+}
+
+.Dashboard-User .GovernButtons {
+    position: absolute;
+    right: 20px;
+    display: flex;
+}
+
+.Dashboard-User .GovernButtons button {
+    background: var(--BTN_BACKGROUND);
+    border-radius: 8px;
+    padding: 5px;
+    cursor: pointer;
+    display: flex;
+}
+
+.Dashboard-User .GovernButtons svg {
+    fill: var(--BTN_TEXT_COLOR);
+    width: 20px;
+    height: 20px;
+}
+
+.Dashboard-User .ChangePassword {
+    background: var(--BLOCK_COLOR);
+    position: absolute;
+    right: 15px;
+    z-index: 1;
+    display: flex;
+    gap: 2px;
+
+    input {
+        padding: 8px 13px;
+        width: 200px;
+    }
+
+    button {
+        width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .Send {
+        background: var(--ACCENT_COLOR);
+        color: var(--BLOCK_COLOR);
+        margin-left: 5px;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .Close {
+        fill: var(--BTN_TEXT_COLOR);
+        margin-left: 10px;
+    }
+}
+
+.Dashboard-BottomBar {
+    background: rgb(255 255 255 / 70%);
+    backdrop-filter: var(--AIR_BLUR);
+    border: 1px solid var(--INPUT_COLOR);
+    border-radius: 100px;
+    width: auto;
+    height: 50px;
+    user-select: none;
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
+}
+
+.Dashboard-BottomBar .Next {
+    background: rgb(255 255 255 / 0%);
+    height: fit-content;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    flex-direction: row-reverse;
+}
+
+.Dashboard-BottomBar .Next svg {
+    fill: var(--BTN_TEXT_COLOR);
+    width: 30px;
+    height: 30px;
+    margin-right: -7px;
+    transform: scaleX(-1);
+}
+
+.Dashboard-BottomBar .Back {
+    background: rgb(255 255 255 / 0%);
+    height: fit-content;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.Dashboard-BottomBar .Back svg {
+    fill: var(--BTN_TEXT_COLOR);
+    width: 30px;
+    height: 30px;
+    margin-left: -7px;
+}
+
+.Dashboard-BottomBar .NonActiveButton {
+    opacity: 0.5;
+    cursor: unset;
+}
+
+.Dashboard-BottomBar .NonActiveButton:active {
+    filter: brightness(1);
+}
+
+.Dashboard-BottomBar .Pages {
+    color: var(--D_OR_P_COLOR);
+    font-size: 0.9em;
+    width: fit-content;
+    height: fit-content;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+}
+
+/* Информация */
+
+.Info-A_Block {
+    border: 2px solid var(--BLOCK_BLOCK_COLOR);
+    border-radius: var(--BR_BASE);
+    padding: 10px;
+    gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.Info-A_Block .BlockContent {
+    display: flex;
+    flex-direction: column;
+}
+
+.Info-A_Block .BlockContent .Title {
+    font-family: var(--FF_TITLE);
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+.Info-A_Block .BlockContent .Description {
+    font-size: 0.95em;
+}
+
+.Info-A_Block .Icon {
+    width: 130px;
+    height: fit-content;
+    flex-shrink: 0;
+}
+
+.Info-Block {
+    width: 100%;
+
+    .UI-Tabs {
+        .ActiveTab {
+            box-shadow: 0px 0px 3px rgb(125 121 141 / 50%);
+        }
+    }
+}
+
+.Info-UpdateBlock {
+    padding: 10px 8px;
+    margin-bottom: 5px;
+    border-radius: var(--BR_BASE);
+
+    .Title {
+        color: var(--TEXT_COLOR);
+        font-family: var(--FF_TITLE);
+        font-size: 1.2em;
+        margin: 5px 0px 0px 0px;
+    }
+
+    .UpdateContent {
+        margin: 10px 0px 0px 0px;
+        font-size: 0.95em;
+        line-height: 19px;
+        white-space: pre-line;
+    }
+}
+
+/* Подписка */
+
+.GoldSub-Page {
+    .UI-C_L {
+        position: relative;
+
+        .UI-Block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .UI-Title {
+            width: 100%;
+        }
+    }
+
+    .UI-C_R {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+
+.GoldSub-Page .UI-ScrollView {
+    padding-bottom: 130px;
+}
+
+.GoldSub-Info_action {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+}
+
+.GoldSub-C_L {
+    .UI-Block {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .UI-Title {
+        width: 100%;
+    }
+
+    .UI-B_LAST {
+        margin-bottom: 40px;
+    }
+}
+
+.GoldSub-Logo {
+    width: 110px;
+    height: 110px;
+    margin: 5px 0px 15px 0px;
+    filter: drop-shadow(3px 3px 5px rgba(251 176 11 / 40%));
+}
+
+.GoldSub-Price {
+    background-image: var(--GOLD_GRADIENT);
+    -webkit-background-clip: text;
+    color: transparent;
+    font-size: 20px;
+    font-family: var(--FF_TITLE);
+    margin: 8px 0px 20px 0px;
+}
+
+.GoldSub-Advantages {
+    width: 100%;
+    border-radius: var(--BR_BASE);
+    overflow: hidden;
+    gap: var(--PUSTOTA_WIDTH);
+    display: flex;
+    flex-direction: column;
+}
+
+.GoldSub-A_Block {
+    background: var(--BTN_BACKGROUND);
+    font-size: var(--FS_TEXT);
+    padding: 7px 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.GoldSub-A_Block:active {
+    filter: brightness(0.8);
+}
+
+.GoldSub-A_B_TITLE {
+    font-size: var(--FS_TITLE);
+    margin-bottom: 4px;
+    background-image: var(--GOLD_GRADIENT);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.GoldSub-Buttons {
+    background: var(--AIR_COLOR);
+    backdrop-filter: var(--AIR_BLUR);
+    -webkit-backdrop-filter: var(--AIR_BLUR);
+    width: 100%;
+    padding: 10px;
+    position: absolute;
+    bottom: 20px;
+    z-index: 1;
+    border-radius: var(--BR_BASE);
+    box-shadow: 0px 0px 10px -5px rgb(64 64 64 / 70%);
+
+    .Pay,
+    .Activate {
+        font-size: var(--FS_TEXT);
+        border-radius: 8px;
+        width: 100%;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .Pay {
+        background: var(--GOLD_GRADIENT);
+        color: #FFF;
+        margin-bottom: 8px;
+        box-shadow: 0px 0px 9px -1px rgb(253 177 102);
+        -moz-box-shadow: 0px 0px 9px -1px rgb(253 177 102);
+        -webkit-box-shadow: 0px 0px 9px -1px rgb(253 177 102);
+
+        .Eballs {
+            background: var(--AIR_COLOR);
+            color: var(--ACCENT_COLOR);
+            border-radius: 10px;
+            padding: 3px 6px;
+            scale: 0.8;
+            gap: 5px;
+            margin-left: 2px;
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    .Activate {
+        background: var(--AIR_BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+    }
+}
+
+.GoldSub-Users .UI-PRELOAD {
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    height: 60px;
+    margin-bottom: 7px;
+}
+
+.GoldSub-Users .UI-PRELOAD::after {
+    filter: blur(50px);
+}
+
+.GoldSub-User {
+    background: linear-gradient(114deg, rgb(221 183 127 / 10%) 60%, #fff4dd);
+    border-radius: var(--BR_BASE);
+    padding: 10px 50px 10px 10px;
+    margin-bottom: 7px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+
+    .Avatar {
+        background: var(--GOLD_GRADIENT);
+        margin-right: 10px;
+    }
+
+    .Metadata {
+        min-width: 0;
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .Name {
+        color: var(--TEXT_COLOR);
+        font-size: var(--FS_NAME);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .Posts {
+        color: var(--D_OR_P_COLOR);
+        font-size: var(--FS_D_OR_P);
+    }
+
+    .GoldStar {
+        width: 65px;
+        position: absolute;
+        bottom: -15px;
+        right: -12px;
+    }
+}
+
+.GoldSub-User::before {
+    position: absolute;
+    content: '';
+    inset: -4px;
+    padding: 5px;
+    border-radius: 14px;
+    background: linear-gradient(465deg, rgb(250 179 30 / 30%), rgb(253 147 71 / 10%));
+    mask: linear-gradient(fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+}
+
+.GoldSub-VideoPreview,
+.GoldSub-InfoPreview {
+    background: var(--AIR_COLOR);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 10px 10px 0px 0px;
+    height: fit-content;
+    padding: 10px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    transform: translateY(570px);
+    opacity: 0;
+    box-shadow: var(--AIR_SHADOW);
+
+    .Info {
+        margin: 10px 0px 20px 0px;
+    }
+
+    .InfoTitle {
+        font-family: var(--FF_TITLE);
+        margin-bottom: 4px;
+        background-image: var(--GOLD_GRADIENT);
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+
+    .InfoDec {
+        font-size: 0.9em;
+        margin-bottom: 25px;
+    }
+
+    .Close {
+        background: var(--AIR_BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+        border-radius: var(--BR_BASE);
+        width: 100%;
+        height: 40px;
+    }
+}
+
+.GoldSub-VideoPreview video {
+    border-radius: var(--BR_BASE);
+    width: 100%;
+    overflow: hidden;
+    opacity: 0;
+}
+
+.GoldSub-InfoPreview .Info {
+    margin: 0px 0px 20px 0px;
+}
+
+.GoldSub-InfoPreview .InfoDec .Title {
+    font-size: 0.9em;
+    margin: 10px 10px 3px;
+}
+
+.GoldSub-InfoPreview .InfoDec .InfoContainer {
+    border-radius: var(--BR_BASE);
+    overflow: hidden;
+    width: 100%;
+    display: flex;
+}
+
+.GoldSub-InfoPreview .InfoDec .InfoContainer .Default {
+    background: var(--AIR_BLOCK_COLOR);
+    width: 100%;
+    padding: 5px 10px;
+}
+
+.GoldSub-InfoPreview .InfoDec .InfoContainer .Gold {
+    background: var(--GOLD_GRADIENT);
+    color: #FFF;
+    width: 100%;
+    padding: 5px 10px;
+}
+
+@media only screen and (max-device-width: 768px),
+only screen and (device-width: 768px) and (device-height: 768px),
+only screen and (width: 768px) and (orientation: landscape),
+only screen and (device-width: 768px),
+only screen and (max-width: 768px) {
+
+    /* Главное */
+
+    :root {
+        --FS_TEXT: 0.96em;
+        --FS_D_OR_P: 0.85em;
+        --C_TOP_MARGIN: 73px;
+    }
+
+    /* Авторизация */
+
+    .Auth-Body {
+        width: 100%;
+        height: 100%;
+        box-shadow: none;
+        border-radius: 0px;
+
+        .Left,
+        .Right {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            position: absolute;
+        }
+
+        .LogoAndTitle {
+            display: none;
+        }
+
+        .Login,
+        .Reg,
+        .Auth-Container {
+            width: 90%;
+        }
+    }
+
+    // Интерфейс - Выбор эмодзи
+
+    .UI-EmojiPicker {
+        width: 100%;
+        margin: 10px;
+    }
+
+    /* Панель навигации */
+
+    .UI-N_DIV {
+        gap: 15px;
+        padding: 0px 15px;
+    }
+
+    /* Интерфейс */
+
+    .UI-L_NAV {
+        background: var(--AIR_COLOR);
+        backdrop-filter: var(--AIR_BLUR);
+        max-width: 100%;
+        width: fit-content;
+        border-radius: 15px;
+        padding: 5px;
+        margin: auto auto 5px auto;
+        position: fixed;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 19;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        box-shadow: var(--AIR_SHADOW);
+
+        .UI-NCounter {
+            font-size: 1em;
+            right: 10px;
+            top: 5px;
+        }
+
+        .UI-B_FIRST {
+            margin-top: 0px;
+        }
+
+        .GoldText {
+            flex-direction: column;
+        }
+
+        .MobileHidden {
+            display: none;
+        }
+
+        button {
+            background: rgb(255 255 255 / 0%);
+            margin: 0;
+            width: 70px;
+            height: 80%;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            .UI-LN_ICON {
+                width: 25px;
+                height: 25px;
+                font-size: 25px;
+                margin: 0px 0px 5px 0px;
+            }
+        }
+
+        .ActiveButton {
+            background: none;
+            color: var(--ACCENT_COLOR);
+            box-shadow: none;
+
+            .UI-LN_ICON {
+                svg {
+                    fill: var(--ACCENT_COLOR);
+                }
+            }
+        }
+    }
+
+    .Content {
+        height: 100%;
+        padding: 0 1%;
+        margin: auto;
+        overflow: scroll;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .Content-Center {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .UI-PAGE_BODY {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        overflow: scroll;
+    }
+
+    .UI-ScrollView {
+        padding: 0px 0px 90px;
+    }
+
+    header {
+        height: 65px;
+    }
+
+    .Search-Container {
+        width: 100%;
+    }
+
+    .Search-Container .EBalls {
+        margin-left: 5px;
+    }
+
+    .UI-N_DIV {
+        .MiniPlayer {
+            width: 100%;
+            height: 100%;
+
+            .UI-MusicPlayer {
+                margin: 0;
+
+                .Music-ControlButtons {
+                    .Back {
+                        display: none;
+                    }
+                }
+            }
+        }
+    }
+
+    .UI-NavPanel {
+        top: 70px;
+    }
+
+    .UI-N_L_AND_N {
+        width: 90%;
+
+        .UI-Logo {
+            margin-right: 10px;
+        }
+    }
+
+    .UI-C_L,
+    .UI-C_R {
+        margin: 0;
+        width: 100%;
+        height: fit-content;
+        overflow: unset;
+        max-width: 100%;
+    }
+
+    .UI-Block {
+        width: 100%;
+    }
+
+    .UI-Window_BTNS {
+        height: 35px;
+    }
+
+    .UI-PartitionBody {
+        position: fixed;
+    }
+
+    .UI-ActionWindow {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    /* Поиск */
+
+    .Search-Result {
+        width: 95%;
+    }
+
+    /* Вход (Мобильная версия) */
+
+    .Authorization-Form input {
+        margin-bottom: 13px;
+    }
+
+    .Home-Status {
+        display: none;
+    }
+
+    /* Главная страница */
+
+    .HomePage .UI-C_R {
+        display: none;
+    }
+
+    /* Пост */
+
+    .AddPost .Buttons .AddFileButtons .FileName {
+        max-width: 70px;
+    }
+
+    .Post-Page {
+        width: 95%;
+        height: fit-content;
+        margin: auto;
+
+        .UI-C_L,
+        .UI-C_R {
+            width: 100%;
+            height: fit-content;
+        }
+
+        .UI-C_L .UI-ScrollView {
+            padding: 0;
+        }
+
+        .UI-C_R .UI-B_FIRST {
+            margin: 0;
+        }
+    }
+
+    .Post {
+        width: auto;
+        min-width: auto;
+
+        .InteractionButton svg {
+            width: 23px;
+            height: 23px;
+        }
+    }
+
+    .Post .File .FileInfo {
+        max-width: 50%;
+    }
+
+    /* Профиль */
+
+    .Profile-Page .UI-C_R .UI-B_FIRST {
+        margin: 0px 0px 7px 0px;
+    }
+
+    .Profile-Page .UI-C_L {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .Profile-Page .UI-C_L .UI-ScrollView {
+        max-width: 100%;
+        overflow: unset;
+        padding: 0;
+    }
+
+    .Profile-InfoBlock {
+
+        .UI-UserIcons svg,
+        .UI-UserIcons img {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    /* Настройки */
+
+    .Settings-Page .UI-C_R {
+        display: none;
+    }
+
+    /* Подписка */
+
+    .GoldSub-Page .UI-C_R {
+        display: none;
+    }
+
+    .GoldSub-Page .UI-ScrollView {
+        padding-bottom: 200px;
+    }
+
+    .GoldSub-Buttons {
+        position: fixed;
+        width: 95%;
+        bottom: 90px;
+    }
+
+    .GoldSub-VideoPreview,
+    .GoldSub-InfoPreview {
+        width: 95%;
+        margin: auto;
+        position: fixed;
+        bottom: 60px;
+    }
+
+    /* Просмотр EPACK */
+
+    .EPACK-Page .UI-C_R {
+        display: none;
+    }
+
+    .UI-Modal {
+        margin: 0;
+        height: 100%;
+        max-width: 100%;
+        border-radius: 0;
+    }
+
+    .UI-GovernButtons {
+        font-size: 1.1rem;
+    }
+}
+
+// Стили для DragDropArea при глобальном перетаскивании файлов
+.AddPost.global-drag,
+.Input.global-drag,
+.EPACK-FileInput.global-drag {
+    background-color: rgba(var(--ACCENT_COLOR_RGB), 0.05);
+    border: 2px dashed var(--ACCENT_COLOR);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    animation: pulseBorder 1.5s infinite alternate;
+}
+
+@keyframes pulseBorder {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--ACCENT_COLOR_RGB), 0.2);
+    }
+
+    100% {
+        box-shadow: 0 0 0 10px rgba(var(--ACCENT_COLOR_RGB), 0);
+    }
+}
+
+.sidebar-emoji-picker {
+    height: calc(100% - 50px);
+    width: 100%;
+    position: relative;
+    border-radius: 0;
+    box-shadow: none;
+    max-height: unset !important;
+
+    .Categories {
+        padding: 5px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .Category {
+        flex: 1;
+        min-width: unset;
+    }
+
+    .Grid {
+        padding: 10px;
+        height: calc(100% - 60px);
+        max-height: none !important;
+        overflow-y: auto;
+
+        .EmojiItem {
+            padding: 5px;
+            transition: background-color 0.2s;
+            border-radius: 8px;
+
+            &:hover {
+                background-color: var(--AIR_BLOCK_COLOR);
+            }
+        }
+    }
+}
+
+.UI-ContextMenu-Container {
+    cursor: default;
+    position: relative;
+}
+
+.ChannelMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    span {
+        font-size: 0.9em;
+        color: var(--TEXT_COLOR);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+}
+
+
+
+.Sessions-TerminateAll {
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    background-color: rgba(255, 59, 48, 0.7);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 15px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.Sessions-TerminateAll:hover {
+    background-color: rgba(224, 53, 43, 0.8);
+}
+
+.Post {
+    .PostContent {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .LikeAnimation {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 100;
+        overflow: hidden;
+    }
+
+    .LikeHeart {
+        position: absolute;
+        will-change: transform, opacity;
+        transform-origin: center center;
+        filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.4));
+
+        svg {
+            width: 70px;
+            height: 70px;
+            animation: heartPulse 1s forwards;
+        }
+    }
+
+    @keyframes heartPulse {
+        0% {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        15% {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        30% {
+            transform: scale(1);
+        }
+
+        80% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(-20px) scale(1);
+        }
+    }
+}
+
+.ErrorBoundary {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--BODY_COLOR);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    overflow: auto;
+    padding: 20px;
+    box-sizing: border-box;
+
+    .ErrorContainer {
+        padding: 30px;
+        max-width: 500px;
+        width: 100%;
+        animation: errorFadeIn 0.5s ease forwards;
+
+        .UI-FormButton {
+            margin: auto;
+        }
+    }
+
+    h1 {
+        color: var(--TEXT_COLOR);
+        font-size: 22px;
+        margin-bottom: 10px;
+        font-weight: bold;
+        font-family: var(--FF_TITLE);
+    }
+
+    p {
+        color: var(--D_OR_P_COLOR);
+        margin-bottom: 25px;
+        font-size: 16px;
+    }
+
+    .ErrorIcon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        background: var(--ERROR_COLOR);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 40px;
+            height: 40px;
+            fill: #fff;
+            color: #fff;
+        }
+    }
+
+    .ErrorDetails {
+        margin-top: 30px;
+        text-align: left;
+        padding: 15px;
+        background: var(--BLOCK_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        user-select: text;
+
+        summary {
+            color: var(--ACCENT_COLOR);
+            cursor: pointer;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .ErrorContent {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background: var(--BLOCK_BLOCK_COLOR_LITE);
+            border-radius: var(--BR_BASE);
+        }
+
+        pre {
+            font-family: monospace;
+            color: var(--TEXT_COLOR);
+            font-size: 12px;
+            padding: 10px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+
+        .CopyButton {
+            background: var(--ACCENT_COLOR);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: transform 0.2s;
+
+            &:hover {
+                transform: scale(1.05);
+            }
+
+            svg {
+                fill: #fff;
+                width: 16px;
+                height: 16px;
+                margin-right: 8px;
+            }
+        }
+    }
+}
+
+@keyframes errorFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .ErrorBoundary {
+        .ErrorContainer {
+            padding: 20px;
+        }
+
+        .ErrorIcon {
+            width: 60px;
+            height: 60px;
+
+            svg {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        h1 {
+            font-size: 18px;
+        }
+
+        p {
+            font-size: 14px;
+        }
+    }
+}
+
+
+/* Интерфейс - Меню */
+
+.Overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.Sidebar {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--BODY_COLOR);
+    width: 85%;
+    max-width: 320px;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+    .S-Content {
+        padding: 10px 15px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .UserCard,
+    .MenuList {
+        border-radius: var(--BR_BASE);
+        overflow: hidden;
+        margin: 8px 0px;
+        display: flex;
+        gap: 1px;
+    }
+
+    .Header {
+        margin-top: 20px;
+
+        .UserCard {
+            background: var(--BLOCK_COLOR);
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background-color 0.2s;
+
+            &:active {
+                background-color: var(--HOVER_COLOR);
+            }
+
+            .UserAvatar {
+                margin-right: 12px;
+
+                .Avatar {
+                    width: 48px !important;
+                    height: 48px !important;
+                }
+            }
+
+            .UserInfo {
+                flex: 1;
+
+                .Name {
+                    font-family: var(--FF_TITLE);
+                    font-size: 1.1em;
+                    color: var(--TITLE_COLOR);
+                    margin-bottom: 4px;
+                }
+
+                .Username {
+                    font-size: 0.9em;
+                    color: var(--TEXT_HINT_COLOR);
+                }
+            }
+        }
+    }
+
+    .MenuList {
+        display: flex;
+        flex-direction: column;
+        max-height: 50vh;
+        overflow-y: auto;
+
+        .MenuItem,
+        .NavButton,
+        >button {
+            position: relative;
+        }
+
+        .MenuItem {
+
+            &-Icon,
+            svg {
+                color: var(--TEXT_COLOR) !important;
+                fill: var(--TEXT_COLOR) !important;
+            }
+        }
+
+        .ChannelsSection {
+            margin: 0;
+            border-radius: 0 0 var(--BR_BASE) var(--BR_BASE);
+            max-height: none;
+            overflow: visible;
+
+            .Null {
+                color: var(--TEXT_HINT_COLOR);
+                padding: 8px 15px;
+                font-size: 0.9em;
+                text-align: center;
+                font-style: italic;
+            }
+        }
+    }
+
+    .ChannelsList {
+        &.Visible {
+            display: block;
+        }
+
+        display: none;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+
+    .Account,
+    .MenuItem {
+        background: var(--BLOCK_COLOR);
+        border-radius: 0;
+        color: var(--TEXT_COLOR);
+        text-align: left;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        text-decoration: none;
+    }
+
+    .Account {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        button {
+            background: none;
+            border-radius: 0;
+        }
+
+        .AccountButton {
+            padding: 5px;
+            flex: 1;
+            align-items: center;
+            display: flex;
+            flex-direction: row;
+
+            .Avatar {
+                margin-right: 10px;
+            }
+        }
+    }
+
+    .MenuItem {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+
+        &:active {
+            background-color: var(--HOVER_COLOR);
+        }
+
+
+        &-Icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            width: 24px;
+            height: 24px;
+            color: var(--TEXT_COLOR);
+
+            svg {
+                width: 22px;
+                height: 22px;
+                color: var(--TEXT_COLOR);
+                fill: var(--TEXT_COLOR);
+            }
+        }
+
+        &-Content {
+            flex: 1;
+        }
+
+        &-Title {
+            font-size: 1.1em;
+        }
+
+        &-Subtitle {
+            font-size: 13px;
+            color: var(--TEXT_HINT_COLOR);
+            margin-top: 2px;
+        }
+
+        &-Action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                width: 20px;
+                height: 20px;
+                color: var(--TEXT_HINT_COLOR);
+            }
+        }
+    }
+
+    .MenuItem,
+    .Account .AccountButton {
+        .Avatar {
+            width: 36px;
+            height: 36px;
+        }
+    }
+
+    .Button {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: var(--BLOCK_COLOR);
+        color: var(--TEXT_COLOR);
+        border-radius: var(--BR_BASE);
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.2s ease;
+
+        svg {
+            margin-right: 16px;
+            width: 22px;
+            height: 22px;
+        }
+
+        &:active {
+            background-color: var(--HOVER_COLOR);
+        }
+    }
+
+    .ButtonsGroup {
+        margin-top: auto;
+        margin-bottom: 24px;
+        padding: 0;
+        gap: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .AddButton {
+        color: var(--ACCENT_COLOR);
+
+        svg {
+            color: var(--ACCENT_COLOR);
+            fill: var(--ACCENT_COLOR);
+        }
+    }
+
+    .Null {
+        color: var(--TEXT_HINT_COLOR);
+        padding: 10px 5px;
+        font-size: 0.9em;
+        text-align: center;
+    }
+}
+
+.ExpandButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+
+    svg {
+        width: 20px;
+        height: 20px;
+        color: var(--TEXT_HINT_COLOR);
+    }
+}
+
+.GoldIcon {
+    width: 24px;
+    height: 24px;
+}
+
+.DeleteButton {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+
+    svg {
+        width: 20px;
+        height: 20px;
+        color: var(--DANGER_COLOR);
+    }
+
+    &:active {
+        background-color: rgba(var(--DANGER_COLOR_RGB, 255, 59, 48), 0.1);
+    }
+}
+
+@media (min-width: 769px) {
+
+    .Sidebar,
+    .Overlay {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .MobileHidden {
+        display: none !important;
+    }
+}
+
+@media (max-height: 600px) {
+    .Sidebar {
+        overflow-y: auto;
+        height: 100%;
+
+        @media (max-height: 450px) {
+            &::after {
+                content: "";
+                position: absolute;
+                bottom: 15px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 40px;
+                height: 4px;
+                background-color: var(--TEXT_HINT_COLOR);
+                opacity: 0.5;
+                border-radius: 2px;
+                pointer-events: none;
+                animation: pulseIndicator 1.5s infinite;
+            }
+        }
+    }
+}
+
+@keyframes pulseIndicator {
+    0% {
+        opacity: 0.2;
+        width: 30px;
+    }
+
+    50% {
+        opacity: 0.5;
+        width: 40px;
+    }
+
+    100% {
+        opacity: 0.2;
+        width: 30px;
+    }
+}
+
+.ChannelMenuItem {
+    position: relative;
+    transition: all 0.2s ease;
+
+    .MenuItem-Action svg {
+        width: 16px;
+        height: 16px;
+        fill: var(--ACCENT_COLOR);
+        opacity: 0.5;
+    }
+
+    .MenuItem-Title {
+        position: relative;
+
+        .ChannelName {
+            position: relative;
+            color: var(--TEXT_COLOR);
+
+            &:before {
+                content: "";
+                margin-right: 0;
+            }
+        }
+    }
+}
+
+.UserContent-Song {
+    background: var(--INTERACTION_BTN_COLOR);
+    border-radius: 10px;
+    width: 100%;
+    height: 60px;
+    margin: 10px 0px;
+    display: flex;
+    align-items: center;
+
+    .UI-MusicCover {
+        margin-left: 10px;
+    }
+
+    .SongInfo {
+        margin-left: 7px;
+
+        .SongTitle {
+            margin-bottom: 2px;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--TEXT_COLOR);
+        }
+
+        .SongArtist {
+            color: var(--INTERACTION_BTN_TEXT_COLOR);
+            font-size: 0.8em;
+        }
+    }
+}
+
+.TrackItem {
+    margin-bottom: 8px;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.spoiler-message.image-spoiler-overlay,
+.spoiler-message.images-spoiler-overlay {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.spoiler-message.image-spoiler-overlay.spoiler-message__showed,
+.spoiler-message.images-spoiler-overlay.spoiler-message__showed {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+.Unified-Textarea-Container {
+    background: var(--BLOCK_COLOR);
+    border: 1px solid var(--AIR_BLOCK_COLOR);
+    border-radius: 12px;
+    padding: 2px 5px;
+    width: 100%;
+}
+
+.Unified-Textarea-Container .SocialInput-container {
+    width: 100%;
+}
+
+.Unified-Textarea-Container .SocialInput-container .UI-Input {
+    background: transparent;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+}

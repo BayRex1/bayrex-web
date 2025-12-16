@@ -1,0 +1,65 @@
+.format-menu {
+  position: fixed;
+  background: var(--BLOCK_COLOR);
+  border-radius: 0.5em;
+  box-shadow: 0 0.125em 0.625em rgba(0, 0, 0, 0.2);
+  padding: 0.375em;
+  display: flex;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-in-out;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -0.5em;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 0.5em solid transparent;
+    border-right: 0.5em solid transparent;
+    border-top: 0.5em solid var(--BLOCK_COLOR);
+  }
+  
+  .format-button {
+    background: var(--AIR_BLOCK_COLOR);
+    border: none;
+    border-radius: 0.25em;
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.125em;
+    cursor: pointer;
+    color: var(--TEXT_COLOR);
+    
+    &:hover {
+      background: var(--ACCENT_COLOR);
+      color: white;
+    }
+    
+    .format-icon {
+      font-size: 1em;
+      font-weight: bold;
+    }
+  }
+
+  /* Стили для мобильных устройств */
+  @media (max-width: 768px) {
+    .format-button {
+      width: 2.5em;
+      height: 2.5em;
+      margin: 0 0.15em;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  0% { 
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 
