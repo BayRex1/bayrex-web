@@ -1,0 +1,654 @@
+.BalancePage {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: flex-end;
+    opacity: 1;
+
+    .Balance-Container {
+        max-width: 500px;
+        width: 100%;
+        margin: 0;
+        padding: 0 0 0 5px;
+    }
+
+    .Balance-Card {
+        text-align: center;
+
+        .Balance-Title {
+            color: var(--TEXT_COLOR);
+            opacity: 0.7;
+            font-size: 1rem;
+            margin: 10px 0px;
+        }
+
+        .Balance-Amount {
+            font-size: 2.5rem;
+            color: var(--TEXT_COLOR);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+
+            .UI-Eball {
+                font-size: 22.5px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .Count {
+                font-family: var(--FF_TITLE);
+            }
+        }
+
+        .Balance-Actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0 1rem;
+
+            .Action-Button {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+                background: none;
+                border: none;
+                color: var(--TEXT_COLOR);
+                cursor: pointer;
+                padding: 0.75rem;
+                transition: all 0.2s;
+                border-radius: 0.5rem;
+
+                &:hover:not(:disabled) {
+                    background: var(--AIR_BLOCK_COLOR);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                svg {
+                    width: 24px;
+                    height: 24px;
+                    fill: currentColor;
+                }
+
+                span {
+                    font-size: 0.875rem;
+                    opacity: 0.8;
+                }
+            }
+        }
+    }
+
+    .Earning-Block {
+        background: var(--BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        padding: 0;
+        margin-bottom: 20px;
+        width: 100%;
+        border: 1px solid var(--BORDER_COLOR);
+        overflow: hidden;
+
+        .UI-BLOCK_HEADER {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--BORDER_COLOR);
+
+            .UI-Block-Title {
+                font-size: 1em;
+                font-weight: 500;
+            }
+        }
+
+        .Earning-Item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            margin: 8px 0;
+            border-radius: var(--BR_BASE);
+            transition: background 0.2s ease;
+
+            &:hover {
+                background: var(--AIR_BLOCK_COLOR);
+            }
+
+            .Earning-Icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: var(--AIR_BLOCK_COLOR);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 20px;
+                flex-shrink: 0;
+
+                svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: var(--ACCENT_COLOR);
+                }
+            }
+
+            .Earning-Info {
+                flex-grow: 1;
+
+                .Earning-Description {
+                    font-size: 0.9em;
+                    color: var(--TEXT_COLOR);
+                    margin-bottom: 8px;
+                    font-weight: 500;
+                }
+
+                .Earning-Amount {
+                    font-size: 1em;
+                    font-weight: 600;
+                    color: var(--ACCENT_COLOR);
+                    display: flex;
+                    align-items: center;
+
+                    .UI-Eball {
+                        margin-right: 8px;
+                        font-weight: normal;
+                        font-size: 0.75em;
+                        width: 22px;
+                        height: 22px;
+                    }
+                }
+            }
+        }
+
+        .Earning-Note {
+            font-size: 0.875em;
+            color: var(--TEXT_COLOR);
+            opacity: 0.7;
+            padding: 16px 20px;
+            background: var(--BLOCK_COLOR);
+            border-top: 1px solid var(--BORDER_COLOR);
+            text-align: center;
+        }
+
+        .Earning-Unlimited {
+            font-size: 0.875em;
+            font-weight: 600;
+            color: var(--TEXT_COLOR);
+            padding: 16px 20px;
+            background: var(--AIR_BLOCK_COLOR);
+            border-top: 1px solid var(--BORDER_COLOR);
+            text-align: center;
+        }
+
+        .Earning-Time-Limit {
+            font-size: 0.875em;
+            color: #ff9800;
+            font-weight: 500;
+            padding: 16px 20px;
+            background: rgba(255, 152, 0, 0.05);
+            border-top: 1px solid var(--BORDER_COLOR);
+            text-align: center;
+        }
+
+        .UI-B_HIGHLIGHT {
+            background: var(--ACCENT_BG_COLOR, rgba(var(--ACCENT_COLOR_RGB), 0.1));
+            color: var(--ACCENT_COLOR);
+        }
+
+        .Info-Block {
+            padding: 20px;
+            border-top: 1px solid var(--BORDER_COLOR);
+
+            .Info-Title {
+                font-size: 1em;
+                font-weight: 600;
+                color: var(--TEXT_COLOR);
+                margin-bottom: 15px;
+                text-align: center;
+            }
+
+            .Info-Item {
+                position: relative;
+                font-size: 0.875em;
+                color: var(--TEXT_COLOR);
+                padding: 10px 0 10px 18px;
+                line-height: 1.4;
+
+                &:before {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    top: 16px;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: var(--ACCENT_COLOR);
+                }
+
+                &:not(:last-child) {
+                    margin-bottom: 10px;
+                }
+            }
+        }
+    }
+
+    .Forecast-Block {
+        background: linear-gradient(37deg, var(--BLOCK_COLOR) 10%, rgba(98, 59, 158, 0.3));
+
+        .UI-Block-Title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--TEXT_COLOR);
+            margin-bottom: 0.5rem;
+
+            svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+                opacity: 0.9;
+            }
+        }
+
+        .Forecast-Date {
+            font-size: 0.875rem;
+            color: var(--TEXT_COLOR);
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .Forecast-Amount {
+            display: flex;
+            align-items: center;
+            margin: 10px 0px;
+            gap: 10px;
+
+            .Count {
+                color: var(--ACCENT_COLOR);
+                font-size: 1.25rem;
+                font-family: var(--FF_TITLE);
+            }
+
+            .UI-Eball {
+                width: 25px;
+                height: 25px;
+                font-size: 12.5px;
+            }
+        }
+
+        .Forecast-Description {
+            font-size: 0.875rem;
+            color: var(--TEXT_COLOR);
+            opacity: 0.7;
+        }
+    }
+
+    .Info-Block {
+        margin-bottom: 0.5rem;
+        background: var(--BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        overflow: hidden;
+        border: 1px solid var(--BORDER_COLOR);
+
+        .Info-Button {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: none;
+            border: none;
+            color: var(--TEXT_COLOR);
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+
+            &:hover {
+                background: var(--AIR_BLOCK_COLOR);
+            }
+
+            svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+                opacity: 0.7;
+                transform: rotate(90deg);
+            }
+        }
+    }
+
+    .Navigation-Block {
+        background: var(--BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        overflow: hidden;
+        padding: 0.5rem;
+        border: 1px solid var(--BORDER_COLOR);
+
+        .Navigation-Buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+
+            .Nav-Button {
+                flex: 1;
+                background: none;
+                border: none;
+                color: var(--TEXT_COLOR);
+                padding: 1rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                border-radius: 0.5rem;
+                font-size: 0.875rem;
+                opacity: 0.8;
+
+                &:hover {
+                    background: var(--AIR_BLOCK_COLOR);
+                    opacity: 1;
+                }
+
+                &.active {
+                    background: var(--ACCENT_COLOR);
+                    color: white;
+                    opacity: 1;
+                }
+            }
+        }
+    }
+
+    .Subscription-Block {
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .Actions {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+    }
+
+    .Status-Block {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        color: var(--TEXT_COLOR);
+        font-size: 0.9em;
+        background: var(--BLOCK_BLOCK_COLOR);
+        border-radius: var(--BR_BASE);
+        margin-bottom: 7px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .Status {
+            color: var(--ACCENT_COLOR);
+            margin-right: 0.15rem;
+        }
+    }
+}
+
+.Earn-Item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: var(--BR_BASE);
+
+    .Earn-Icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--AIR_BLOCK_COLOR);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+
+        svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--ACCENT_COLOR);
+        }
+    }
+
+    .Earn-Info {
+        flex: 1;
+
+        .Earn-Title {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .Earn-Amount {
+            background: var(--BLOCK_BLOCK_COLOR);
+            width: fit-content;
+            display: flex;
+            align-items: center;
+            font-size: 0.875rem;
+            border-radius: var(--BR_BASE);
+            padding: 5px;
+
+            .UI-Eball {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+                margin-right: 0.5rem;
+            }
+        }
+    }
+}
+
+.Earn-Description {
+    padding: 10px;
+    font-size: 0.8rem;
+    color: var(--TEXT_COLOR);
+    opacity: 0.7;
+    margin-top: 10px;
+}
+
+.Transaction-Item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: var(--BR_BASE);
+
+    .Transaction-Icon {
+        background: var(--BLOCK_BLOCK_COLOR);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        position: relative;
+
+        svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--ACCENT_COLOR);
+
+            &.outgoing {
+                transform: rotate(180deg);
+            }
+        }
+
+        .Avatar-Left,
+        .Avatar-Right {
+            position: absolute;
+        }
+
+        .Avatar-Left {
+            left: 0;
+            top: -3px;
+        }
+
+        .Avatar-Right {
+            right: 0;
+            bottom: -3px;
+        }
+    }
+
+    .Transaction-Info {
+        flex: 1;
+        width: 100%;
+        overflow: hidden;
+
+        .Transaction-Title {
+            font-family: var(--FF_TITLE);
+            font-size: 0.9rem;
+            color: var(--TEXT_COLOR);
+            margin-bottom: 0.25rem;
+            display: flex;
+            gap: 5px;
+        }
+
+        .Transaction-Date {
+            font-size: 0.8rem;
+            color: var(--TEXT_COLOR);
+            opacity: 0.7;
+        }
+
+        .Message {
+            background: var(--BLOCK_BLOCK_COLOR);
+            border-radius: var(--BR_BASE);
+            padding: 10px;
+            max-width: 90%;
+            font-size: 0.9em;
+            margin-top: 5px;
+            width: fit-content;
+            overflow: hidden;
+            word-wrap: break-word;
+            white-space: pre-line;
+        }
+    }
+
+    .Transaction-Amount {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .Count {
+            font-family: var(--FF_TITLE);
+        }
+
+        .UI-Eball {
+            width: 25px;
+            height: 25px;
+            font-size: 12.5px;
+        }
+    }
+
+    &.incoming .Transaction-Amount {
+        color: var(--SUCCESS_COLOR, #4CAF50);
+    }
+
+    &.outgoing .Transaction-Amount {
+        color: var(--ERROR_COLOR, #f44336);
+    }
+}
+
+.Balance-Transfer {
+    .EliraSend {
+        margin: auto;
+        display: block;
+        width: 200px;
+    }
+
+    .Form {
+        background: var(--AIR_COLOR);
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+        margin-top: -80px;
+        position: sticky;
+        z-index: 1;
+        padding: 10px;
+        gap: 10px;
+        display: flex;
+        flex-direction: column;
+
+        .BalanceState {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .Count {
+                background: var(--AIR_BLOCK_COLOR);
+                border-radius: var(--BR_BASE);
+                padding: 2px 5px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+        }
+
+        .SelectedUser {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+
+            .UI-ListElement {
+                width: 100%;
+            }
+
+            .Close {
+                background: var(--BTN_CLOSE_COLOR);
+                width: 60px;
+                height: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                svg {
+                    fill: var(--TEXT_COLOR);
+                    width: 80%;
+                    height: 80%;
+                }
+            }
+        }
+
+        .Users {
+            width: 100%;
+            margin-top: 10px;
+            gap: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .TransferDetails {
+            background: var(--AIR_BLOCK_COLOR);
+            border-radius: var(--BR_BASE);
+            padding: 10px;
+            gap: 5px;
+            display: flex;
+            flex-direction: column;
+
+            .DetailRow {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .Count {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+
+                    .UI-Eball {
+                        font-size: 12.5px;
+                        width: 25px;
+                        height: 25px;
+                    }
+                }
+            }
+        }
+
+        .UI-Input {
+            width: 100%;
+            resize: none;
+        }
+    }
+}
