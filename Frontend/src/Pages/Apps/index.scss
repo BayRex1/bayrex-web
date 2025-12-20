@@ -1,0 +1,47 @@
+.Apps-Page {
+    .AppsList {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px;
+    }
+}
+
+.UI-App {
+    background: var(--BaseBackground_Body);
+    border-radius: 14px;
+    padding: 5px;
+    display: flex;
+    user-select: none;
+    flex-direction: column;
+    align-items: center;
+
+    .UI-AppIcon {
+        width: 75px;
+        height: 75px;
+        pointer-events: none;
+
+        .UI-PRELOAD {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            filter: blur(20px);
+        }
+    }
+
+    .Name {
+        width: 100%;
+        margin-top: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        text-align: center;
+
+        .UI-PRELOAD {
+            width: 50%;
+            height: 10px;
+            margin: auto;
+        }
+    }
+}
