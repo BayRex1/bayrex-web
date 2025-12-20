@@ -1,0 +1,156 @@
+.Hall-Page {
+    .Leaderboard {
+        width: 100%;
+        padding: 10px;
+
+        .Leaderboard-Title {
+            text-align: center;
+            margin-bottom: 100px;
+        }
+    
+        .Title {
+            font-size: 1.5em;
+            font-family: var(--FF_TITLE);
+        }
+    
+        .Leaderboard-Podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            height: 300px;
+            padding-top: 60px;
+        }
+    
+        .Podium-First,
+        .Podium-Second,
+        .Podium-Third {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+    
+        .Podium-First {
+            height: 100%;
+            width: 120px;
+            background: linear-gradient(180deg, #ac6cd8 0%, #282949 100%);
+            border-radius: 8px 8px 0 0;
+        }
+    
+        .Podium-Second {
+            height: 80%;
+            width: 120px;
+            background: linear-gradient(180deg, #b26fb5 0%, #3f3462 100%);
+            border-radius: 8px 8px 0 0;
+        }
+    
+        .Podium-Third {
+            height: 60%;
+            width: 120px;
+            background: linear-gradient(180deg, #71d0f9 0%, #3f3462 100%);
+            border-radius: 8px 8px 0 0;
+        }
+    
+        .Podium-Place {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+
+            .Count {
+                font-size: 1.1em;
+                color: #fff;
+                text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+            }
+
+            .UI-Eball {
+                width: 30px;
+                height: 30px;
+                font-size: 15px;
+            }
+        }
+    
+        .Podium-User {
+            position: absolute;
+            top: -110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+
+            .Avatar {
+                width: 100px;
+                height: 100px;
+                font-size: 50px;
+            }
+        }
+    
+        .User-Name {
+            color: #fff;
+            max-width: 130px;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+            padding: 10px 10px;
+            font-size: 1.2em;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .Users {
+        .User {
+            background: linear-gradient(37deg, var(--BLOCK_COLOR) 70%, rgb(98 59 158 / 30%));
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+
+            .Avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+
+            .UserData {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+                gap: 2px;
+                margin-left: 10px;
+
+                .Name {
+                    color: var(--TEXT_COLOR);
+                    font-size: 1.05em;
+                    font-family: var(--FF_TITLE);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .Username {
+                    font-size: 0.9em;
+                    opacity: 0.7;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+            }
+
+            .EballCount {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                flex-shrink: 0;
+                margin-left: 10px;
+
+                .Count {
+                    font-size: 1.05em;
+                    font-family: var(--FF_TITLE);
+                }
+            }
+        }
+    }
+}
