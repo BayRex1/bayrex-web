@@ -1,0 +1,740 @@
+/* Музыка */
+
+/* Музыка - Элементы */
+
+.UI-Slider .UI-PRELOAD {
+    background: rgb(255 255 255 / 0%);
+    height: 100%;
+    margin: 0;
+    border-radius: 0;
+}
+
+.UI-Slider .UI-PRELOAD::after {
+    background: rgb(212 205 223);
+}
+
+.Music-ControlButtons {
+    fill: var(--TITLE_COLOR);
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Music-ControlButtons svg {
+    fill: var(--TITLE_COLOR);
+    width: 20px;
+    height: 20px;
+}
+
+.Music-ControlButtons button {
+    background: rgb(255 255 255 / 0%);
+    height: fit-content;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Music-ControlButtons .Back svg {
+    transform: rotate(180deg);
+}
+
+/* Музыка - Полноценный плеер */
+
+.Music-FullPlayer_BG {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    object-fit: cover;
+
+    .UI-MusicCover,
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.Music-FullPlayer_BG_Blur {
+    background: rgb(39 39 39 / 20%);
+    backdrop-filter: blur(100px);
+    -webkit-backdrop-filter: blur(100px);
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+}
+
+.Music-FullPlayer {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+}
+
+.Music-FullPlayer .CloseButton {
+    background: rgb(255 255 255 / 0%);
+    margin-top: 100px;
+    z-index: 2;
+    position: absolute;
+    display: flex;
+}
+
+.Music-FullPlayer .CloseButton svg {
+    fill: rgb(255 255 255 / 50%);
+    width: 40px;
+    height: 40px;
+}
+
+.Music-FullPlayer_C {
+    width: 100%;
+    max-width: 800px;
+    height: 100%;
+    padding: 0px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.Music-FullPlayer_C .Controls {
+    fill: rgb(255 255 255 / 50%);
+    margin-top: 5px;
+    flex-grow: 1;
+    z-index: 2;
+}
+
+.Music-FullPlayer_C .Controls .Info {
+    gap: var(--PUSTOTA_WIDTH);
+    display: flex;
+    flex-direction: row;
+}
+
+.Music-FullPlayer_C .Controls .Info button {
+    background: rgb(255 255 255 / 0%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Music-FullPlayer_C .Controls .Info button svg {
+    width: 20px;
+    height: 20px;
+    transition: .2s;
+}
+
+.Music-FullPlayer_C .Controls .Metadata {
+    color: var(--AIR_COLOR);
+    font-size: 1.3em;
+    flex-grow: 1;
+    text-shadow: 0px 1px 5px rgb(0 0 0 / 50%);
+}
+
+.Music-FullPlayer_C .Controls .Metadata .Name {
+    font-family: var(--FF_TITLE);
+}
+
+.Music-FullPlayer_C .Controls .Metadata .Author {
+    color: rgb(255 255 255 / 80%);
+    font-size: 0.9em;
+    margin-top: 5px;
+    text-shadow: 0px 1px 5px rgb(0 0 0 / 30%);
+}
+
+.Music-FullPlayer_C .Controls .UI-Slider {
+    background: rgb(255 255 255 / 50%);
+    border-radius: 2.5px;
+    height: 6px;
+    margin-top: 25px;
+}
+
+.Music-FullPlayer_C .Controls .UI-Slider .Progress {
+    background: var(--AIR_COLOR);
+}
+
+.Music-FullPlayer_C .Controls .UI-Slider:hover {
+    height: 10px;
+    border-radius: 10px;
+}
+
+.Music-FullPlayer_C .Controls .Music-Duration {
+    color: rgb(255 255 255 / 50%);
+    font-size: 0.75em;
+    font-family: var(--FF_TITLE);
+    margin: 5px;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+.Music-FullPlayer_C .Controls .Music-ControlButtons {
+    margin: 10px 5px 0px;
+    padding: 0px 10px;
+    justify-content: space-between;
+
+    svg {
+        fill: rgb(255 255 255 / 50%);
+        width: 25px;
+        height: 25px;
+    }
+
+    .Base {
+        gap: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            fill: rgb(255 255 255);
+            width: 28px;
+            height: 28px;
+        }
+    }
+}
+
+.Music-FullPlayer_C .Controls .Volume {
+    margin-top: 10px;
+    padding: 0px 5px;
+    gap: 10px;
+    display: flex;
+    align-items: center;
+
+    .UI-Slider {
+        margin-top: 0px;
+    }
+}
+
+.Music-FullPlayer_C .Controls .Volume svg {
+    fill: rgb(255 255 255 / 50%);
+    height: 20px;
+}
+
+.Music-FullPlayer_C .Controls .Active svg {
+    fill: var(--AIR_COLOR);
+}
+
+.Music-FullPlayer_C {
+    .Cover-Containers {
+        width: 250px;
+        height: 250px;
+        margin-right: 50px;
+        flex-shrink: 0;
+        position: relative;
+
+        .Container {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            position: absolute;
+            overflow: hidden;
+            box-shadow: 0 15px 35px -10px #0006;
+
+            .UI-MusicCover {
+                width: 100%;
+                height: 100%;
+            }
+        }
+    }
+
+    .FullInfo {
+        width: 100%;
+        max-height: 500px;
+        position: relative;
+
+        .Close {
+            position: absolute;
+            top: 30px;
+            right: 0;
+            z-index: 1;
+            background: rgb(255 255 255 / 0%);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                fill: var(--AIR_COLOR);
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        .List {
+            width: 100%;
+            max-height: 500px;
+            overflow: scroll;
+            padding: 50px 0px;
+            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 10%, rgb(0, 0, 0) 90%, rgba(0, 0, 0, 0) 100%);
+
+            .Item {
+                font-size: 2em;
+                color: var(--AIR_COLOR);
+                display: flex;
+
+                .InfoTitle {
+                    margin-right: 10px;
+                    opacity: 0.5;
+                }
+            }
+        }
+    }
+}
+
+/* Музыка - Мини плеер */
+
+.Music-MiniPlayer {
+    background: var(--AIR_COLOR);
+    border-radius: var(--BR_BASE);
+    backdrop-filter: var(--AIR_BLUR);
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 20px;
+    z-index: 3;
+    user-select: none;
+    box-shadow: var(--BLOCK_SHADOW);
+
+    .UI-MusicCover {
+        cursor: pointer;
+    }
+}
+
+/* Музыка - Добавить */
+
+.Music-Add {
+    display: flex;
+}
+
+.Music-AddFrom_content input[type="file"] {
+    display: none;
+}
+
+.Music-AddFrom_content label {
+    cursor: pointer;
+}
+
+.Music-AddFrom_content label:active {
+    filter: brightness(0.8);
+}
+
+.Music-AddFrom_content label .Text {
+    width: 85%;
+    font-size: var(--FS_TEXT);
+    text-wrap: nowrap;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.Music-AddFrom_content .Inputs-Title {
+    color: var(--D_OR_P_COLOR);
+    font-size: 0.85em;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+}
+
+.Music-AddFrom_content .BaseInfo {
+    margin: 0px 5px;
+    display: flex;
+}
+
+.Music-AddFrom_content .BaseInfo .Cover {
+    background: var(--AIR_BLOCK_COLOR);
+    border-radius: 10px;
+    width: 150px;
+    height: 150px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    overflow: hidden;
+
+    label,
+    img {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+    }
+
+    label {
+        background: none;
+        z-index: 2;
+    }
+
+    img {
+        z-index: 1;
+    }
+
+    .Delete {
+        background: var(--BTN_CLOSE_COLOR);
+        backdrop-filter: blur(10px) saturate(5);
+        padding: 5px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 10px;
+        z-index: 2;
+    }
+
+    .Text {
+        position: absolute;
+        bottom: 10px;
+    }
+
+    svg {
+        fill: var(--BTN_TEXT_COLOR);
+        width: 80px;
+        height: 80px;
+        margin: auto;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 20px;
+    }
+}
+
+.Music-AddFrom_content .BaseInfo .Inputs {
+    flex-grow: 1;
+    gap: 7px;
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+.Music-AddFrom_content .InfoAndFile {
+    margin: 10px 5px;
+    display: flex;
+}
+
+.Music-AddFrom_content .InfoAndFile .Info {
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+.Music-AddFrom_content .InfoAndFile label {
+    background: var(--AIR_BLOCK_COLOR);
+    border-radius: 10px;
+    width: 150px;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Music-AddFrom_content .AllInfo {
+    margin: 10px 5px 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.Music-AddFrom_content .AllInfo .Columns {
+    gap: 10px;
+    display: flex;
+    flex-direction: row;
+}
+
+.Music-AddFrom_content .AllInfo .Column {
+    margin-top: 8px;
+    flex-grow: 1;
+    gap: 7px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.Music-AddFrom_content .UI-FormButton {
+    margin: 15px auto 5px;
+    display: block;
+}
+
+/* Музыка - Список */
+
+.Music-List {
+    position: relative;
+}
+
+.Music-List .Title {
+    font-size: 1.2em;
+    font-family: var(--FF_TITLE);
+    margin: 14px 20px;
+    position: absolute;
+    top: 0px;
+    left: 0;
+    z-index: 1;
+}
+
+.Music-List .Scroll {
+    overflow-x: scroll;
+    display: flex;
+}
+
+.Music-List .SH_L {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    box-shadow: 1px 0px 9px 10px var(--BODY_COLOR);
+}
+
+.Music-List .SH_R {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    box-shadow: 1px 0px 9px 10px var(--BODY_COLOR);
+}
+
+.Music-List .ScrollButton {
+    background: var(--AIR_COLOR);
+    width: fit-content;
+    height: fit-content;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.Music-List .ScrollButton svg {
+    fill: var(--BTN_TEXT_COLOR);
+    width: 35px;
+    height: 35px;
+    margin: 0px -10px;
+}
+
+.Music-List .SC-R {
+    right: 0;
+}
+
+.Music-List .SC-R svg {
+    transform: scaleX(-1);
+}
+
+.Music-SongPrev {
+    width: fit-content;
+    position: relative;
+    user-select: none;
+    margin: 50px 15px 10px 15px;
+
+    .UI-MusicCover {
+        cursor: pointer;
+        transition: .2s;
+    }
+
+    .UI-MusicCover:hover {
+        transform: scale(0.95);
+    }
+}
+
+.Music-SongPrev .MetaAndButton {
+    max-width: 140px;
+    margin: 5px 5px 8px 5px;
+    display: flex;
+    align-items: center;
+}
+
+.Music-SongPrev .UI-GovernButton {
+    background: rgb(255 255 255 / 0%);
+    position: sticky;
+    z-index: 1;
+}
+
+.Music-SongPrev .UI-GovernButtons {
+    left: 0px;
+    right: 0px;
+    top: unset;
+    bottom: 46px;
+    z-index: 1;
+}
+
+.Music-SongPrev .Metadata {
+    flex: 1;
+    max-width: 119px;
+    white-space: nowrap;
+}
+
+.Music-SongPrev .Metadata .UI-PRELOAD {
+    width: 100%;
+    height: 12px;
+    margin-top: 2px;
+}
+
+.Music-SongPrev .Metadata .UI-PRELOAD::after {
+    filter: blur(12px);
+}
+
+.Music-SongPrev .Name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.Music-SongPrev .Author {
+    color: var(--D_OR_P_COLOR);
+    font-size: 0.9em;
+    width: 80%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+// Музыка - Плейлисты
+
+.Music-Playlist-Content {
+    .Header {
+        display: flex;
+        align-items: center;
+        margin: 20px 0;
+        gap: 10px;
+
+        .Title {
+            font-size: 2.5em;
+            font-family: var(--FF_TITLE);
+            margin-bottom: 4px;
+        }
+    }
+
+    .Songs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--PUSTOTA_WIDTH);
+
+        .Song {
+            padding: 5px;
+            border-radius: var(--BR_BASE);
+            background: var(--BLOCK_COLOR);
+            box-shadow: var(--BLOCK_SHADOW);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            position: relative;
+
+            .UI-MusicCover {
+                cursor: pointer;
+            }
+
+            .Number {
+                user-select: none;
+                color: var(--D_OR_P_COLOR);
+                font-size: 1em;
+                width: 30px;
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .Info {
+                flex-grow: 1;
+                display: flex;
+                text-align: left;
+                justify-content: space-between;
+                flex-direction: row;
+                align-items: center;
+
+                .Base {
+                    display: flex;
+                    flex-direction: column;
+
+                    .Title {
+                        margin-bottom: 3px;
+                        cursor: pointer;
+                    }
+
+                    .Author {
+                        color: var(--D_OR_P_COLOR);
+                        font-size: var(--FS_D_OR_P);
+                    }
+                }
+
+                .DateAndDuration {
+                    user-select: none;
+                    color: var(--D_OR_P_COLOR);
+                    font-size: var(--FS_D_OR_P);
+                }
+            }
+
+            .Like {
+                background: none;
+                display: flex;
+
+                svg {
+                    fill: var(--TEXT_COLOR);
+                    width: 15px;
+                    height: 15px;
+                }
+            }
+
+            .UI-GovernButton {
+                background: var(--BLOCK_BLOCK_COLOR);
+                border-radius: 100px;
+                margin-right: 10px;
+            }
+        }
+    }
+}
+
+@media only screen and (max-device-width: 768px),
+only screen and (device-width: 768px) and (device-height: 768px),
+only screen and (width: 768px) and (orientation: landscape),
+only screen and (device-width: 768px),
+only screen and (max-width: 768px) {
+    
+    /* Музыка */
+
+    .Music-FullPlayer_C {
+        width: 85%;
+        padding: 0;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .Music-FullPlayer_C .Controls .Music-ControlButtons {
+        margin-right: 0;
+        margin-left: 0;
+    }
+
+    .Music-FullPlayer_C .Cover-Containers {
+        margin: 0px auto 25px auto;
+    }
+
+    .Music-FullPlayer_C .Controls {
+        width: 100%;
+        flex-grow: 0;
+    }
+
+    .Music-MiniPlayer {
+        bottom: 75px;
+        position: fixed;
+
+        .UI-VolumeControl {
+            display: none;
+        }
+    }
+
+    .Music-Playlist-Content {
+        .Header {
+            text-align: center;
+            flex-direction: column;
+        }
+
+        .Songs {
+            .Song {
+                .DateAndDuration {
+                    display: none;
+                }
+            }
+        }
+    }
+}
