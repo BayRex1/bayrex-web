@@ -1,0 +1,87 @@
+/* Просмотр EPACK */
+
+.EPACK-FileInput {
+    width: 100%;
+    padding: 5px;
+    user-select: none;
+    display: flex;
+    align-items: center;
+
+    &.dragging {
+        outline: 2px dashed var(--ACCENT_COLOR);
+        background-color: rgba(var(--ACCENT_COLOR_RGB), 0.05);
+        transition: all 0.2s ease;
+        border-radius: 15px;
+        transform: scale(1.01);
+
+        &::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--ACCENT_COLOR);
+            font-size: 1.2em;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 2;
+            white-space: nowrap;
+        }
+
+        input,
+        label,
+        .Text {
+            opacity: 0.5;
+        }
+    }
+}
+
+.EPACK-FileInput label {
+    background: var(--BTN_BACKGROUND);
+    color: var(--BTN_TEXT_COLOR);
+    border-radius: 6px;
+    padding: 7px 10px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.EPACK-FileInput label:active {
+    filter: brightness(0.8);
+}
+
+.EPACK-FileInput input[type="file"] {
+    display: none;
+}
+
+.EPACK-FileInput .Text {
+    margin-left: 10px;
+}
+
+.EPACK-Post {
+    padding: 10px;
+
+    .Interaction {
+        width: 100%;
+        height: 30px;
+        padding: 0px 10px;
+        display: flex;
+
+        .InteractionCount {
+            background: rgb(255 255 255 / 0%);
+            color: var(--TEXT_COLOR);
+            fill: var(--TEXT_COLOR);
+            width: fit-content;
+            padding: 0;
+            margin-right: 20px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .InteractionCount svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+    }
+}
