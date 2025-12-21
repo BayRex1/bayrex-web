@@ -1,0 +1,606 @@
+/* Настройки */
+
+.Settings-Page {
+    flex-direction: row-reverse;
+}
+
+.Settings-Page .UI-C_L {
+    position: relative;
+    width: 100%;
+}
+
+.Settings-Page .UI-C_R {
+    width: 100%;
+    max-width: 350px;
+}
+
+.Settings-Page .UI-B_FIRST {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .UI-Title {
+        width: 100%;
+    }
+}
+
+.Settings-Page .Profile-InfoBlock {
+    .UI-Cover {
+        height: 100px;
+    }
+
+    .AvatarContainer {
+        top: 105px;
+    }
+
+    .Username {
+        margin: 2px 10px 0px 10px;
+    }
+}
+
+/* Настройки - Предпросмотр профиля */
+
+.Settings-PRFL_Email {
+    background: var(--BLOCK_BLOCK_COLOR);
+    border-radius: 10px;
+    width: fit-content;
+    margin-top: 10px;
+    padding: 4px 10px;
+    position: relative;
+    overflow: hidden;
+    transition: .2s;
+    user-select: all;
+}
+
+.Settings-PRFL_Email::after {
+    content: '';
+    background: var(--BLOCK_BLOCK_COLOR);
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    top: 0;
+    right: 0;
+    transform: translateX(0);
+    box-shadow: -11px 0px 9px 10px var(--BLOCK_BLOCK_COLOR);
+    transition: .2s;
+}
+
+.Settings-PRFL_Email.hover::after {
+    transform: translateX(120%);
+}
+
+/* Настройки - Редактирование профиля */
+
+.Settings-ChangeButtons {
+    width: fit-content;
+    border-radius: 10px;
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.Settings-ChangeButtons input {
+    display: none;
+}
+
+.Settings-ChangeButtons .Button {
+    background: var(--BTN_BACKGROUND);
+    color: var(--BTN_TEXT_COLOR);
+    font-size: var(--FS_TEXT);
+    border-radius: 0px;
+    margin-bottom: 1.5px;
+    padding: 5px 10px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.Settings-ChangeButtons .Button:active {
+    filter: brightness(0.8);
+}
+
+.Settings-ChangeButtons .ButtonDL {
+    background: var(--BTN_CLOSE_COLOR);
+    color: var(--BTN_TEXT_COLOR);
+    font-size: var(--FS_TEXT);
+    border-radius: 0px;
+    margin-bottom: 0px;
+    padding: 5px 10px;
+}
+
+.Settings-CP_Cover {
+    background: var(--NL_GRADIENT);
+    border-radius: 5px;
+    width: 100%;
+    height: 130px;
+    position: relative;
+    overflow: hidden;
+}
+
+.Settings-CP_Cover .Settings-ChangeButtons {
+    border-radius: 5px 0px 0px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+.Settings-CP_Cover .Settings-ChangeButtons .Button {
+    background: rgb(242 242 242 / 70%);
+    backdrop-filter: blur(3px);
+    color: rgb(79 79 79);
+    border-radius: 5px 0px 0px 0px;
+}
+
+.Settings-CP_Cover .Settings-ChangeButtons .ButtonDL {
+    backdrop-filter: blur(3px);
+    color: rgb(79 79 79);
+}
+
+.Settings-CP_Avatar {
+    margin: 4px 5px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.Settings-CP_Avatar .Avatar {
+    position: relative;
+    left: 14px;
+    z-index: 1;
+}
+
+.Settings-CP_Avatar .Settings-ChangeButtons {
+    right: 14px;
+}
+
+.Settings-CP_Avatar .Button {
+    padding: 5px 10px 5px 40px;
+}
+
+.Settings-CP_Avatar .ButtonDL {
+    padding: 5px 10px 5px 40px;
+}
+
+.Settings-CP_Input_container {
+    width: 100%;
+    margin: 0px 0px 3px 0px;
+    padding: 0px 5px;
+    display: flex;
+    flex-direction: column;
+
+    .Title {
+        color: rgb(156 153 167);
+        font-size: 0.8em;
+        margin: 6px 0px 5px 6px;
+    }
+
+    .UI-Input {
+        width: 100%;
+        padding: 7px 9px;
+    }
+
+    input {
+        position: sticky;
+        z-index: 3;
+    }
+
+    textarea {
+        height: 80px;
+        position: sticky;
+        z-index: 1;
+        overflow: hidden;
+        resize: none;
+    }
+
+    .UI-Links {
+        margin-top: 0px;
+    }
+}
+
+.Settings-LinkContainer {
+    margin-top: 60px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .Avatar {
+        margin-right: -15px;
+    }
+
+    .LinkIcon {
+        width: 42px;
+        height: 42px;
+        margin-left: -15px;
+        margin-top: 50px;
+        z-index: 1;
+
+        svg,
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        svg {
+            fill: var(--ACCENT_COLOR);
+            filter: drop-shadow(2px 4px 3px var(--ACCENT_COLOR));
+        }
+    }
+}
+
+/* Настройки - Выбор темы */
+
+.Settings-Themes {
+    padding: 8px 0px 4px 0px;
+    overflow: hidden;
+    position: relative;
+    
+    .ThemeScrollButton {
+        background: var(--BTN_BACKGROUND);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 3;
+        
+        svg {
+            width: 18px;
+            height: 18px;
+            color: var(--TEXT_COLOR);
+        }
+        
+        &.left {
+            left: 5px;
+        }
+        
+        &.right {
+            right: 5px;
+        }
+    }
+
+    .Scroll {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        gap: 12px;
+        scrollbar-width: none;
+        
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        .ChangeTheme {
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+            position: relative;
+            
+            &.Selected {
+                .Info {
+                    background: var(--ACCENT_COLOR);
+                    color: #fff;
+                    transform: scale(1.05);
+                }
+                
+                .TH-Container {
+                    border: 2px solid var(--ACCENT_COLOR);
+                    box-shadow: 0 4px 12px rgba(150, 116, 202, 0.3);
+                }
+            }
+        }
+
+        .Info {
+            color: var(--TEXT_COLOR);
+            font-size: 10px;
+            width: 70px;
+            margin-top: 5px;
+            text-align: center;
+            padding: 4px 5px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1.1;
+            background: var(--BLOCK_COLOR_LITE);
+        }
+    }
+}
+
+/* Настройки - Разделы */
+
+.Settings-Author {
+    margin: 15px 10px;
+    display: flex;
+    align-items: flex-start;
+
+    .Avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .Info {
+        margin-left: 10px;
+    }
+
+    .Name {
+        color: var(--TEXT_COLOR);
+        font-family: var(--FF_TITLE);
+        font-size: 1em;
+        margin-top: 3px;
+    }
+
+    .JobTitle {
+        color: var(--BLOCK_COLOR_LITE_TEXT);
+        font-size: 0.87em;
+        margin-top: 5px;
+    }
+
+    .Links {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+
+        .SocialLink {
+            background: var(--AIR_BLOCK_COLOR);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 5px;
+            font-size: 0.8em;
+
+            svg,
+            img {
+                width: 15px;
+                height: 15px;
+                object-fit: contain;
+            }
+        }
+    }
+}
+
+.Settings-PType {
+    width: 100%;
+    gap: 5px;
+    display: flex;
+}
+
+.Settings-PType button {
+    width: 100%;
+    padding: 5px;
+}
+
+.Settings-PType .Active {
+    background: rgb(195 184 226);
+    color: rgb(27 19 48 / 80%);
+}
+
+.Settings-UsernameIcon {
+    margin: 35px auto 25px auto;
+    width: fit-content;
+}
+
+.Settings-UsernameIcon svg {
+    fill: var(--ACCENT_COLOR);
+    filter: drop-shadow(2px 4px 3px var(--ACCENT_COLOR));
+    width: 70px;
+    height: 70px;
+}
+
+/* Настройки - Сессии */
+
+.Settings-Session {
+    width: 100%;
+    padding: 0px 7px;
+    display: flex;
+    gap: 10px;
+
+    .Icon {
+        background: var(--AIR_COLOR);
+        width: 35px;
+        height: 35px;
+        margin: 5px;
+        border-radius: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .Info {
+        flex: 1;
+
+        .DeviceType {
+            font-size: 1.2em;
+        }
+
+        .Device {
+            font-size: 0.9em;
+        }
+    }
+
+    button {
+        fill: #ff0000;
+        background: #ffffff00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Настройки - Выбор языка */
+
+.Settings-ChangeLanguage {
+    background: var(--BLOCK_COLOR_LITE);
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    transition: .2s;
+
+    img {
+        width: 25px;
+        height: 25px;
+        margin-right: 10px;
+    }
+}
+
+.Settings-LanguageSelected {
+    background: var(--AIR_BLOCK_COLOR);
+    outline: 1px solid var(--ACCENT_COLOR);
+}
+
+.Settings-Advanced {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+    
+    .Parameter {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+.MyReport-Item {
+    .MyReport-Header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .MyReport-Target {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .target-type {
+                background: var(--ACCENT_COLOR);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+
+            .target-name {
+                color: var(--TEXT_COLOR);
+                font-size: 0.9rem;
+                opacity: 0.8;
+            }
+        }
+
+        .MyReport-Status {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+    }
+
+    .MyReport-Content {
+        margin-bottom: 8px;
+
+        .MyReport-Category,
+        .MyReport-Message,
+        .MyReport-TargetContent {
+            margin-bottom: 6px;
+            color: var(--TEXT_COLOR);
+            font-size: 0.9rem;
+            line-height: 1.4;
+
+            strong {
+                color: var(--TITLE_COLOR);
+            }
+        }
+
+        .content-preview {
+            background: var(--INPUT_COLOR);
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-top: 4px;
+            font-style: italic;
+            color: var(--TEXT_COLOR_LITE);
+            font-size: 0.85rem;
+        }
+    }
+
+    .MyReport-Footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--TEXT_COLOR_LITE);
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+
+        .MyReport-Date,
+        .MyReport-Updated {
+            opacity: 0.7;
+        }
+    }
+
+    .MyReport-Resolution {
+        background: var(--INPUT_COLOR);
+        border-radius: 8px;
+        padding: 10px;
+        border-left: 3px solid var(--ACCENT_COLOR);
+
+        .resolution-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+            color: var(--TITLE_COLOR);
+            font-size: 0.9rem;
+
+            svg {
+                width: 14px;
+                height: 14px;
+                fill: var(--ACCENT_COLOR);
+            }
+        }
+
+        .resolution-text {
+            color: var(--TEXT_COLOR);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .moderator-info {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--TEXT_COLOR_LITE);
+
+            .moderator-link {
+                background: none;
+                border: none;
+                color: var(--ACCENT_COLOR);
+                cursor: pointer;
+                text-decoration: underline;
+                font-size: inherit;
+                font-family: inherit;
+                padding: 0;
+                margin: 0;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    color: #7e5ba6;
+                    text-decoration: none;
+                }
+            }
+        }
+    }
+}
