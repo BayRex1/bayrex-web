@@ -1,4 +1,3 @@
-
 import Avatar from '/src/UIKit/Components/Base/Avatar';
 import type { AvatarProps } from '/src/UIKit/Components/Base/Avatar';
 import ContextMenu from '/src/UIKit/Components/Base/ContextMenu';
@@ -35,6 +34,7 @@ import BoxButtons from '/src/UIKit/Components/Layout/BoxButtons';
 import QuestionModal from '/src/UIKit/Components/Layout/QuestionModal';
 import Block from '/src/UIKit/Components/Layout/Block';
 import PartitionName from '/src/UIKit/Components/Layout/PartitionName';
+import MobileSidebarMenu from '/src/UIKit/Components/Layout/MobileSidebarMenu'; // <-- ДОБАВЛЕННЫЙ ИМПОРТ
 
 // Файлы из UIKit/Components/Tabs/
 import MaterialTabs from '/src/UIKit/Components/Tabs/MaterialTabs';
@@ -109,7 +109,8 @@ export {
     SavesAvatar,
     Block,
     PartitionName,
-    ListButtons
+    ListButtons,
+    MobileSidebarMenu // <-- ДОБАВЛЕННЫЙ ЭКСПОРТ
 }
 
 export type {
