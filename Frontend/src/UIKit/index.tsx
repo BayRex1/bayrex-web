@@ -1,6 +1,15 @@
-import Avatar from '/src/Components/Base/Avatar';
-import type { AvatarProps } from '/src/Components/Base/Avatar';
-import Notifications from '/src/Components/Base/Notifications';
+// Файлы из UIKit/Components/Base/ - как ты говорил
+import Avatar from '/src/UIKit/Components/Base/Avatar';
+import type { AvatarProps } from '/src/UIKit/Components/Base/Avatar';
+import ContextMenu from '/src/UIKit/Components/Base/ContextMenu';
+import Cover from '/src/UIKit/Components/Base/Cover';
+import DropdownSelect from '/src/UIKit/Components/Base/DropdownSelect';
+import Gift from '/src/UIKit/Components/Base/Gift';
+import MusicCover from '/src/UIKit/Components/Base/MusicCover';
+import Notifications from '/src/UIKit/Components/Base/Notifications';
+import SavesAvatar from '/src/UIKit/Components/Base/SavesAvatar';
+
+// ВСЕ остальные импорты через /src/
 import AddButton from '/src/Components/Buttons/AddButton';
 import FormButton from '/src/Components/Buttons/FormButton';
 import SendButton from '/src/Components/Buttons/SendButton';
@@ -12,17 +21,13 @@ import BoxButtons from '/src/Components/Layout/BoxButtons';
 import MaterialTabs from '/src/Components/Tabs/MaterialTabs';
 import CopyInput from '/src/Components/Inputs/CopyInput';
 import EmojiPicker from '/src/Components/EmojiPicker';
-import DropdownSelect from '/src/Components/Base/DropdownSelect';
 import SocialInput from '/src/Components/Inputs/SocialInput';
-import Cover from '/src/Components/Base/Cover';
 import AvatarInput from '/src/Components/Inputs/AvatarInput';
 import CoverInput from '/src/Components/Inputs/CoverInput';
 import QuestionModal from '/src/Components/Layout/QuestionModal';
 import CopyTextBox from '/src/Components/Text/CopyTextBox';
 import ApiCode from '/src/Components/Text/ApiCode';
 import Slider from '/src/Components/Player/Slider';
-import MusicCover from '/src/Components/Base/MusicCover';
-import ContextMenu from '/src/Components/Base/ContextMenu';
 import BackButton from '/src/Components/Buttons/BackButton';
 import Name from '/src/Components/Text/Name';
 import Video from '/src/Components/Player/Video';
@@ -33,10 +38,8 @@ import Button from '/src/Components/Buttons/Button';
 import RoutedModal from '/src/Components/Modals/RoutedModal';
 import AlertModal from '/src/Components/Modals/AlertModal';
 import Switch from '/src/Components/Buttons/Switch';
-import Gift from '/src/Components/Base/Gift';
 import GovernButtons from '/src/Components/Buttons/GovernButtons';
 import ProgressRing from '/src/Components/Loaders/ProgressRing';
-import SavesAvatar from '/src/Components/Base/SavesAvatar';
 import Tabs from '/src/Components/Tabs/Tabs';
 import GitHubButton from '/src/Components/Buttons/GitHubButton';
 import Block from '/src/Components/Layout/Block';  
