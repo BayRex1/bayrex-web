@@ -1,4 +1,4 @@
-// Файлы из UIKit/Components/Base/
+
 import Avatar from '/src/UIKit/Components/Base/Avatar';
 import type { AvatarProps } from '/src/UIKit/Components/Base/Avatar';
 import ContextMenu from '/src/UIKit/Components/Base/ContextMenu';
@@ -64,13 +64,7 @@ import AlertModal from '/src/UIKit/Components/Modals/AlertModal';
 // Файлы из UIKit/Components/EmojiPicker/
 import EmojiPicker from '/src/UIKit/Components/EmojiPicker';
 
-// Файлы из UIKit/Components/Sidebar/
-export { default as Sidebar } from '/src/UIKit/Components/Sidebar/Sidebar';
-export { default as MobileSidebarMenu } from '/src/UIKit/Components/Sidebar/MobileSidebarMenu';
-export { default as MenuItem } from '/src/UIKit/Components/Sidebar/MenuItem';
-export { default as UserCard } from '/src/UIKit/Components/Sidebar/UserCard';
-export { default as ChannelItem } from '/src/UIKit/Components/Sidebar/ChannelItem';
-export { default as AccountsList } from '/src/UIKit/Components/Sidebar/AccountsList';
+// Sidebar компоненты УДАЛЕНЫ - их файлов нет
 
 export {
     Text,
