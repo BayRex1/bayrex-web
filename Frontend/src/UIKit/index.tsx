@@ -1,4 +1,4 @@
-// Файлы из UIKit/Components/Base/ - как ты говорил
+// Файлы из UIKit/Components/Base/
 import Avatar from '/src/UIKit/Components/Base/Avatar';
 import type { AvatarProps } from '/src/UIKit/Components/Base/Avatar';
 import ContextMenu from '/src/UIKit/Components/Base/ContextMenu';
@@ -9,48 +9,68 @@ import MusicCover from '/src/UIKit/Components/Base/MusicCover';
 import Notifications from '/src/UIKit/Components/Base/Notifications';
 import SavesAvatar from '/src/UIKit/Components/Base/SavesAvatar';
 
-// ВСЕ остальные импорты через /src/
-import AddButton from '/src/Components/Buttons/AddButton';
-import FormButton from '/src/Components/Buttons/FormButton';
-import SendButton from '/src/Components/Buttons/SendButton';
-import Textarea from '/src/Components/Inputs/Textarea';
-import TextInput from '/src/Components/Inputs/TextInput';
-import NavigatedHeader from '/src/Components/Layout/NavigatedHeader';
-import BoxButton from '/src/Components/Buttons/BoxButton';
-import BoxButtons from '/src/Components/Layout/BoxButtons';
-import MaterialTabs from '/src/Components/Tabs/MaterialTabs';
-import CopyInput from '/src/Components/Inputs/CopyInput';
-import EmojiPicker from '/src/Components/EmojiPicker';
-import SocialInput from '/src/Components/Inputs/SocialInput';
-import AvatarInput from '/src/Components/Inputs/AvatarInput';
-import CoverInput from '/src/Components/Inputs/CoverInput';
-import QuestionModal from '/src/Components/Layout/QuestionModal';
-import CopyTextBox from '/src/Components/Text/CopyTextBox';
-import ApiCode from '/src/Components/Text/ApiCode';
-import Slider from '/src/Components/Player/Slider';
-import BackButton from '/src/Components/Buttons/BackButton';
-import Name from '/src/Components/Text/Name';
-import Video from '/src/Components/Player/Video';
-import DownloadProgress from '/src/Components/Loaders/DownloadProgress';
-import Text from '/src/Components/Text/Text';
-import User from '/src/Components/SimpleElements/User';
-import Button from '/src/Components/Buttons/Button';
-import RoutedModal from '/src/Components/Modals/RoutedModal';
-import AlertModal from '/src/Components/Modals/AlertModal';
-import Switch from '/src/Components/Buttons/Switch';
-import GovernButtons from '/src/Components/Buttons/GovernButtons';
-import ProgressRing from '/src/Components/Loaders/ProgressRing';
-import Tabs from '/src/Components/Tabs/Tabs';
-import GitHubButton from '/src/Components/Buttons/GitHubButton';
-import Block from '/src/Components/Layout/Block';  
-import PartitionName from '/src/Components/Layout/PartitionName';
-import ListButtons from '/src/Components/Buttons/ListButtons';
-export { default as Sidebar } from '/src/Components/Sidebar/Sidebar';
-export { default as MobileSidebarMenu } from '/src/Components/Sidebar/MobileSidebarMenu';
-export { default as MenuItem } from '/src/Components/Sidebar/MenuItem';
-export { default as UserCard } from '/src/Components/Sidebar/UserCard';
-export { default as ChannelItem } from '/src/Components/Sidebar/ChannelItem';
-export { default as AccountsList } from '/src/Components/Sidebar/AccountsList';
+// Файлы из UIKit/Components/Buttons/
+import AddButton from '/src/UIKit/Components/Buttons/AddButton';
+import FormButton from '/src/UIKit/Components/Buttons/FormButton';
+import SendButton from '/src/UIKit/Components/Buttons/SendButton';
+import BoxButton from '/src/UIKit/Components/Buttons/BoxButton';
+import BackButton from '/src/UIKit/Components/Buttons/BackButton';
+import Button from '/src/UIKit/Components/Buttons/Button';
+import Switch from '/src/UIKit/Components/Buttons/Switch';
+import GovernButtons from '/src/UIKit/Components/Buttons/GovernButtons';
+import GitHubButton from '/src/UIKit/Components/Buttons/GitHubButton';
+import ListButtons from '/src/UIKit/Components/Buttons/ListButtons';
+
+// Файлы из UIKit/Components/Inputs/
+import Textarea from '/src/UIKit/Components/Inputs/Textarea';
+import TextInput from '/src/UIKit/Components/Inputs/TextInput';
+import CopyInput from '/src/UIKit/Components/Inputs/CopyInput';
+import SocialInput from '/src/UIKit/Components/Inputs/SocialInput';
+import AvatarInput from '/src/UIKit/Components/Inputs/AvatarInput';
+import CoverInput from '/src/UIKit/Components/Inputs/CoverInput';
+
+// Файлы из UIKit/Components/Layout/
+import NavigatedHeader from '/src/UIKit/Components/Layout/NavigatedHeader';
+import BoxButtons from '/src/UIKit/Components/Layout/BoxButtons';
+import QuestionModal from '/src/UIKit/Components/Layout/QuestionModal';
+import Block from '/src/UIKit/Components/Layout/Block';
+import PartitionName from '/src/UIKit/Components/Layout/PartitionName';
+
+// Файлы из UIKit/Components/Tabs/
+import MaterialTabs from '/src/UIKit/Components/Tabs/MaterialTabs';
+import Tabs from '/src/UIKit/Components/Tabs/Tabs';
+
+// Файлы из UIKit/Components/Text/
+import CopyTextBox from '/src/UIKit/Components/Text/CopyTextBox';
+import ApiCode from '/src/UIKit/Components/Text/ApiCode';
+import Name from '/src/UIKit/Components/Text/Name';
+import Text from '/src/UIKit/Components/Text/Text';
+
+// Файлы из UIKit/Components/Player/
+import Slider from '/src/UIKit/Components/Player/Slider';
+import Video from '/src/UIKit/Components/Player/Video';
+
+// Файлы из UIKit/Components/Loaders/
+import DownloadProgress from '/src/UIKit/Components/Loaders/DownloadProgress';
+import ProgressRing from '/src/UIKit/Components/Loaders/ProgressRing';
+
+// Файлы из UIKit/Components/SimpleElements/
+import User from '/src/UIKit/Components/SimpleElements/User';
+
+// Файлы из UIKit/Components/Modals/
+import RoutedModal from '/src/UIKit/Components/Modals/RoutedModal';
+import AlertModal from '/src/UIKit/Components/Modals/AlertModal';
+
+// Файлы из UIKit/Components/EmojiPicker/
+import EmojiPicker from '/src/UIKit/Components/EmojiPicker';
+
+// Файлы из UIKit/Components/Sidebar/
+export { default as Sidebar } from '/src/UIKit/Components/Sidebar/Sidebar';
+export { default as MobileSidebarMenu } from '/src/UIKit/Components/Sidebar/MobileSidebarMenu';
+export { default as MenuItem } from '/src/UIKit/Components/Sidebar/MenuItem';
+export { default as UserCard } from '/src/UIKit/Components/Sidebar/UserCard';
+export { default as ChannelItem } from '/src/UIKit/Components/Sidebar/ChannelItem';
+export { default as AccountsList } from '/src/UIKit/Components/Sidebar/AccountsList';
 
 export {
     Text,
