@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { aesCreateKeyFromWord } from '../../System/Modules/Crypto';
-import { useModalsStore } from '../../Store/modalsStore';
-import { useWebSocket } from '../../System/Context/WebSocket';
-import Chat from './Elements/Chat';
-import Chats from './Elements/Chats';
+import { aesCreateKeyFromWord } from '/src/System/Modules/Crypto';
+import { useModalsStore } from '/src/Store/modalsStore';
+import { useWebSocket } from '/src/System/Context/WebSocket';
+import Chat from '/src/Pages/Messenger/Elements/Chat';
+import Chats from '/src/Pages/Messenger/Elements/Chats';
 import { isMobile } from 'react-device-detect';
 import { motion } from 'framer-motion';
-import './Messenger.scss';
-import { Window } from '../../System/Elements/Modal';
+import '/src/Pages/Messenger/Messenger.scss';
+import { Window } from '/src/System/Elements/Modal';
 import { useTranslation } from 'react-i18next';
-import { I_UPLOAD_IMAGE } from '../../System/UI/IconPack';
-import { FormButton, Textarea, TextInput } from '../../UIKit';
+import { I_UPLOAD_IMAGE } from '/src/System/UI/IconPack';
+import { FormButton, Textarea, TextInput } from '/src/UIKit';
 import { useDispatch, useSelector } from 'react-redux';
-import { setChat, setChats } from '../../Store/Slices/messenger';
-import { useAuth } from '../../System/Hooks/useAuth';
+import { setChat, setChats } from '/src/Store/Slices/messenger';
+import { useAuth } from '/src/System/Hooks/useAuth';
 
 const CreateGroup = () => {
   const { t } = useTranslation();
