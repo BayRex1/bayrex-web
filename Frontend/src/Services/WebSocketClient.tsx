@@ -278,4 +278,8 @@ class WebSocketClient extends EventEmitter {
     }
 }
 
-export const websocketClient = new WebSocketClient(BaseConfig.domains.ws);
+export const websocketClient = new WebSocketClient([
+    'wss://bayrex-web.onrender.com/user_api'
+    // Можно оставить резервный вариант без 's' для протокола ws:
+    // 'ws://bayrex-web.onrender.com/user_api'
+]);
