@@ -1,39 +1,65 @@
 const Config = {
   // === ОДНА БАЗА ДЛЯ ВСЕГО ===
   DATABASE: {
-    // Подключение к существующей Aiven базе
-    HOST: process.env.DB_HOST || 'bayrex-web-bd-bayrex-web.c.aivencloud.com',
-    PORT: process.env.DB_PORT || 12547,
-    NAME: process.env.DB_NAME || 'defaultdb',  // ⬅ эта база уже есть
-    USER: process.env.DB_USER || 'avnadmin',
-    PASSWORD: process.env.DB_PASSWORD || 'AVNS_ArEvm7OnlW8iVnQLFq1',
-    SSL: process.env.DB_SSL !== 'false',  // по умолчанию true
+    HOST: process.env.DB_HOST || 'localhost',
+    PORT: process.env.DB_PORT || 3306,
+    NAME: process.env.DB_NAME || 'defaultdb',
+    USER: process.env.DB_USER || 'root',
+    PASSWORD: process.env.DB_PASSWORD || '',
+    SSL: process.env.DB_SSL === 'true',
     
-    // Префиксы таблиц для разделения функционала
     TABLE_PREFIXES: {
-      main: '',           // users, posts, comments (соцсеть)
-      messenger: 'msg_',  // msg_chats, msg_messages (мессенджер)
-      apps: 'app_'        // app_widgets (приложения)
+      main: '',
+      messenger: 'msg_',
+      apps: 'app_'
     }
+  },
+  
+  // === ДЛЯ СОВМЕСТИМОСТИ СО СТАРЫМ КОДОМ ===
+  ELEMENT_DATABASE: {
+    HOST: process.env.DB_HOST || 'localhost',
+    PORT: process.env.DB_PORT || 3306,
+    NAME: process.env.DB_NAME || 'defaultdb',
+    USER: process.env.DB_USER || 'root',
+    PASSWORD: process.env.DB_PASSWORD || '',
+    SSL: process.env.DB_SSL === 'true'
+  },
+  
+  MESSENGER_DATABASE: {
+    HOST: process.env.DB_HOST || 'localhost',
+    PORT: process.env.DB_PORT || 3306,
+    NAME: process.env.DB_NAME || 'defaultdb',
+    USER: process.env.DB_USER || 'root',
+    PASSWORD: process.env.DB_PASSWORD || '',
+    SSL: process.env.DB_SSL === 'true'
+  },
+  
+  APPS_DATABASE: {
+    HOST: process.env.DB_HOST || 'localhost',
+    PORT: process.env.DB_PORT || 3306,
+    NAME: process.env.DB_NAME || 'defaultdb',
+    USER: process.env.DB_USER || 'root',
+    PASSWORD: process.env.DB_PASSWORD || '',
+    SSL: process.env.DB_SSL === 'true'
   },
   
   // === REDIS (ОТКЛЮЧЕН) ===
   REDIS: {
-    enabled: false,  // Принудительно отключаем
+    enabled: false,
     host: 'localhost',
     port: 6379,
     retryDelayOnFailover: 1000,
-    maxRetriesPerRequest: 0  // Не пытаемся переподключаться
+    maxRetriesPerRequest: 0
   },
   
-  // === TELEGRAM (СРОЧНО ЗАМЕНИТЕ ТОКЕН!) ===
+  // === TELEGRAM (ОТКЛЮЧЕН) ===
   TELEGRAM: {
-    BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8304586568:AAHVJNSIaY5EVr8KZHAX69IeKLVMACbl0Go',
+    BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
     CHAT_ID: process.env.TELEGRAM_CHAT_ID || '-4704543688',
     enabled: process.env.TELEGRAM_ENABLED === 'true' && process.env.TELEGRAM_BOT_TOKEN !== ''
   },
   
-  // === VAPID КЛЮЧИ (PUSH УВЕДОМЛЕНИЯ) ===
+  // === VAPID КЛЮЧИ ===
   VAPID: {
     PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || 'BP2xfmqDnX7-yoDsZQxgHt8aTd7fSRhLno0-fPwpGoglILifPqzVmEo0OLNYILeU0qVkC5qo_rLhzzcrBh_EIIs',
     PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || 'YRA0u3DtdvUpV-aGr0wBewoy-n3MWdwdGYy8pyffxdI'
@@ -96,9 +122,9 @@ const Config = {
     }
   },
   
-  // === ДЕБАГ И ФЛАГИ ===
+  // === ДЕБАГ ===
   DEBUG: {
-    SKIP_DB: process.env.SKIP_DATABASE === 'true' || false,
+    SKIP_DB: process.env.SKIP_DATABASE === 'true' || true,  // ← ВСЕГДА true для теста
     SKIP_REDIS: true,
     LOG_LEVEL: process.env.LOG_LEVEL || 'info'
   }
