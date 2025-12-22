@@ -1,4 +1,4 @@
-    const Config = {
+const Config = {
     ELEMENT_DATABASE: {
         HOST: 'MySQL-8.2',
         NAME: 'sn',
@@ -25,7 +25,7 @@
         PUBLIC_KEY: 'BP2xfmqDnX7-yoDsZQxgHt8aTd7fSRhLno0-fPwpGoglILifPqzVmEo0OLNYILeU0qVkC5qo_rLhzzcrBh_EIIs',
         PRIVATE_KEY: 'YRA0u3DtdvUpV-aGr0wBewoy-n3MWdwdGYy8pyffxdI'
     },
-    PORT: 8080,
+    PORT: process.env.PORT || 10000,  // ← ИСПРАВЛЕНО
     USE_HTTPS: false,
     SSL: {
         KEY: '',
