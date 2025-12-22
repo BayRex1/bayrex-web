@@ -1,7 +1,7 @@
-import login from './login.js';
-import reg from './reg.js';
-import delete_session from './sessions/delete.js';
-import load from './sessions/load.js';
+import login from './login.ts';
+import reg from './reg.ts';
+import delete_session from './sessions/delete.ts';
+import load from './sessions/load.ts';
 
 export default {
     login,
@@ -10,4 +10,5 @@ export default {
         load,
         delete: delete_session
     }
+
 }
