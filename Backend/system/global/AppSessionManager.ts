@@ -1,4 +1,4 @@
-import { dbA } from '../lib/db';
+import { dbA } from '../lib/db.ts';
 
 console.log('🎯 AppSessionManager: используем память вместо Redis');
 
@@ -111,4 +111,5 @@ export const redis = {
         return 1;
     }
 };
+
 
