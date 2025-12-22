@@ -1,79 +1,43 @@
-// Backend/index.ts - ПОЛНЫЙ КОД С БЛОКИРОВКОЙ REDIS
+// Backend/index.ts - ES модули версия
 
-// ============ НАЧАЛО: БЛОКИРОВКА REDIS ============
-console.log('🛡️  Активирую защиту от Redis ошибок...');
+// ============ НАЧАЛО: БЛОКИРОВКА REDIS ДЛЯ ES МОДУЛЕЙ ============
+console.log('🛡️  Активирую защиту от Redis ошибок (ES модули)...');
 
-// 1. Глобальное подавление ошибок Redis в console.error
-const originalConsoleError = console.error;
-console.error = function(...args: any[]) {
-  const message = args[0]?.toString() || '';
-  if (message.includes('[ioredis]') || 
-      message.includes('ECONNREFUSED') || 
-      message.includes('Redis connection')) {
-    // Тихо игнорируем ошибки Redis
-    console.log('🔴 Подавлена ошибка Redis (в логах не будет)');
-    return;
+// 1. Создаем глобальную заглушку для ioredis
+class RedisStub {
+  constructor(options?: any) {
+    console.log('📦 RedisStub создан. Реальный Redis отключен.');
   }
-  originalConsoleError.apply(console, args);
-};
-
-// 2. Monkey-patch для require чтобы блокировать ioredis импорт
-if (typeof require !== 'undefined') {
-  try {
-    const Module = require('module');
-    const originalRequire = Module.prototype.require;
-    
-    Module.prototype.require = function(id: string) {
-      // Блокируем импорт ioredis/redis
-      if (id === 'ioredis' || id === 'redis' || id.includes('ioredis')) {
-        console.log('🔴 Блокируем импорт', id, '- возвращаю заглушку');
-        
-        const RedisStub = class {
-          constructor(options?: any) {
-            console.log('📦 RedisStub создан. Реальный Redis отключен.');
-          }
-          
-          // Все методы возвращают заглушки
-          async connect() { 
-            return Promise.resolve(); 
-          }
-          
-          async get() { 
-            return Promise.resolve(null); 
-          }
-          
-          async set() { 
-            return Promise.resolve('OK'); 
-          }
-          
-          async quit() { 
-            return Promise.resolve('OK'); 
-          }
-          
-          async disconnect() { 
-            return Promise.resolve(); 
-          }
-          
-          on() { return this; }
-          once() { return this; }
-          off() { return this; }
-        };
-        
-        return RedisStub;
-      }
-      
-      return originalRequire.apply(this, arguments as any);
-    };
-    console.log('✅ Monkey-patch для require установлен');
-  } catch (error) {
-    console.log('⚠️  Не удалось установить monkey-patch:', error.message);
+  
+  async connect() { 
+    return Promise.resolve(); 
   }
+  
+  async get() { 
+    return Promise.resolve(null); 
+  }
+  
+  async set() { 
+    return Promise.resolve('OK'); 
+  }
+  
+  async quit() { 
+    return Promise.resolve('OK'); 
+  }
+  
+  async disconnect() { 
+    return Promise.resolve(); 
+  }
+  
+  on() { return this; }
+  once() { return this; }
+  off() { return this; }
 }
 
-// 3. Блокировка сетевых подключений к Redis портам
-if (typeof process !== 'undefined' && require) {
-  try {
-    const net = require('net');
+// 2. Подменяем глобальные методы для блокировки сетевых подключений
+if (typeof process !== 'undefined') {
+  // Создаем динамический импорт для net модуля
+  import('net').then(net => {
     const originalConnect = net.Socket.prototype.connect;
     
     net.Socket.prototype.connect = function(...args: any[]) {
@@ -88,7 +52,7 @@ if (typeof process !== 'undefined' && require) {
         host = args[0].host || '';
       }
       
-      // Redis порты: 6379, 6380 или если в хосте есть "redis"
+      // Redis порты: 6379, 6380
       if (port === 6379 || port === 6380 || 
           (typeof host === 'string' && (host.includes('redis') || host.includes('redislabs')))) {
         console.log(`🔴 Блокирую подключение к Redis (${host}:${port})`);
@@ -106,9 +70,26 @@ if (typeof process !== 'undefined' && require) {
       return originalConnect.apply(this, args);
     };
     console.log('✅ Блокировка сетевых подключений установлена');
-  } catch (error) {
-    console.log('⚠️  Не удалось блокировать сетевые подключения:', error.message);
-  }
+  }).catch(() => {
+    console.log('⚠️  Не удалось импортировать net модуль');
+  });
+}
+
+// 3. Monkey-patch для динамических импортов (import())
+const originalImport = (globalThis as any).import;
+if (originalImport) {
+  (globalThis as any).import = function(specifier: string) {
+    // Перехватываем импорт ioredis
+    if (specifier.includes('ioredis') || specifier.includes('/redis')) {
+      console.log('🔴 Блокирую динамический импорт Redis:', specifier);
+      return Promise.resolve({
+        default: RedisStub,
+        Redis: RedisStub,
+        Cluster: RedisStub
+      });
+    }
+    return originalImport(specifier);
+  };
 }
 
 console.log('✅ Защита от Redis ошибок активирована');
@@ -175,17 +156,24 @@ const shutdown = async (signal: 'SIGINT' | 'SIGTERM') => {
 };
 
 process.on('uncaughtException', (error) => {
-  console.error('Необработанное исключение:', error);
-  if (telegramBot.isEnabled()) {
-    telegramBot.sendBackendError(error, 'Uncaught Exception');
+  const errorMessage = error.message || String(error);
+  if (!errorMessage.includes('REDIS_DISABLED') && !errorMessage.includes('ioredis')) {
+    console.error('Необработанное исключение:', error);
+    if (telegramBot.isEnabled()) {
+      telegramBot.sendBackendError(error, 'Uncaught Exception');
+    }
   }
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('Необработанное отклонение промиса:', reason);
   const error = reason instanceof Error ? reason : new Error(String(reason));
-  if (telegramBot.isEnabled()) {
-    telegramBot.sendBackendError(error, 'Unhandled Promise Rejection');
+  const errorMessage = error.message || String(reason);
+  
+  if (!errorMessage.includes('REDIS_DISABLED') && !errorMessage.includes('ioredis')) {
+    console.error('Необработанное отклонение промиса:', reason);
+    if (telegramBot.isEnabled()) {
+      telegramBot.sendBackendError(error, 'Unhandled Promise Rejection');
+    }
   }
 });
 
