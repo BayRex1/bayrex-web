@@ -1,5 +1,5 @@
-// ВАЖНО: правильный путь импорта
-import { dbA } from '../../../lib/db.ts';
+// ВАРИАНТ 1: Абсолютный путь (самый надежный)
+import { dbA } from '/opt/render/project/src/lib/db.ts';
 
 console.log('🎯 AppSessionManager: используем память вместо Redis');
 
@@ -113,3 +113,4 @@ export const redis = {
         return 1;
     }
 };
+
