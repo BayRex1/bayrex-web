@@ -1,11 +1,11 @@
-import like from './like.js';
-import load_library from './load_library.js';
-import add from './playlists/add.js';
-import create from './playlists/create.js';
-import deletePlaylist from './playlists/delete.js';
-import load from './playlists/load.js';
-import remove from './playlists/remove.js';
-import upload from './upload.js';
+import like from './like.ts';
+import load_library from './load_library.ts';
+import add from './playlists/add.ts';
+import create from './playlists/create.ts';
+import deletePlaylist from './playlists/delete.ts';
+import load from './playlists/load.ts';
+import remove from './playlists/remove.ts';
+import upload from './upload.ts';
 
 export default {
     upload,
