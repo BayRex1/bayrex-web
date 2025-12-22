@@ -1,84 +1,113 @@
-import { Redis } from 'ioredis';
-import { dbA } from '../../lib/db.js';
+import { dbA } from '../lib/db.js';
+
+console.log('🎯 AppSessionManager: используем память вместо Redis');
+
+interface AppSession {
+    ws: any;
+    lastActive: number;
+    data: any;
+}
 
 class AppSessionManager {
-    private redis: Redis;
-    private activeConnections: {
-        [id: string]: 
-        { ws: WebSocket, lastActive: number } 
-    };
+    private activeConnections: Map<string, AppSession>;
 
     constructor() {
-        this.redis = new Redis();
-        this.activeConnections = {};
+        this.activeConnections = new Map();
+        console.log('✅ AppSessionManager создан (режим без Redis)');
     }
 
-    async redisRetry(fn: Function, retries: number = 3) {
-        let attempt = 0;
-        while (attempt < retries) {
-            try {
-                return await fn();
-            } catch (error) {
-                attempt++;
-                console.error(`Ошибка Redis, попытка ${attempt}: ${error.message}`);
-                if (attempt >= retries) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-    }
-
-    async createSession({ id, ws, data }) {
+    async createSession({ id, ws, data }: { id: string; ws: any; data: any }) {
         try {
-            await this.redisRetry(() => this.redis.set(`session:${id}`, JSON.stringify(data)));
-            this.activeConnections[id] = { ws: ws, lastActive: Date.now() };
-        } catch (error) {
-            console.error(`Ошибка при создании сессии для пользователя ${id}:`, error);
+            // Сохраняем в память
+            this.activeConnections.set(id, { 
+                ws: ws, 
+                lastActive: Date.now(),
+                data: data
+            });
+            console.log(`✅ Сессия приложения создана: ${id}`);
+        } catch (error: any) {
+            console.error(`Ошибка при создании сессии для приложения ${id}:`, error.message);
         }
     }
 
-    async getSession(id: number) {
-        return await this.redisRetry(async () => {
-            const sessionData = await this.redis.get(`session:${id}`);
-
+    async getSession(id: string) {
+        try {
+            const connection = this.activeConnections.get(id);
+            if (!connection) {
+                return null;
+            }
+            
             return {
-                ...(sessionData ? JSON.parse(sessionData) : {}),
-                connection: this.activeConnections[id] || null
+                ...connection.data,
+                connection: connection
             };
-        });
+        } catch (error: any) {
+            console.error(`Ошибка при получении сессии ${id}:`, error.message);
+            return null;
+        }
     }
 
-    async deleteSession(id: number) {
-        await this.redis.del(`session:${id}`);
-        delete this.activeConnections[id];
+    async deleteSession(id: string) {
+        this.activeConnections.delete(id);
+        console.log(`🗑️  Сессия приложения удалена: ${id}`);
     }
 
     getSessions() {
-        return this.activeConnections;
+        return Object.fromEntries(this.activeConnections);
     }
 
-    async updateSession(id: number, newData: any) {
-        const sessionKey = `session:${id}`;
-        const currentData = await this.getSession(id);
-        const updatedData = currentData ? { ...currentData, ...newData } : newData;
-        await this.redis.set(sessionKey, JSON.stringify(updatedData));
+    async updateSession(id: string, newData: any) {
+        const connection = this.activeConnections.get(id);
+        if (connection) {
+            connection.data = {
+                ...connection.data,
+                ...newData
+            };
+            this.activeConnections.set(id, connection);
+            console.log(`🔄 Сессия приложения обновлена: ${id}`);
+        }
     }
 
-    async connectAccount({ api_key, ws }) {
+    async connectAccount({ api_key, ws }: { api_key: string; ws: any }) {
         const app = await dbA.query('SELECT * FROM `apps` WHERE `api_key` = ?', [api_key]);
 
-        if (!app || app.length === 0 || !app[0].id) return false;
+        if (!app || app.length === 0 || !app[0].id) {
+            console.log(`❌ Приложение не найдено по ключу: ${api_key?.substring(0, 10)}...`);
+            return false;
+        }
 
-        const appID = app[0].id;
+        const appID = app[0].id.toString();
         await this.createSession({
             id: appID,
             ws: ws,
             data: app[0]
         });
+        
         await this.updateSession(appID, {
-            aesKey: ws.keys.user.aes
+            aesKey: ws.keys?.user?.aes // Опциональная цепочка
         });
+        
+        console.log(`✅ Приложение подключено: ${app[0].name || appID}`);
         return app[0];
     }
 }
 
-export default new AppSessionManager();
+// Экспортируем синглтон
+const appSessionManager = new AppSessionManager();
+export default appSessionManager;
+
+// Экспортируем заглушку для обратной совместимости (если другие файлы импортируют redis)
+export const redis = {
+    get: async (key: string) => {
+        console.log(`📦 AppSessionManager Redis.get("${key}") -> null`);
+        return null;
+    },
+    set: async (key: string, value: any) => {
+        console.log(`📦 AppSessionManager Redis.set("${key}") -> OK`);
+        return 'OK';
+    },
+    del: async (key: string) => {
+        console.log(`📦 AppSessionManager Redis.del("${key}") -> 1`);
+        return 1;
+    }
+};
