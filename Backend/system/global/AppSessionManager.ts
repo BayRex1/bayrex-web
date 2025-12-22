@@ -1,4 +1,5 @@
-import { dbA } from '../lib/db.ts';
+// ВАЖНО: правильный путь импорта
+import { dbA } from '../../../lib/db.ts';
 
 console.log('🎯 AppSessionManager: используем память вместо Redis');
 
@@ -69,6 +70,7 @@ class AppSessionManager {
     }
 
     async connectAccount({ api_key, ws }: { api_key: string; ws: any }) {
+        // Используем dbA из правильного импорта
         const app = await dbA.query('SELECT * FROM `apps` WHERE `api_key` = ?', [api_key]);
 
         if (!app || app.length === 0 || !app[0].id) {
@@ -96,7 +98,7 @@ class AppSessionManager {
 const appSessionManager = new AppSessionManager();
 export default appSessionManager;
 
-// Экспортируем заглушку для обратной совместимости (если другие файлы импортируют redis)
+// Экспортируем заглушку для обратной совместимости
 export const redis = {
     get: async (key: string) => {
         console.log(`📦 AppSessionManager Redis.get("${key}") -> null`);
@@ -111,5 +113,3 @@ export const redis = {
         return 1;
     }
 };
-
-
