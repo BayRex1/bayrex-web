@@ -4,11 +4,10 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "start": "node -r ./module-alias-register.js index.ts",
+    "start": "npx tsx index.ts",
     "dev": "npx tsx index.ts",
     "build": "tsc",
-    "obfuscate": "javascript-obfuscator ./dist --output ./dist",
-    "postinstall": "echo 'Настраиваю окружение без Redis...'"
+    "obfuscate": "javascript-obfuscator ./dist --output ./dist"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",
@@ -28,29 +27,17 @@
     "uuidv7": "^1.0.2",
     "web-push": "^3.6.7",
     "ws": "^8.18.3",
-    "module-alias": "^2.2.3"
+    "tsx": "^4.19.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.2.0",
     "@types/ws": "^8.18.1",
     "javascript-obfuscator": "^4.1.1",
-    "typescript": "^5.9.2",
-    "tsx": "^4.19.4"
-  },
-  "_moduleAliases": {
-    "ioredis": "./redis-stub.js",
-    "redis": "./redis-stub.js",
-    "mysql2": "./mysql-stub.js"
-  },
-  "exports": {
-    ".": "./index.ts",
-    "./redis-stub": "./redis-stub.js",
-    "./mysql-stub": "./mysql-stub.js"
+    "typescript": "^5.9.2"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=18.0.0"
   },
   "keywords": [
     "websocket",
@@ -61,10 +48,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/bayrex-backend"
+    "url": "https://github.com/BayRex1/bayrex-web"
   },
   "bugs": {
-    "url": "https://github.com/your-username/bayrex-backend/issues"
+    "url": "https://github.com/BayRex1/bayrex-web/issues"
   },
   "homepage": "https://bayrex-backend.onrender.com"
 }
