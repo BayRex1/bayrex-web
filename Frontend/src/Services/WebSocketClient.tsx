@@ -68,12 +68,13 @@ class WebSocketClient extends EventEmitter {
             this.reconnectTimeout = null;
         }
 
-        console.log('Пытаюсь соединится');
+        console.log('🔄 Пытаюсь соединиться с WebSocket сервером...');
         const url = this.getCurrentURL();
+        console.log(`📡 URL подключения: ${url}`);
         this.socket = new WebSocket(url);
 
         this.socket.onopen = async () => {
-            console.log('Соединение установлено');
+            console.log('✅ Соединение установлено');
             this.emit('socket_connect');
             await this.generateKeys();
             const publicKeyPem = arrayBufferToPem(this.rsaPublic as ArrayBuffer, 'PUBLIC KEY');
@@ -100,7 +101,7 @@ class WebSocketClient extends EventEmitter {
                     if (Array.isArray(listeners)) {
                         if (decryptedData.type === 'messenger' && decryptedData.action === 'download_file') {
                             this.mesCount++;
-                            console.log(`count: ${this.mesCount}`);
+                            console.log(`📥 count: ${this.mesCount}`);
                         }
                         listeners.forEach(callback => {
                             callback(decryptedData);
@@ -119,12 +120,12 @@ class WebSocketClient extends EventEmitter {
                             this.aesServerKey = decryptedData.key;
                             this.socketReady = true;
                             this.emit('socket_ready');
-                            console.log('Сокет полностью готов');
+                            console.log('✅ Сокет полностью готов');
                             errorReporter.setWebSocketClient(this);
                             this.processQueue();
                         }
                     } catch (error) {
-                        console.error('Ошибка обработки RSA сообщения:', error);
+                        console.error('❌ Ошибка обработки RSA сообщения:', error);
                         this.disconnect();
                     }
                 }
@@ -144,10 +145,13 @@ class WebSocketClient extends EventEmitter {
         };
 
         const handleDisconnect = (): void => {
+            console.log('🔌 Соединение разорвано');
             this.disconnect();
             if (!this.reconnectTimeout) {
                 this.nextURL();
+                console.log(`🔄 Переключаюсь на следующий URL через 5 секунд...`);
                 this.reconnectTimeout = window.setTimeout(() => {
+                    console.log('🔄 Попытка переподключения...');
                     this.connect();
                     this.reconnectTimeout = null;
                 }, 5000);
@@ -160,7 +164,7 @@ class WebSocketClient extends EventEmitter {
 
     async send(data): Promise<any> {
         if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN || !this.socketReady) {
-            console.log('Отправка сообщения на сервер, но сокет не открыт', data);
+            console.log('⏳ Отправка сообщения отложена (сокет не готов)', data);
             this.messageQueue.push(data);
             return;
         }
@@ -202,6 +206,7 @@ class WebSocketClient extends EventEmitter {
 
     nextURL(): void {
         this.urlIndex = (this.urlIndex + 1) % this.urls.length;
+        console.log(`🔄 Следующий URL: ${this.urls[this.urlIndex]}`);
     }
 
     generateRayID(): string {
@@ -218,6 +223,8 @@ class WebSocketClient extends EventEmitter {
         if (!this.socketReady || this.processingMessages) return;
         this.processingMessages = true;
 
+        console.log(`📤 Обработка очереди сообщений: ${this.messageQueue.length} сообщений`);
+        
         while (this.messageQueue.length > 0) {
             const message = this.messageQueue.shift();
             this.send(message);
@@ -227,6 +234,8 @@ class WebSocketClient extends EventEmitter {
     }
 
     disconnect(): void {
+        console.log('🔌 Отключение WebSocket...');
+        
         if (this.socket) {
             if (this.socket.readyState === WebSocket.OPEN) {
                 this.socket.close();
@@ -273,13 +282,18 @@ class WebSocketClient extends EventEmitter {
     getConnectionStatus() {
         return {
             currentIndex: this.urlIndex,
-            urls: this.urls
+            urls: this.urls,
+            isConnected: this.isConnected,
+            socketReady: this.socketReady,
+            currentURL: this.getCurrentURL()
         };
     }
 }
 
+// ИСПРАВЛЕННЫЙ URL: подключаемся к правильному бэкенду на Render
 export const websocketClient = new WebSocketClient([
-    'wss://bayrex-web.onrender.com/user_api'
-    // Можно оставить резервный вариант без 's' для протокола ws:
-    // 'ws://bayrex-web.onrender.com/user_api'
+    'wss://bayrex-backend.onrender.com/user_api',
+    'ws://bayrex-backend.onrender.com/user_api'
+    // Для локальной разработки можно раскомментировать:
+    // 'ws://localhost:10000/user_api'
 ]);
