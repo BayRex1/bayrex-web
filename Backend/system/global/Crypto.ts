@@ -1,7 +1,7 @@
 import { encode } from '@msgpack/msgpack';
 import crypto from 'crypto';
 
-// Импорт публичного ключа
+// Импорт публичного ключа (можно удалить, не используется после исправления)
 export const importPublicKey = (pk: string): Buffer => {
     const base64String = pk
         .replace(/-----BEGIN PUBLIC KEY-----/, '')
@@ -11,7 +11,7 @@ export const importPublicKey = (pk: string): Buffer => {
     return publicKeyBytes;
 }
 
-// Импорт приватного ключа
+// Импорт приватного ключа (можно удалить, не используется после исправления)
 export const importPrivateKey = (privateKeyPem: string): Buffer => {
     const base64String = privateKeyPem
         .replace(/-----BEGIN PRIVATE KEY-----/, '')
@@ -21,7 +21,7 @@ export const importPrivateKey = (privateKeyPem: string): Buffer => {
     return privateKeyBytes;
 }
 
-// ШИФРОВАНИЕ RSA - ИСПРАВЛЕНО
+// Шифрование с помощью RSA - ИСПРАВЛЕНО
 export const rsaEncrypt = async (data: Uint8Array, pk: string): Promise<Uint8Array> => {
     try {
         // В Node.js используем publicEncrypt вместо crypto.subtle
@@ -36,11 +36,11 @@ export const rsaEncrypt = async (data: Uint8Array, pk: string): Promise<Uint8Arr
         return new Uint8Array(encryptedData);
     } catch (error: any) {
         console.error('❌ RSA encrypt error:', error.message);
-        throw new Error('Ошибка шифрования RSA: ' + error.message);
+        throw new Error('Ошибка шифрования данных: ' + error.message);
     }
 }
 
-// РАСШИФРОВКА RSA - ИСПРАВЛЕНО
+// Расшифровка с помощью RSA - ИСПРАВЛЕНО
 export const rsaDecrypt = async (data: Uint8Array, privateKeyPem: string): Promise<Uint8Array> => {
     try {
         if (!data || data.length === 0) {
@@ -68,10 +68,11 @@ export const rsaDecrypt = async (data: Uint8Array, privateKeyPem: string): Promi
     } catch (error: any) {
         console.error('❌ RSA decrypt error:', {
             dataLength: data?.length || 0,
+            hasPrivateKey: !!privateKeyPem,
             errorMessage: error.message,
-            stack: error.stack
+            errorName: error.name
         });
-        throw new Error('Ошибка расшифровки RSA: ' + error.message);
+        throw new Error('Ошибка расшифровки данных: ' + error.message);
     }
 }
 
