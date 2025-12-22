@@ -1,46 +1,36 @@
 const Config = {
-  // === БАЗЫ ДАННЫХ ===
-  ELEMENT_DATABASE: {
+  // === ОДНА БАЗА ДЛЯ ВСЕГО ===
+  DATABASE: {
+    // Подключение к существующей Aiven базе
     HOST: process.env.DB_HOST || 'bayrex-web-bd-bayrex-web.c.aivencloud.com',
     PORT: process.env.DB_PORT || 12547,
-    NAME: process.env.DB_NAME || 'sn',
+    NAME: process.env.DB_NAME || 'defaultdb',  // ⬅ эта база уже есть
     USER: process.env.DB_USER || 'avnadmin',
     PASSWORD: process.env.DB_PASSWORD || 'AVNS_ArEvm7OnlW8iVnQLFq1',
-    SSL: process.env.DB_SSL ? process.env.DB_SSL === 'true' : true
-  },
-  
-  MESSENGER_DATABASE: {
-    HOST: process.env.DB_HOST_MESSENGER || process.env.DB_HOST || 'bayrex-web-bd-bayrex-web.c.aivencloud.com',
-    PORT: process.env.DB_PORT_MESSENGER || process.env.DB_PORT || 12547,
-    NAME: process.env.DB_NAME_MESSENGER || 'sn_messenger',
-    USER: process.env.DB_USER_MESSENGER || process.env.DB_USER || 'avnadmin',
-    PASSWORD: process.env.DB_PASSWORD_MESSENGER || process.env.DB_PASSWORD || 'AVNS_ArEvm7OnlW8iVnQLFq1',
-    SSL: process.env.DB_SSL_MESSENGER ? process.env.DB_SSL_MESSENGER === 'true' : true
-  },
-  
-  APPS_DATABASE: {
-    HOST: process.env.DB_HOST_APPS || process.env.DB_HOST || 'bayrex-web-bd-bayrex-web.c.aivencloud.com',
-    PORT: process.env.DB_PORT_APPS || process.env.DB_PORT || 12547,
-    NAME: process.env.DB_NAME_APPS || 'sn_apps',
-    USER: process.env.DB_USER_APPS || process.env.DB_USER || 'avnadmin',
-    PASSWORD: process.env.DB_PASSWORD_APPS || process.env.DB_PASSWORD || 'AVNS_ArEvm7OnlW8iVnQLFq1',
-    SSL: process.env.DB_SSL_APPS ? process.env.DB_SSL_APPS === 'true' : true
+    SSL: process.env.DB_SSL !== 'false',  // по умолчанию true
+    
+    // Префиксы таблиц для разделения функционала
+    TABLE_PREFIXES: {
+      main: '',           // users, posts, comments (соцсеть)
+      messenger: 'msg_',  // msg_chats, msg_messages (мессенджер)
+      apps: 'app_'        // app_widgets (приложения)
+    }
   },
   
   // === REDIS (ОТКЛЮЧЕН) ===
   REDIS: {
-    enabled: false,  // Принудительно отключаем Redis
+    enabled: false,  // Принудительно отключаем
     host: 'localhost',
     port: 6379,
     retryDelayOnFailover: 1000,
-    maxRetriesPerRequest: 1
+    maxRetriesPerRequest: 0  // Не пытаемся переподключаться
   },
   
-  // === TELEGRAM (ОБЯЗАТЕЛЬНО ПОМЕНЯЙТЕ ТОКЕН!) ===
+  // === TELEGRAM (СРОЧНО ЗАМЕНИТЕ ТОКЕН!) ===
   TELEGRAM: {
     BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8304586568:AAHVJNSIaY5EVr8KZHAX69IeKLVMACbl0Go',
     CHAT_ID: process.env.TELEGRAM_CHAT_ID || '-4704543688',
-    enabled: process.env.TELEGRAM_ENABLED === 'true' || false
+    enabled: process.env.TELEGRAM_ENABLED === 'true' && process.env.TELEGRAM_BOT_TOKEN !== ''
   },
   
   // === VAPID КЛЮЧИ (PUSH УВЕДОМЛЕНИЯ) ===
@@ -106,10 +96,10 @@ const Config = {
     }
   },
   
-  // === ДЕБАГ ===
+  // === ДЕБАГ И ФЛАГИ ===
   DEBUG: {
     SKIP_DB: process.env.SKIP_DATABASE === 'true' || false,
-    SKIP_REDIS: true,  // Всегда пропускаем Redis
+    SKIP_REDIS: true,
     LOG_LEVEL: process.env.LOG_LEVEL || 'info'
   }
 };
