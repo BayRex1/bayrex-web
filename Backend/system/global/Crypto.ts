@@ -21,29 +21,26 @@ export const importPrivateKey = (privateKeyPem: string): Buffer => {
     return privateKeyBytes;
 }
 
-// Шифрование с помощью RSA
+// ШИФРОВАНИЕ RSA - ИСПРАВЛЕНО
 export const rsaEncrypt = async (data: Uint8Array, pk: string): Promise<Uint8Array> => {
     try {
-        const publicKeyBuffer = importPublicKey(pk);
-        const publicKeyE = await crypto.subtle.importKey(
-            'spki',
-            publicKeyBuffer,
-            { name: 'RSA-OAEP', hash: { name: 'SHA-256' } },
-            true,
-            ['encrypt']
-        );
-        const encryptedDataBuffer = await crypto.subtle.encrypt(
-            { name: 'RSA-OAEP' },
-            publicKeyE,
+        // В Node.js используем publicEncrypt вместо crypto.subtle
+        const encryptedData = crypto.publicEncrypt(
+            {
+                key: pk, // PEM ключ напрямую
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256'
+            },
             data
         );
-        return new Uint8Array(encryptedDataBuffer);
+        return new Uint8Array(encryptedData);
     } catch (error: any) {
-        throw new Error('Ошибка шифрования данных: ' + error.message);
+        console.error('❌ RSA encrypt error:', error.message);
+        throw new Error('Ошибка шифрования RSA: ' + error.message);
     }
 }
 
-// Расшифровка с помощью RSA
+// РАСШИФРОВКА RSA - ИСПРАВЛЕНО
 export const rsaDecrypt = async (data: Uint8Array, privateKeyPem: string): Promise<Uint8Array> => {
     try {
         if (!data || data.length === 0) {
@@ -58,28 +55,23 @@ export const rsaDecrypt = async (data: Uint8Array, privateKeyPem: string): Promi
             throw new Error('Данные слишком короткие для RSA расшифровки');
         }
 
-        const privateKeyBuffer = importPrivateKey(privateKeyPem);
-        const privateKey = await crypto.subtle.importKey(
-            'pkcs8',
-            privateKeyBuffer,
-            { name: 'RSA-OAEP', hash: { name: 'SHA-256' } },
-            true,
-            ['decrypt']
+        // В Node.js используем privateDecrypt вместо crypto.subtle
+        const decryptedData = crypto.privateDecrypt(
+            {
+                key: privateKeyPem, // PEM ключ напрямую
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256'
+            },
+            Buffer.from(data)
         );
-        const decryptedDataBuffer = await crypto.subtle.decrypt(
-            { name: 'RSA-OAEP' },
-            privateKey,
-            data
-        );
-        return new Uint8Array(decryptedDataBuffer);
+        return new Uint8Array(decryptedData);
     } catch (error: any) {
-        console.error('Детали ошибки расшифровки:', {
+        console.error('❌ RSA decrypt error:', {
             dataLength: data?.length || 0,
-            hasPrivateKey: !!privateKeyPem,
             errorMessage: error.message,
-            errorName: error.name
+            stack: error.stack
         });
-        throw new Error('Ошибка расшифровки данных: ' + error.message);
+        throw new Error('Ошибка расшифровки RSA: ' + error.message);
     }
 }
 
@@ -101,7 +93,7 @@ export const aesEncrypt = (data: Uint8Array, key: string): Uint8Array | null => 
         
         return result;
     } catch (error) {
-        console.error("Ошибка при шифровании:", error);
+        console.error("❌ AES encrypt error:", error);
         return null;
     }
 }
@@ -120,7 +112,7 @@ export const aesEncryptFile = (buffer: Buffer): { key: string; iv: string; buffe
             buffer: encrypted
         };
     } catch (error) {
-        console.error('Ошибка при шифровании файла:', error);
+        console.error('❌ AES file encrypt error:', error);
         return null;
     }
 }
@@ -134,7 +126,7 @@ export const aesDecrypt = (encryptedData: Uint8Array, key: string): Uint8Array |
         const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
         return decrypted;
     } catch (error) {
-        console.error('Ошибка при дешифровании:', error);
+        console.error('❌ AES decrypt error:', error);
         return null;
     }
 }
@@ -152,7 +144,7 @@ export const aesEncryptUnit8 = (encryptedData: string, key: ArrayLike<number>): 
         
         return result;
     } catch (error) {
-        console.error("Ошибка при шифровании:", error);
+        console.error("❌ AES Unit8 encrypt error:", error);
         return null;
     }
 }
@@ -166,27 +158,31 @@ export const aesDecryptUnit8 = (encryptedData: Uint8Array, key: ArrayLike<number
         const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
         return decrypted.toString('utf8');
     } catch (error) {
-        console.error('Ошибка при дешифровании:', error);
+        console.error('❌ AES Unit8 decrypt error:', error);
         return null;
     }
 }
 
-// Отправка информации с использованием RSA
+// Отправка информации с использованием RSA - ИСПРАВЛЕНО
 export const sendRSA = async ({ data, key }: { data: any; key: string }): Promise<Uint8Array | undefined> => {
     try {
+        console.log('🔐 sendRSA: Шифруем данные RSA');
         const binary = encode(data);
         return await rsaEncrypt(binary, key);
     } catch (error: any) {
-        console.log('Ошибка отправки E2E: ' + error.message);
+        console.error('❌ sendRSA error:', error.message);
+        return undefined;
     }
 }
 
 // Отправка информации с использованием AES
 export const sendAES = async ({ data, key }: { data: any; key: string }): Promise<Uint8Array | null | undefined> => {
     try {
+        console.log('🔐 sendAES: Шифруем данные AES');
         const binary = encode(data);
         return aesEncrypt(binary, key);
     } catch (error: any) {
-        console.log('Ошибка отправки AES: ' + error.message);
+        console.error('❌ sendAES error:', error.message);
+        return null;
     }
 }
