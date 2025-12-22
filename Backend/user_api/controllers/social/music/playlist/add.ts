@@ -1,4 +1,4 @@
-import MusicManager from '../../../../../services/music/MusicManager.js';
+import MusicManager from '../../../../../services/music/MusicManager';
 
 const add = async ({ account, data }) => {
     const { playlist_id, song_id } = data.payload;
