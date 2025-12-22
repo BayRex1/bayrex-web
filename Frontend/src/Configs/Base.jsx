@@ -1,28 +1,25 @@
 const CURRENT_VERSION = 2.7;
-// const WINDOWS_CURRENT_VERSION = '2.7.0';
 
 const BaseConfig = {
     session: {
         name: `Element Web ${CURRENT_VERSION}`,
         device: 'browser',
-        // name: `Element Windows ${WINDOWS_CURRENT_VERSION}`,
-        // device: 'windows_app'
     },
     captcha: true,
     domains: {
-        client: 'https://elemsocial.com',
-        base: 'https://elemsocial.com',
-        share: 'https://share.elemsocial.com',
+        // ВАЖНО: Заменяем ВСЕ elemsocial.com на ваш домен Render
+        client: 'https://bayrex-web.onrender.com',
+        base: 'https://bayrex-web.onrender.com',
+        share: 'https://bayrex-web.onrender.com',
         ws: [
-            'wss://bpws.elemsocial.com/user_api',
-            'wss://ws.elemsocial.com:8880/user_api'
+            'wss://bayrex-web.onrender.com/user_api'
+            // Можно добавить резервный, но обычно не нужно:
+            // 'ws://bayrex-web.onrender.com/user_api'
         ],
+        // Для локальной разработки (оставьте закомментированным):
         // client: 'http://localhost:3000',
         // base: 'http://localhost:3000',
-        // share: 'https://share.elemsocial.com',
-        // ws: [
-        //     'ws://localhost:8080/user_api',
-        // ],
+        // ws: ['ws://localhost:8080/user_api'],
     },
     vapid: {
         public_key: 'BP2xfmqDnX7-yoDsZQxgHt8aTd7fSRhLno0-fPwpGoglILifPqzVmEo0OLNYILeU0qVkC5qo_rLhzzcrBh_EIIs'
