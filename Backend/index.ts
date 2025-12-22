@@ -1,99 +1,129 @@
-// Backend/index.ts - ES модули версия
+// Backend/index.ts - АГРЕССИВНАЯ БЛОКИРОВКА REDIS
 
-// ============ НАЧАЛО: БЛОКИРОВКА REDIS ДЛЯ ES МОДУЛЕЙ ============
-console.log('🛡️  Активирую защиту от Redis ошибок (ES модули)...');
+// ============ САМОЕ НАЧАЛО: ГЛОБАЛЬНОЕ ПОДАВЛЕНИЕ REDIS ============
+// Этот код должен быть САМЫМИ ПЕРВЫМИ СТРОЧКАМИ
 
-// 1. Создаем глобальную заглушку для ioredis
-class RedisStub {
-  constructor(options?: any) {
-    console.log('📦 RedisStub создан. Реальный Redis отключен.');
+// 1. Немедленно подавляем все ошибки Redis на уровне process
+const originalEmit = process.emit;
+process.emit = function(event: string | symbol, ...args: any[]): boolean {
+  // Перехватываем события ошибок
+  if (event === 'uncaughtException' || event === 'unhandledRejection') {
+    const error = args[0];
+    if (error && (
+        (error.message && error.message.includes('ioredis')) ||
+        (error.message && error.message.includes('ECONNREFUSED')) ||
+        (error.code && error.code === 'ECONNREFUSED')
+    )) {
+      // Тихо игнорируем ошибки Redis
+      return true;
+    }
   }
-  
-  async connect() { 
-    return Promise.resolve(); 
-  }
-  
-  async get() { 
-    return Promise.resolve(null); 
-  }
-  
-  async set() { 
-    return Promise.resolve('OK'); 
-  }
-  
-  async quit() { 
-    return Promise.resolve('OK'); 
-  }
-  
-  async disconnect() { 
-    return Promise.resolve(); 
-  }
-  
-  on() { return this; }
-  once() { return this; }
-  off() { return this; }
-}
+  return originalEmit.apply(process, args);
+};
 
-// 2. Подменяем глобальные методы для блокировки сетевых подключений
-if (typeof process !== 'undefined') {
-  // Создаем динамический импорт для net модуля
-  import('net').then(net => {
-    const originalConnect = net.Socket.prototype.connect;
-    
-    net.Socket.prototype.connect = function(...args: any[]) {
-      // Проверяем, не пытается ли подключиться к Redis
-      let port = 0;
-      let host = '';
+// 2. Подавляем console.error для Redis логов
+const originalConsoleError = console.error;
+console.error = function(...args: any[]) {
+  const firstArg = args[0];
+  if (firstArg && (
+      (typeof firstArg === 'string' && firstArg.includes('[ioredis]')) ||
+      (typeof firstArg === 'string' && firstArg.includes('ECONNREFUSED')) ||
+      (args[1] && typeof args[1] === 'string' && args[1].includes('Redis'))
+  )) {
+    // Не выводим ошибки Redis
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
+// 3. Перехватываем глобальный fetch/import для блокировки Redis
+const originalGlobalImport = globalThis.import;
+if (originalGlobalImport) {
+  globalThis.import = function(specifier: string) {
+    if (typeof specifier === 'string' && (
+        specifier.includes('ioredis') || 
+        specifier.includes('/redis') ||
+        specifier === 'redis' ||
+        specifier === 'ioredis'
+    )) {
+      console.log('🔴 Блокирую импорт Redis:', specifier);
       
-      if (args.length >= 2 && typeof args[1] === 'number') {
-        port = args[1];
-      } else if (args[0] && typeof args[0] === 'object') {
-        port = args[0].port || 0;
-        host = args[0].host || '';
-      }
-      
-      // Redis порты: 6379, 6380
-      if (port === 6379 || port === 6380 || 
-          (typeof host === 'string' && (host.includes('redis') || host.includes('redislabs')))) {
-        console.log(`🔴 Блокирую подключение к Redis (${host}:${port})`);
+      // Возвращаем заглушку
+      const RedisStub = class {
+        constructor(options?: any) {
+          console.log('📦 RedisStub создан вместо реального Redis');
+        }
         
-        // Эмулируем мгновенную ошибку подключения
-        setTimeout(() => {
-          if (typeof this.emit === 'function') {
-            this.emit('error', new Error('REDIS_DISABLED: Используется режим без БД'));
-          }
-        }, 10);
-        
-        return this;
-      }
+        async connect() { return Promise.resolve(); }
+        async get() { return Promise.resolve(null); }
+        async set() { return Promise.resolve('OK'); }
+        async quit() { return Promise.resolve('OK'); }
+        async disconnect() { return Promise.resolve(); }
+        on() { return this; }
+        once() { return this; }
+        off() { return this; }
+        removeAllListeners() { return this; }
+      };
       
-      return originalConnect.apply(this, args);
-    };
-    console.log('✅ Блокировка сетевых подключений установлена');
-  }).catch(() => {
-    console.log('⚠️  Не удалось импортировать net модуль');
-  });
-}
-
-// 3. Monkey-patch для динамических импортов (import())
-const originalImport = (globalThis as any).import;
-if (originalImport) {
-  (globalThis as any).import = function(specifier: string) {
-    // Перехватываем импорт ioredis
-    if (specifier.includes('ioredis') || specifier.includes('/redis')) {
-      console.log('🔴 Блокирую динамический импорт Redis:', specifier);
       return Promise.resolve({
         default: RedisStub,
         Redis: RedisStub,
         Cluster: RedisStub
       });
     }
-    return originalImport(specifier);
+    return originalGlobalImport(specifier);
   };
 }
 
-console.log('✅ Защита от Redis ошибок активирована');
-// ============ КОНЕЦ БЛОКИРОВКИ REDIS ============
+// 4. Блокируем все попытки создания сетевых подключений к портам Redis
+// Делаем это асинхронно, чтобы не блокировать запуск
+setImmediate(async () => {
+  try {
+    const net = await import('net');
+    const originalConnect = net.Socket.prototype.connect;
+    
+    net.Socket.prototype.connect = function(...args: any[]) {
+      // Определяем порт и хост
+      let port = 0;
+      let host = '';
+      
+      if (args.length >= 2 && typeof args[1] === 'number') {
+        port = args[1];
+        host = typeof args[0] === 'string' ? args[0] : '';
+      } else if (args[0] && typeof args[0] === 'object') {
+        port = args[0].port || 0;
+        host = args[0].host || '';
+      }
+      
+      // Блокируем Redis порты
+      if (port === 6379 || port === 6380 || 
+          (typeof host === 'string' && host.includes('redis'))) {
+        console.log(`🔴 Блокировано подключение к Redis на ${host}:${port}`);
+        
+        // Немедленно эмулируем ошибку
+        process.nextTick(() => {
+          if (typeof this.emit === 'function') {
+            this.emit('error', new Error('Redis отключен'));
+          }
+          if (typeof this.destroy === 'function') {
+            this.destroy();
+          }
+        });
+        
+        return this;
+      }
+      
+      return originalConnect.apply(this, args);
+    };
+    
+    console.log('✅ Сетевые подключения к Redis заблокированы');
+  } catch (error) {
+    console.log('⚠️  Не удалось заблокировать сетевые подключения:', error.message);
+  }
+});
+
+console.log('🛡️  Агрессивная защита от Redis активирована');
+// ============ КОНЕЦ ГЛОБАЛЬНОГО ПОДАВЛЕНИЯ ============
 
 console.log('='.repeat(50));
 console.log('🚀 ЗАПУСК СЕРВЕРА В РЕЖИМЕ БЕЗ БД И БЕЗ REDIS');
@@ -111,7 +141,6 @@ import fs from 'fs';
 let punishmentScheduler, telegramBot;
 
 try {
-  // Пробуем импортировать, но если модули используют БД/Redis - будут ошибки
   const schedulerModule = await import('./services/system/PunishmentScheduler.js');
   const telegramModule = await import('./services/system/TelegramBot.js');
   
@@ -123,7 +152,6 @@ try {
   console.log('⚠️  Некоторые модули не загрузились:', error.message);
   console.log('🔄 Создаём заглушки...');
   
-  // Создаём заглушки
   punishmentScheduler = {
     start: () => console.log('📦 PunishmentScheduler (заглушка)'),
     stop: () => {}
@@ -155,9 +183,9 @@ const shutdown = async (signal: 'SIGINT' | 'SIGTERM') => {
   });
 };
 
+// Эти обработчики уже настроены выше, но оставляем для других ошибок
 process.on('uncaughtException', (error) => {
-  const errorMessage = error.message || String(error);
-  if (!errorMessage.includes('REDIS_DISABLED') && !errorMessage.includes('ioredis')) {
+  if (!error.message?.includes('Redis') && !error.message?.includes('ioredis')) {
     console.error('Необработанное исключение:', error);
     if (telegramBot.isEnabled()) {
       telegramBot.sendBackendError(error, 'Uncaught Exception');
@@ -167,9 +195,7 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason) => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
-  const errorMessage = error.message || String(reason);
-  
-  if (!errorMessage.includes('REDIS_DISABLED') && !errorMessage.includes('ioredis')) {
+  if (!error.message?.includes('Redis') && !error.message?.includes('ioredis')) {
     console.error('Необработанное отклонение промиса:', reason);
     if (telegramBot.isEnabled()) {
       telegramBot.sendBackendError(error, 'Unhandled Promise Rejection');
