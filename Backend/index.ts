@@ -5,8 +5,42 @@ import userAPI from './user_api/index.js';
 import appAPI from './app_api/index.js';
 import Config from './system/global/Config.js';
 import fs from 'fs';
-import { punishmentScheduler } from './services/system/PunishmentScheduler.js';
-import { telegramBot } from './services/system/TelegramBot.js';
+
+// === ДОБАВЬ ЭТО ПЕРЕД ИМПОРТАМИ ===
+console.log('='.repeat(50));
+console.log('🚀 ЗАПУСК СЕРВЕРА В РЕЖИМЕ БЕЗ БД И БЕЗ REDIS');
+console.log('='.repeat(50));
+
+// === УСЛОВНЫЙ ИМПОРТ ДЛЯ TELEGRAM ===
+let punishmentScheduler, telegramBot;
+
+try {
+  // Пробуем импортировать, но если модули используют БД/Redis - будут ошибки
+  const schedulerModule = await import('./services/system/PunishmentScheduler.js');
+  const telegramModule = await import('./services/system/TelegramBot.js');
+  
+  punishmentScheduler = schedulerModule.punishmentScheduler;
+  telegramBot = telegramModule.telegramBot;
+  
+  console.log('✅ Модули загружены');
+} catch (error) {
+  console.log('⚠️  Некоторые модули не загрузились:', error.message);
+  console.log('🔄 Создаём заглушки...');
+  
+  // Создаём заглушки
+  punishmentScheduler = {
+    start: () => console.log('📦 PunishmentScheduler (заглушка)'),
+    stop: () => {}
+  };
+  
+  telegramBot = {
+    isEnabled: () => false,
+    sendSystemAlert: async () => {},
+    sendBackendError: async () => {},
+    testConnection: async () => false,
+    stop: () => {}
+  };
+}
 
 const shutdown = async (signal: 'SIGINT' | 'SIGTERM') => {
   console.log(`Получен ${signal}, завершаем работу...`);
@@ -27,13 +61,17 @@ const shutdown = async (signal: 'SIGINT' | 'SIGTERM') => {
 
 process.on('uncaughtException', (error) => {
   console.error('Необработанное исключение:', error);
-  telegramBot.sendBackendError(error, 'Uncaught Exception');
+  if (telegramBot.isEnabled()) {
+    telegramBot.sendBackendError(error, 'Uncaught Exception');
+  }
 });
 
 process.on('unhandledRejection', (reason) => {
   console.error('Необработанное отклонение промиса:', reason);
   const error = reason instanceof Error ? reason : new Error(String(reason));
-  telegramBot.sendBackendError(error, 'Unhandled Promise Rejection');
+  if (telegramBot.isEnabled()) {
+    telegramBot.sendBackendError(error, 'Unhandled Promise Rejection');
+  }
 });
 
 process.on('SIGINT', () => shutdown('SIGINT'));
@@ -61,7 +99,8 @@ if (Config.USE_HTTPS) {
 }
 
 server.listen(Config.PORT, async () => {
-  console.log(`сервак тута ->  ${Config.PORT}`);
+  console.log(`✅ сервак тута -> ${Config.PORT}`);
+  console.log(`🌐 WebSocket: wss://bayrex-backend.onrender.com/user_api`);
 
   punishmentScheduler.start();
 
@@ -70,6 +109,8 @@ server.listen(Config.PORT, async () => {
     if (isConnected) {
       await telegramBot.sendSystemAlert(`запустился епта`);
     }
+  } else {
+    console.log('🤖 Telegram бот отключён');
   }
 });
 
@@ -100,17 +141,25 @@ const appWS = new WebSocketServer({
 server.on('upgrade', (request, socket, head) => {
   if (request.url === '/user_api') {
     userWS.handleUpgrade(request, socket, head, (ws) => {
+      console.log('🔌 Новое WebSocket подключение: /user_api');
       userAPI(ws, request);
     });
   } else if (request.url === '/user_api_legacy') {
     userWS.handleUpgrade(request, socket, head, (ws) => {
+      console.log('🔌 Новое WebSocket подключение: /user_api_legacy');
       userAPI(ws, request, false);
     });
   } else if (request.url === '/app_api') {
     appWS.handleUpgrade(request, socket, head, (ws) => {
+      console.log('🔌 Новое WebSocket подключение: /app_api');
       appAPI(ws, request);
     });
   } else {
+    console.log(`❌ Неизвестный WebSocket endpoint: ${request.url}`);
     socket.destroy();
   }
 });
+
+console.log('='.repeat(50));
+console.log('✅ Сервер готов к подключениям');
+console.log('='.repeat(50));
