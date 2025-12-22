@@ -1,3 +1,123 @@
+// Backend/index.ts - ПОЛНЫЙ КОД С БЛОКИРОВКОЙ REDIS
+
+// ============ НАЧАЛО: БЛОКИРОВКА REDIS ============
+console.log('🛡️  Активирую защиту от Redis ошибок...');
+
+// 1. Глобальное подавление ошибок Redis в console.error
+const originalConsoleError = console.error;
+console.error = function(...args: any[]) {
+  const message = args[0]?.toString() || '';
+  if (message.includes('[ioredis]') || 
+      message.includes('ECONNREFUSED') || 
+      message.includes('Redis connection')) {
+    // Тихо игнорируем ошибки Redis
+    console.log('🔴 Подавлена ошибка Redis (в логах не будет)');
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
+// 2. Monkey-patch для require чтобы блокировать ioredis импорт
+if (typeof require !== 'undefined') {
+  try {
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    
+    Module.prototype.require = function(id: string) {
+      // Блокируем импорт ioredis/redis
+      if (id === 'ioredis' || id === 'redis' || id.includes('ioredis')) {
+        console.log('🔴 Блокируем импорт', id, '- возвращаю заглушку');
+        
+        const RedisStub = class {
+          constructor(options?: any) {
+            console.log('📦 RedisStub создан. Реальный Redis отключен.');
+          }
+          
+          // Все методы возвращают заглушки
+          async connect() { 
+            return Promise.resolve(); 
+          }
+          
+          async get() { 
+            return Promise.resolve(null); 
+          }
+          
+          async set() { 
+            return Promise.resolve('OK'); 
+          }
+          
+          async quit() { 
+            return Promise.resolve('OK'); 
+          }
+          
+          async disconnect() { 
+            return Promise.resolve(); 
+          }
+          
+          on() { return this; }
+          once() { return this; }
+          off() { return this; }
+        };
+        
+        return RedisStub;
+      }
+      
+      return originalRequire.apply(this, arguments as any);
+    };
+    console.log('✅ Monkey-patch для require установлен');
+  } catch (error) {
+    console.log('⚠️  Не удалось установить monkey-patch:', error.message);
+  }
+}
+
+// 3. Блокировка сетевых подключений к Redis портам
+if (typeof process !== 'undefined' && require) {
+  try {
+    const net = require('net');
+    const originalConnect = net.Socket.prototype.connect;
+    
+    net.Socket.prototype.connect = function(...args: any[]) {
+      // Проверяем, не пытается ли подключиться к Redis
+      let port = 0;
+      let host = '';
+      
+      if (args.length >= 2 && typeof args[1] === 'number') {
+        port = args[1];
+      } else if (args[0] && typeof args[0] === 'object') {
+        port = args[0].port || 0;
+        host = args[0].host || '';
+      }
+      
+      // Redis порты: 6379, 6380 или если в хосте есть "redis"
+      if (port === 6379 || port === 6380 || 
+          (typeof host === 'string' && (host.includes('redis') || host.includes('redislabs')))) {
+        console.log(`🔴 Блокирую подключение к Redis (${host}:${port})`);
+        
+        // Эмулируем мгновенную ошибку подключения
+        setTimeout(() => {
+          if (typeof this.emit === 'function') {
+            this.emit('error', new Error('REDIS_DISABLED: Используется режим без БД'));
+          }
+        }, 10);
+        
+        return this;
+      }
+      
+      return originalConnect.apply(this, args);
+    };
+    console.log('✅ Блокировка сетевых подключений установлена');
+  } catch (error) {
+    console.log('⚠️  Не удалось блокировать сетевые подключения:', error.message);
+  }
+}
+
+console.log('✅ Защита от Redis ошибок активирована');
+// ============ КОНЕЦ БЛОКИРОВКИ REDIS ============
+
+console.log('='.repeat(50));
+console.log('🚀 ЗАПУСК СЕРВЕРА В РЕЖИМЕ БЕЗ БД И БЕЗ REDIS');
+console.log('='.repeat(50));
+
 import { createServer } from 'http';
 import { createServer as createHttpsServer } from 'https';
 import { WebSocketServer } from 'ws';
@@ -5,11 +125,6 @@ import userAPI from './user_api/index.js';
 import appAPI from './app_api/index.js';
 import Config from './system/global/Config.js';
 import fs from 'fs';
-
-// === ДОБАВЬ ЭТО ПЕРЕД ИМПОРТАМИ ===
-console.log('='.repeat(50));
-console.log('🚀 ЗАПУСК СЕРВЕРА В РЕЖИМЕ БЕЗ БД И БЕЗ REDIS');
-console.log('='.repeat(50));
 
 // === УСЛОВНЫЙ ИМПОРТ ДЛЯ TELEGRAM ===
 let punishmentScheduler, telegramBot;
@@ -101,6 +216,8 @@ if (Config.USE_HTTPS) {
 server.listen(Config.PORT, async () => {
   console.log(`✅ сервак тута -> ${Config.PORT}`);
   console.log(`🌐 WebSocket: wss://bayrex-backend.onrender.com/user_api`);
+  console.log(`🌐 WebSocket: wss://bayrex-backend.onrender.com/app_api`);
+  console.log(`🌐 WebSocket: wss://bayrex-backend.onrender.com/user_api_legacy`);
 
   punishmentScheduler.start();
 
