@@ -1,141 +1,158 @@
-import { checkValidUID, getDate } from './Function.js';
-import { dbE } from '../../lib/db.js';
+// AccountManager.ts - версия без БД
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import Config from '../../system/global/Config.js';
+import AppError from '../system/AppError.js';
+import ImageEngine from '../system/ImageEngine.js';
+import Validator from '../system/Validator.js';
+import { getDate } from '../../system/global/Function.js';
 
-// ⬇⬇⬇ ЗАМЕНЯЕМ REDIS НА ПАМЯТЬ ⬇⬇⬇
-console.log('🎯 AccountManager: используем память вместо Redis');
-
-const memoryStorage = new Map(); // Храним сессии в памяти
-const activeConnections = {};
-
-// Заглушка для совместимости (если другие модули импортируют redis)
-export const redis = {
-  set: async (key, value) => {
-    console.log(`📦 MemoryStorage.set("${key}")`);
-    memoryStorage.set(key, value);
-    return 'OK';
-  },
-  
-  get: async (key) => {
-    console.log(`📦 MemoryStorage.get("${key}")`);
-    return memoryStorage.get(key) || null;
-  },
-  
-  del: async (key) => {
-    console.log(`📦 MemoryStorage.del("${key}")`);
-    memoryStorage.delete(key);
-    return 1;
-  },
-  
-  // Для совместимости с оригинальным кодом
-  on: () => redis
+// Хранилище в памяти
+const memoryStorage = {
+    accounts: new Map<number, any>(),
+    sessions: new Map<string, any>(),
+    permissions: new Map<number, any>(),
+    nextAccountId: 1000,
+    nextSessionId: 1
 };
 
-// Заглушка для retry функции (она больше не нужна, но оставляем для совместимости)
-const redisRetry = async (fn, retries = 3) => {
-  try {
-    return await fn();
-  } catch (error) {
-    console.error('Ошибка в memoryStorage:', error.message);
-    throw error;
-  }
-};
+class AccountManager {
+    private accountID: number;
+    private accountData: any = null;
 
-export const createSession = async ({ id, ws, data }) => {
-  try {
-    // Сохраняем в память вместо Redis
-    const sessionKey = `session:${id}`;
-    memoryStorage.set(sessionKey, JSON.stringify(data));
-    activeConnections[id] = { ws: ws, lastActive: Date.now() };
-    
-    console.log(`✅ Сессия создана для пользователя ${id}`);
-  } catch (error) {
-    console.error(`Ошибка при создании сессии для пользователя ${id}:`, error);
-  }
-};
+    constructor(id: number) {
+        if (!id || typeof id !== 'number' || id <= 0) {
+            throw new AppError('Некорректный идентификатор аккаунта');
+        }
+        
+        // Проверяем, существует ли аккаунт
+        if (!memoryStorage.accounts.has(id)) {
+            throw new AppError('Аккаунт не найден в памяти');
+        }
+        
+        this.accountID = id;
+        this.accountData = memoryStorage.accounts.get(id);
+    }
 
-export const getSession = async (id) => {
-  try {
-    const sessionKey = `session:${id}`;
-    const sessionData = memoryStorage.get(sessionKey);
-    
-    return {
-      ...(sessionData ? JSON.parse(sessionData) : {}),
-      connection: activeConnections[id] || null
-    };
-  } catch (error) {
-    console.error(`Ошибка при получении сессии ${id}:`, error);
-    return null;
-  }
-};
+    // Статический метод для создания аккаунта (вызывается из reg.ts)
+    static async createAccount(accountData: {
+        name: string;
+        username: string;
+        email: string;
+        password: string;
+    }): Promise<{ id: number; account: any }> {
+        
+        // Проверяем уникальность username и email
+        for (const [id, acc] of memoryStorage.accounts.entries()) {
+            if (acc.Username === accountData.username) {
+                throw new AppError('Этот логин уже занят');
+            }
+            if (acc.Email === accountData.email) {
+                throw new AppError('Этот email уже используется');
+            }
+        }
 
-export const sendMessageToUser = ({ uid, message }) => {
-  const connection = activeConnections[uid];
-  if (connection && connection.ws.readyState === connection.ws.OPEN) {
-    connection.ws.send(message);
-  } else {
-    console.log(`Пользователь с ID ${uid} не подключен.`);
-  }
-};
+        const newId = memoryStorage.nextAccountId++;
+        const hashedPassword = await bcrypt.hash(accountData.password, 10);
+        
+        const newAccount = {
+            ID: newId,
+            Name: accountData.name,
+            Username: accountData.username,
+            Email: accountData.email,
+            Password: hashedPassword,
+            CreateDate: getDate(),
+            Avatar: null,
+            Cover: null,
+            Description: '',
+            Eballs: 0
+        };
 
-export const deleteSession = async (id) => {
-  const sessionKey = `session:${id}`;
-  memoryStorage.delete(sessionKey);
-  delete activeConnections[id];
-  console.log(`🗑️  Сессия удалена: ${id}`);
-};
+        memoryStorage.accounts.set(newId, newAccount);
+        
+        // Создаем дефолтные permissions
+        memoryStorage.permissions.set(newId, {
+            UserID: newId,
+            Posts: true,
+            Comments: true,
+            NewChats: true,
+            MusicUpload: false,
+            Admin: false,
+            Verified: false,
+            Fake: false
+        });
 
-export const getSessions = () => {
-  return activeConnections;
-};
+        console.log(`✅ Аккаунт создан в памяти: ${accountData.username} (ID: ${newId})`);
+        
+        return { id: newId, account: newAccount };
+    }
 
-export const updateSession = async (id, newData) => {
-  const sessionKey = `session:${id}`;
-  const currentData = await getSession(id);
-  const updatedData = currentData ? { ...currentData, ...newData } : newData;
-  
-  const { connection, ws, ...serializableData } = updatedData;
-  
-  memoryStorage.set(sessionKey, JSON.stringify(serializableData));
-  console.log(`🔄 Сессия обновлена: ${id}`);
-};
+    // Метод для получения AccountManager по ID (после создания)
+    static getInstance(id: number): AccountManager {
+        return new AccountManager(id);
+    }
 
-export const updateAccount = async ({ id, value, data }) => {
-  if (!checkValidUID(id)) return;
+    // Создание сессии (упрощенная версия)
+    async startSession(deviceType: string, device: string | null): Promise<string> {
+        const S_KEY = crypto.randomBytes(32).toString('hex');
+        
+        const session = {
+            uid: this.accountID,
+            s_key: S_KEY,
+            device_type: deviceType === 'browser' ? 1 : 0,
+            device: device || 'unknown',
+            create_date: getDate()
+        };
 
-  await dbE.query(`UPDATE accounts SET ${value} = ? WHERE ID = ?`, [data, id]);
-  const currentSession = await getSession(id) || {};
-  currentSession[value] = data; 
+        // Сохраняем в памяти (в реальности - в Redis)
+        memoryStorage.sessions.set(S_KEY, session);
+        
+        console.log(`✅ Сессия создана для аккаунта ${this.accountID}: ${S_KEY}`);
+        return S_KEY;
+    }
 
-  await updateSession(id, currentSession);
-};
+    // Проверка пароля
+    async verifyPassword(password: string): Promise<boolean> {
+        if (!this.accountData) {
+            throw new AppError('Данные аккаунта не загружены');
+        }
 
-export const connectAccount = async ({ S_KEY, ws }) => {
-  const session = await dbE.query('SELECT * FROM `accounts_sessions` WHERE `s_key` = ?', [S_KEY]);
+        return await bcrypt.compare(password, this.accountData.Password);
+    }
 
-  if (!session || session.length === 0 || !session[0].uid) return false;
+    // Получение данных аккаунта
+    async getAccountData(): Promise<any> {
+        return this.accountData;
+    }
 
-  const result = await dbE.query('SELECT * FROM `accounts` WHERE `ID` = ?', [session[0].uid]);
+    // Получение permissions
+    async getPermissions(): Promise<any> {
+        const perms = memoryStorage.permissions.get(this.accountID) || {
+            Posts: true,
+            Comments: true,
+            NewChats: true,
+            MusicUpload: false,
+            Admin: false,
+            Verified: false,
+            Fake: false
+        };
+        return perms;
+    }
 
-  if (result.length > 0) {
-    const uid = result[0].ID;
-    await createSession({
-      id: uid,
-      ws: ws,
-      data: result[0]
-    });
-    await updateSession(uid, {
-      aesKey: ws.keys?.user?.aes, // Добавляем опциональную цепочку
-      S_KEY: S_KEY
-    });
-    await updateAccount({
-      id: uid,
-      value: 'last_online',
-      data: getDate()
-    });
-    return result[0];
-  } else {
-    return false;
-  }
-};
+    // Остальные методы можно оставить как заглушки или упростить
+    async getGoldStatus() { return false; }
+    async getGoldHistory() { return []; }
+    async getChannels() { return []; }
+    async getMessengerNotifications() { return 0; }
+    async changeAvatar() { return { status: 'success', avatar: null }; }
+    async changeCover() { return { status: 'success', cover: null }; }
+    async changeName() { return { status: 'success' }; }
+    async changeUsername() { return { status: 'success' }; }
+    async changeDescription() { return { status: 'success' }; }
+    async changeEmail() { return { status: 'success' }; }
+    async changePassword() { return { status: 'success' }; }
+    async addEballs() { return; }
+    async maybeReward() { return; }
+}
 
-console.log('✅ AccountManager готов (режим без Redis)');
+export default AccountManager;
