@@ -42,7 +42,22 @@ const memoryStorage = {
         Fake: false
     });
     
+    // Создаем тестовую сессию
+    const testSessionKey = 'test_session_key_' + Date.now();
+    memoryStorage.sessions.set(testSessionKey, {
+        uid: testAccountId,
+        s_key: testSessionKey,
+        device_type: 1,
+        device: 'test-device',
+        create_date: new Date().toISOString(),
+        aesKey: 'test_aes_key',
+        mesKey: 'test_mes_key',
+        connection: null,
+        lastActive: new Date().toISOString()
+    });
+    
     console.log(`✅ Тестовый аккаунт создан: testuser / test123 (ID: ${testAccountId})`);
+    console.log(`✅ Тестовая сессия создана: ${testSessionKey.substring(0, 10)}...`);
 })();
 
 class AccountManager {
@@ -556,8 +571,10 @@ class AccountManager {
         };
     }
 
-    // Получение всех сессий пользователя
+    // Получение всех сессий пользователя (getUserSessions)
     static async getUserSessions(userId) {
+        console.log(`🔍 getUserSessions для пользователя: ${userId}`);
+        
         const sessions = [];
         for (const [sKey, session] of memoryStorage.sessions.entries()) {
             if (session.uid === userId) {
@@ -570,7 +587,15 @@ class AccountManager {
                 });
             }
         }
+        
+        console.log(`✅ Найдено ${sessions.length} сессий для пользователя ${userId}`);
         return sessions;
+    }
+
+    // Псевдоним getSessions для совместимости
+    static async getSessions(userId) {
+        console.log(`🔍 getSessions (псевдоним) для пользователя: ${userId}`);
+        return await AccountManager.getUserSessions(userId);
     }
 
     // Удаление сессии
@@ -608,6 +633,51 @@ class AccountManager {
         
         console.log(`❌ Сессия по connection ${connectionId} не найдена`);
         return null;
+    }
+
+    // Получение информации об аккаунте (для social/info.js)
+    static async getAccountInfo(userId) {
+        console.log(`🔍 getAccountInfo для пользователя: ${userId}`);
+        
+        if (!memoryStorage.accounts.has(userId)) {
+            console.log(`❌ Аккаунт не найден: ${userId}`);
+            return null;
+        }
+        
+        const account = memoryStorage.accounts.get(userId);
+        
+        // Возвращаем данные без пароля
+        const { Password, ...safeData } = account;
+        
+        return {
+            ...safeData,
+            permissions: memoryStorage.permissions.get(userId) || {
+                Posts: true,
+                Comments: true,
+                NewChats: true,
+                MusicUpload: false,
+                Admin: false,
+                Verified: false,
+                Fake: false
+            }
+        };
+    }
+
+    // Обновление информации об аккаунте
+    static async updateAccountInfo(userId, updates) {
+        console.log(`🔧 updateAccountInfo для пользователя ${userId}:`, updates);
+        
+        if (!memoryStorage.accounts.has(userId)) {
+            console.log(`❌ Аккаунт не найден: ${userId}`);
+            return false;
+        }
+        
+        const account = memoryStorage.accounts.get(userId);
+        const updatedAccount = { ...account, ...updates };
+        memoryStorage.accounts.set(userId, updatedAccount);
+        
+        console.log(`✅ Информация аккаунта ${userId} обновлена`);
+        return true;
     }
 
     // Дополнительные методы для совместимости
@@ -755,6 +825,7 @@ class AccountManager {
 export const getSession = AccountManager.getSession;
 export const sendMessageToUser = AccountManager.sendMessageToUser;
 export const getUserSessions = AccountManager.getUserSessions;
+export const getSessions = AccountManager.getSessions; // Псевдоним для совместимости с info.js
 export const deleteSession = AccountManager.deleteSession;
 export const createAccount = AccountManager.createAccount;
 export const getInstance = AccountManager.getInstance;
@@ -765,6 +836,8 @@ export const getAccountByEmailOrUsername = AccountManager.getAccountByEmailOrUse
 export const connectAccount = AccountManager.connectAccount;
 export const logout = AccountManager.logout;
 export const validateToken = AccountManager.validateToken;
+export const getAccountInfo = AccountManager.getAccountInfo;
+export const updateAccountInfo = AccountManager.updateAccountInfo;
 
 // Экспорт для отладки
 export const debugMemory = () => ({
