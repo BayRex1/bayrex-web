@@ -1,76 +1,66 @@
-// AccountManager.ts - версия без БД
+// AccountManager.js - без TypeScript синтаксиса
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Config from '../../system/global/Config.js';
-import AppError from '../system/AppError.js';
-import ImageEngine from '../system/ImageEngine.js';
-import Validator from '../system/Validator.js';
-import { getDate } from '../../system/global/Function.js';
+import Config from './Config.js';
+import AppError from '../services/system/AppError.js';
 
 // Хранилище в памяти
 const memoryStorage = {
-    accounts: new Map<number, any>(),
-    sessions: new Map<string, any>(),
-    permissions: new Map<number, any>(),
-    nextAccountId: 1000,
-    nextSessionId: 1
+    accounts: new Map(),
+    sessions: new Map(),
+    permissions: new Map(),
+    nextAccountId: 1000
 };
 
 class AccountManager {
-    private accountID: number;
-    private accountData: any = null;
-
-    constructor(id: number) {
+    constructor(id) {
         if (!id || typeof id !== 'number' || id <= 0) {
             throw new AppError('Некорректный идентификатор аккаунта');
         }
         
-        // Проверяем, существует ли аккаунт
+        this.accountID = id;
+        
+        // Проверяем существование аккаунта
         if (!memoryStorage.accounts.has(id)) {
-            throw new AppError('Аккаунт не найден в памяти');
+            throw new AppError('Аккаунт не найден');
         }
         
-        this.accountID = id;
         this.accountData = memoryStorage.accounts.get(id);
     }
 
-    // Статический метод для создания аккаунта (вызывается из reg.ts)
-    static async createAccount(accountData: {
-        name: string;
-        username: string;
-        email: string;
-        password: string;
-    }): Promise<{ id: number; account: any }> {
+    // Статический метод для создания аккаунта
+    static async createAccount(accountData) {
+        const { name, username, email, password } = accountData;
         
-        // Проверяем уникальность username и email
+        // Проверка уникальности
         for (const [id, acc] of memoryStorage.accounts.entries()) {
-            if (acc.Username === accountData.username) {
+            if (acc.Username === username) {
                 throw new AppError('Этот логин уже занят');
             }
-            if (acc.Email === accountData.email) {
+            if (acc.Email === email) {
                 throw new AppError('Этот email уже используется');
             }
         }
 
         const newId = memoryStorage.nextAccountId++;
-        const hashedPassword = await bcrypt.hash(accountData.password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
         
         const newAccount = {
             ID: newId,
-            Name: accountData.name,
-            Username: accountData.username,
-            Email: accountData.email,
+            Name: name,
+            Username: username,
+            Email: email,
             Password: hashedPassword,
-            CreateDate: getDate(),
+            CreateDate: new Date().toISOString(),
             Avatar: null,
             Cover: null,
             Description: '',
-            Eballs: 0
+            Eballs: 100
         };
 
         memoryStorage.accounts.set(newId, newAccount);
         
-        // Создаем дефолтные permissions
+        // Дефолтные permissions
         memoryStorage.permissions.set(newId, {
             UserID: newId,
             Posts: true,
@@ -82,18 +72,18 @@ class AccountManager {
             Fake: false
         });
 
-        console.log(`✅ Аккаунт создан в памяти: ${accountData.username} (ID: ${newId})`);
+        console.log(`✅ Аккаунт создан в памяти: ${username} (ID: ${newId})`);
         
         return { id: newId, account: newAccount };
     }
 
-    // Метод для получения AccountManager по ID (после создания)
-    static getInstance(id: number): AccountManager {
+    // Получение экземпляра AccountManager
+    static getInstance(id) {
         return new AccountManager(id);
     }
 
-    // Создание сессии (упрощенная версия)
-    async startSession(deviceType: string, device: string | null): Promise<string> {
+    // Создание сессии
+    async startSession(deviceType, device) {
         const S_KEY = crypto.randomBytes(32).toString('hex');
         
         const session = {
@@ -101,18 +91,17 @@ class AccountManager {
             s_key: S_KEY,
             device_type: deviceType === 'browser' ? 1 : 0,
             device: device || 'unknown',
-            create_date: getDate()
+            create_date: new Date().toISOString()
         };
 
-        // Сохраняем в памяти (в реальности - в Redis)
         memoryStorage.sessions.set(S_KEY, session);
         
-        console.log(`✅ Сессия создана для аккаунта ${this.accountID}: ${S_KEY}`);
+        console.log(`✅ Сессия создана для аккаунта ${this.accountID}`);
         return S_KEY;
     }
 
     // Проверка пароля
-    async verifyPassword(password: string): Promise<boolean> {
+    async verifyPassword(password) {
         if (!this.accountData) {
             throw new AppError('Данные аккаунта не загружены');
         }
@@ -121,13 +110,13 @@ class AccountManager {
     }
 
     // Получение данных аккаунта
-    async getAccountData(): Promise<any> {
+    async getAccountData() {
         return this.accountData;
     }
 
     // Получение permissions
-    async getPermissions(): Promise<any> {
-        const perms = memoryStorage.permissions.get(this.accountID) || {
+    async getPermissions() {
+        return memoryStorage.permissions.get(this.accountID) || {
             Posts: true,
             Comments: true,
             NewChats: true,
@@ -136,10 +125,9 @@ class AccountManager {
             Verified: false,
             Fake: false
         };
-        return perms;
     }
 
-    // Остальные методы можно оставить как заглушки или упростить
+    // Остальные методы
     async getGoldStatus() { return false; }
     async getGoldHistory() { return []; }
     async getChannels() { return []; }
@@ -156,3 +144,14 @@ class AccountManager {
 }
 
 export default AccountManager;
+
+// Экспорт для отладки
+export const debugMemory = () => ({
+    totalAccounts: memoryStorage.accounts.size,
+    totalSessions: memoryStorage.sessions.size,
+    accounts: Array.from(memoryStorage.accounts.values()).map(acc => ({
+        ID: acc.ID,
+        Username: acc.Username,
+        Email: acc.Email
+    }))
+});
