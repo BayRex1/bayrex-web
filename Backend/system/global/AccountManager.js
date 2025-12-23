@@ -1,166 +1,87 @@
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import AppError from '../../services/system/AppError.js';
+// system/global/AccountManager.js
 
-// Хранилище в памяти
+import crypto from 'crypto';
+
+// Простейшая "память" для аккаунтов и сессий
 const memoryStorage = {
-    accounts: new Map(),
-    sessions: new Map(),
-    permissions: new Map(),
-    nextAccountId: 1000
+    accounts: new Map(),       // key: account ID, value: account data
+    sessions: new Map(),       // key: session key, value: { accountId, device, type }
 };
 
 class AccountManager {
-    constructor(id) {
-        if (!id || typeof id !== 'number' || id <= 0) {
-            throw new AppError('Некорректный идентификатор аккаунта');
-        }
-        this.accountID = id;
-
-        if (!memoryStorage.accounts.has(id)) {
-            throw new AppError('Аккаунт не найден');
-        }
-        this.accountData = memoryStorage.accounts.get(id);
+    constructor(accountId) {
+        this.accountId = accountId;
     }
 
-    // Создание нового аккаунта
-    static async createAccount({ name, username, email, password }) {
-        // Проверка уникальности
-        for (const acc of memoryStorage.accounts.values()) {
-            if (acc.Username === username) throw new AppError('Логин занят');
-            if (acc.Email === email) throw new AppError('Email уже используется');
-        }
-
-        const newId = memoryStorage.nextAccountId++;
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const newAccount = {
-            ID: newId,
-            Name: name,
-            Username: username,
-            Email: email,
-            Password: hashedPassword,
-            CreateDate: new Date().toISOString(),
-            Avatar: null,
-            Cover: null,
-            Description: '',
-            Eballs: 100,
-            Notifications: 0
-        };
-
-        memoryStorage.accounts.set(newId, newAccount);
-        memoryStorage.permissions.set(newId, {
-            UserID: newId,
-            Posts: true,
-            Comments: true,
-            NewChats: true,
-            MusicUpload: false,
-            Admin: false,
-            Verified: false,
-            Fake: false
-        });
-
-        console.log(`✅ Аккаунт создан: ${username} (ID: ${newId})`);
-        return { id: newId, account: newAccount };
-    }
-
-    // Получение экземпляра
-    static getInstance(id) {
-        return new AccountManager(id);
+    // Проверка пароля (предполагается хранение хеша)
+    async verifyPassword(password) {
+        const account = memoryStorage.accounts.get(this.accountId);
+        if (!account) return false;
+        return account.password === password; // В реальном проекте использовать bcrypt
     }
 
     // Создание сессии
-    async startSession(deviceType = null, device = 'unknown') {
-        const S_KEY = crypto.randomBytes(32).toString('hex');
-        const session = {
-            uid: this.accountID,
-            s_key: S_KEY,
-            device_type: deviceType === 'browser' ? 1 : 0,
+    async startSession(deviceType = null, device = null) {
+        const S_KEY = crypto.randomBytes(16).toString('hex');
+        memoryStorage.sessions.set(S_KEY, {
+            accountId: this.accountId,
+            deviceType,
             device,
-            create_date: new Date().toISOString(),
-            aesKey: 'mock_aes_key',
-            mesKey: 'mock_mes_key'
-        };
-        memoryStorage.sessions.set(S_KEY, session);
-        console.log(`✅ Сессия создана: ${S_KEY.substring(0, 10)}...`);
+            createdAt: new Date(),
+        });
         return S_KEY;
     }
 
-    // Проверка пароля
-    async verifyPassword(password) {
-        return await bcrypt.compare(password, this.accountData.Password);
+    // Статические методы для работы с памятью
+
+    static getSession(S_KEY) {
+        return memoryStorage.sessions.get(S_KEY) || null;
     }
 
-    // Получение безопасных данных
-    async getAccountData() {
-        const { Password, ...safeData } = this.accountData;
-        return safeData;
-    }
-
-    // Получение permissions
-    async getPermissions() {
-        return memoryStorage.permissions.get(this.accountID) || {};
-    }
-
-    // Обновление данных
-    async updateAccountData(updates) {
-        this.accountData = { ...this.accountData, ...updates };
-        memoryStorage.accounts.set(this.accountID, this.accountData);
-        return true;
-    }
-
-    // -----------------
-    // Методы для работы с сессиями
-    // -----------------
-    static getSession(sessionKey) {
-        if (typeof sessionKey === 'number') {
-            for (const session of memoryStorage.sessions.values()) {
-                if (session.uid === sessionKey) return session;
-            }
-        } else if (typeof sessionKey === 'string') {
-            return memoryStorage.sessions.get(sessionKey);
-        }
-        return null;
-    }
-
-    static getUserSessions(userId) {
+    static getUserSessions(accountId) {
         const sessions = [];
-        for (const session of memoryStorage.sessions.values()) {
-            if (session.uid === userId) sessions.push(session);
+        for (const [key, session] of memoryStorage.sessions.entries()) {
+            if (session.accountId === accountId) sessions.push({ key, ...session });
         }
         return sessions;
     }
 
-    static deleteSession(sessionKey) {
-        return memoryStorage.sessions.delete(sessionKey);
+    static deleteSession(S_KEY) {
+        return memoryStorage.sessions.delete(S_KEY);
     }
 
-    // -----------------
-    // Отладка
-    // -----------------
     static debugMemory() {
-        return {
-            totalAccounts: memoryStorage.accounts.size,
-            totalSessions: memoryStorage.sessions.size,
-            nextAccountId: memoryStorage.nextAccountId,
-            accounts: Array.from(memoryStorage.accounts.values()).map(acc => ({
-                ID: acc.ID,
-                Username: acc.Username,
-                Email: acc.Email,
-                Name: acc.Name
-            })),
-            sessions: Array.from(memoryStorage.sessions.values()).map(s => ({
-                s_key: s.s_key.substring(0, 10) + '...',
-                uid: s.uid,
-                device: s.device
-            }))
-        };
+        return memoryStorage;
+    }
+
+    static getAccounts() {
+        return Array.from(memoryStorage.accounts.values());
+    }
+
+    static async updateAccount(id, updates) {
+        if (!memoryStorage.accounts.has(id)) {
+            throw new Error('Аккаунт не найден');
+        }
+        const account = memoryStorage.accounts.get(id);
+        const updated = { ...account, ...updates };
+        memoryStorage.accounts.set(id, updated);
+        return updated;
+    }
+
+    static async createAccount({ username, email, password, name }) {
+        const id = memoryStorage.accounts.size + 1000;
+        const account = { ID: id, username, email, name, password };
+        memoryStorage.accounts.set(id, account);
+        return account;
     }
 }
 
-// Экспорт
+// Экспорт по дефолту и по именам
 export default AccountManager;
 export const debugMemory = AccountManager.debugMemory;
 export const getSession = AccountManager.getSession;
 export const getUserSessions = AccountManager.getUserSessions;
 export const deleteSession = AccountManager.deleteSession;
+export const updateAccount = AccountManager.updateAccount;
+export const createAccount = AccountManager.createAccount;
+export const getAccounts = AccountManager.getAccounts;
