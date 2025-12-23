@@ -93,11 +93,7 @@ class AccountManager {
     }
 
     static async connectAccount(accountId, deviceType = 'browser', device = 'unknown') {
-        const account = memoryStorage.accounts.get(accountId);
-        if (!account) {
-            console.log(`❌ connectAccount: аккаунт ${accountId} не найден`);
-            return null;
-        }
+        if (!memoryStorage.accounts.has(accountId)) return null;
 
         const sKey = crypto.randomBytes(32).toString('hex');
 
@@ -111,7 +107,6 @@ class AccountManager {
             mesKey: 'mock_mes_key'
         });
 
-        console.log(`✅ connectAccount: user ${accountId}, session ${sKey.substring(0, 8)}...`);
         return sKey;
     }
 
@@ -129,6 +124,16 @@ class AccountManager {
         return null;
     }
 
+    // 🔥 НОВОЕ: вернуть ВСЕ сессии
+    static async getSessions() {
+        return Array.from(memoryStorage.sessions.values());
+    }
+
+    static async getUserSessions(userId) {
+        return Array.from(memoryStorage.sessions.values())
+            .filter(s => s.uid === userId);
+    }
+
     static async updateSession(sessionKey, patch = {}) {
         const session = memoryStorage.sessions.get(sessionKey);
         if (!session) return false;
@@ -138,16 +143,11 @@ class AccountManager {
             ...patch
         });
 
-        console.log(`✅ updateSession: ${sessionKey.substring(0, 8)}...`);
         return true;
     }
 
     static async deleteSession(sessionKey) {
         return memoryStorage.sessions.delete(sessionKey);
-    }
-
-    static async getUserSessions(userId) {
-        return [...memoryStorage.sessions.values()].filter(s => s.uid === userId);
     }
 
     // ==================================
@@ -173,7 +173,6 @@ class AccountManager {
         if (!acc) return false;
 
         memoryStorage.accounts.set(accountId, { ...acc, ...patch });
-        console.log(`✅ updateAccount: ${accountId}`);
         return true;
     }
 
@@ -191,22 +190,22 @@ class AccountManager {
 
     static async sendMessageToUser(params, message) {
         const uid = typeof params === 'object' ? params.uid : params;
-        console.log(`📨 sendMessageToUser → ${uid}`);
-        return { success: true };
+        return { success: true, uid };
     }
 }
 
 // ==================================
-// Named exports (CRITICAL)
+// Named exports (FINAL SET)
 // ==================================
 export const getSession = AccountManager.getSession;
+export const getSessions = AccountManager.getSessions;
+export const getUserSessions = AccountManager.getUserSessions;
 export const connectAccount = AccountManager.connectAccount;
 export const updateSession = AccountManager.updateSession;
+export const updateAccount = AccountManager.updateAccount;
 export const deleteSession = AccountManager.deleteSession;
-export const getUserSessions = AccountManager.getUserSessions;
 export const createAccount = AccountManager.createAccount;
 export const getInstance = AccountManager.getInstance;
-export const updateAccount = AccountManager.updateAccount;
 export const sendMessageToUser = AccountManager.sendMessageToUser;
 
 export default AccountManager;
