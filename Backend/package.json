@@ -6,8 +6,7 @@
   "scripts": {
     "start": "npx tsx index.ts",
     "dev": "npx tsx index.ts",
-    "build": "tsc",
-    "obfuscate": "javascript-obfuscator ./dist --output ./dist"
+    "build": "tsc"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",
@@ -15,43 +14,28 @@
     "base64url": "^3.0.1",
     "bcryptjs": "^3.0.2",
     "check-disk-space": "^3.4.0",
-    "express": "^4.21.2",
     "cors": "^2.8.5",
+    "express": "^4.21.2",
     "file-type": "^21.0.0",
     "heic-convert": "^2.1.0",
     "music-metadata": "^11.7.3",
+    "mysql2": "^3.14.3",
     "node-id3": "^0.2.9",
     "path": "^0.12.7",
     "sharp": "^0.34.3",
+    "tsx": "^4.19.4",
     "url": "^0.11.4",
     "uuidv7": "^1.0.2",
     "web-push": "^3.6.7",
-    "ws": "^8.18.3",
-    "tsx": "^4.19.4"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.2.0",
     "@types/ws": "^8.18.1",
-    "javascript-obfuscator": "^4.1.1",
     "typescript": "^5.9.2"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "keywords": [
-    "websocket",
-    "backend",
-    "render"
-  ],
-  "author": "BayRex Team",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/BayRex1/bayrex-web"
-  },
-  "bugs": {
-    "url": "https://github.com/BayRex1/bayrex-web/issues"
-  },
-  "homepage": "https://bayrex-backend.onrender.com"
+  }
 }
