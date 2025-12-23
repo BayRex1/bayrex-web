@@ -1,8 +1,8 @@
-// AccountManager.js - без TypeScript синтаксиса
+// AccountManager.js - с правильным путем импорта
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import Config from './Config.js';
-import AppError from '../services/system/AppError.js';
+import AppError from '../../services/system/AppError.js';
 
 // Хранилище в памяти
 const memoryStorage = {
