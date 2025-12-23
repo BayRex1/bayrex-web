@@ -2,15 +2,47 @@ import { readdir, stat } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import RouterHelper from '../../../../services/system/RouterHelper.js';
-import { Redis } from 'ioredis';
 import { dbE } from '../../../../lib/db.js';
 
-const redis = new Redis();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../../../storage');
 const ROOT_PATH = process.platform === 'win32' ? 'C:' : '/';
 const CACHE_KEY = 'storage_stats';
 const CACHE_TTL_SECONDS = 120;
+
+// Заглушка для Redis
+class RedisStub {
+  constructor() {
+    console.log('📦 RedisStub для statistic.ts');
+  }
+  
+  async get(key: string) {
+    console.log(`📦 RedisStub.get("${key}") -> null`);
+    return null;
+  }
+  
+  async set(key: string, value: any, mode?: string, duration?: number) {
+    console.log(`📦 RedisStub.set("${key}") -> OK`);
+    return 'OK';
+  }
+  
+  async del(key: string) {
+    console.log(`📦 RedisStub.del("${key}") -> 1`);
+    return 1;
+  }
+  
+  async expire(key: string, seconds: number) {
+    console.log(`📦 RedisStub.expire("${key}", ${seconds}) -> 1`);
+    return 1;
+  }
+  
+  async quit() {
+    console.log('📦 RedisStub.quit() -> OK');
+    return 'OK';
+  }
+}
+
+const redis = new RedisStub();
 
 const getDiskSize = async () => {
     try {
@@ -40,6 +72,7 @@ const getFolderSize = async (folderPath) => {
             }
         }
     } catch (err) {
+        // Игнорируем ошибки доступа
     }
 
     return totalSize;
@@ -94,6 +127,7 @@ const getStatistic = async () => {
         return statistic;
     } catch (err) {
         console.error('Failed to load statistics:', err);
+        // Возвращаем нулевые значения в режиме заглушки
         return statistic;
     }
 };
@@ -176,26 +210,20 @@ const statistic = async () => {
             path: 'temp',
             size: 0
         },
-    ]
+    ];
 
-    const cached = await redis.get(CACHE_KEY);
+    // В режиме без Redis всегда пропускаем кэш
+    console.log('📦 Redis отключен, пропускаем кэширование');
 
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            return RouterHelper.success(parsed);
-        } catch (err) {
-            console.error('Failed to parse cached data:', err);
-        }
-    }
-
-    const statistic = await getStatistic();
+    const statisticData = await getStatistic();
     const storage = await calculateSizes(paths);
     const storage_space = await getDiskSize();
 
-    const result = { storage, storage_space, statistic };
-
-    await redis.set(CACHE_KEY, JSON.stringify(result), 'EX', CACHE_TTL_SECONDS);
+    const result = { 
+        storage, 
+        storage_space, 
+        statistic: statisticData 
+    };
 
     return RouterHelper.success(result);
 }
