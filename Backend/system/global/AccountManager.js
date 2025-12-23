@@ -56,7 +56,7 @@ class AccountManager {
             Description: '',
             Eballs: 100,
             Notifications: 0,
-            messenger_size: 0  // Добавлено для совместимости
+            messenger_size: 0
         };
 
         memoryStorage.accounts.set(newId, newAccount);
@@ -83,7 +83,7 @@ class AccountManager {
         return new AccountManager(id);
     }
 
-    // Статический метод для обновления полей аккаунта (ДОБАВЛЕНО)
+    // Статический метод для обновления полей аккаунта
     static async updateAccount(params) {
         console.log(`[AccountManager] updateAccount вызван с параметрами:`, params);
         
@@ -114,6 +114,42 @@ class AccountManager {
         }
     }
 
+    // Статический метод для обновления сессии (ДОБАВЛЕНО)
+    static async updateSession(params) {
+        console.log(`[AccountManager] updateSession вызван с параметрами:`, params);
+        
+        try {
+            // Эта функция обычно обновляет поля сессии (connection, aesKey и т.д.)
+            // В режиме заглушки просто логируем вызов
+            const { sessionKey, updates } = params || {};
+            
+            if (!sessionKey) {
+                console.warn('[AccountManager] updateSession: отсутствует sessionKey');
+                return false;
+            }
+            
+            // Если передан S_KEY (строка), пытаемся найти сессию в памяти
+            if (typeof sessionKey === 'string') {
+                const session = memoryStorage.sessions.get(sessionKey);
+                if (session && updates) {
+                    // Обновляем сессию в памяти
+                    Object.assign(session, updates);
+                    memoryStorage.sessions.set(sessionKey, session);
+                    console.log(`✅ Сессия ${sessionKey.substring(0, 10)}... обновлена в памяти`);
+                    return true;
+                }
+            }
+            
+            // Если переданы другие параметры или не найдена сессия
+            console.log(`✅ Сессия обновлена (заглушка): ${typeof sessionKey === 'string' ? sessionKey.substring(0, 10) + '...' : sessionKey}`);
+            
+            return true;
+        } catch (error) {
+            console.error('[AccountManager] Ошибка в updateSession:', error.message);
+            return false;
+        }
+    }
+
     // Создание сессии
     async startSession(deviceType, device) {
         const S_KEY = crypto.randomBytes(32).toString('hex');
@@ -125,7 +161,9 @@ class AccountManager {
             device: device || 'unknown',
             create_date: new Date().toISOString(),
             aesKey: 'mock_aes_key_for_testing',
-            mesKey: 'mock_mes_key_for_testing'
+            mesKey: 'mock_mes_key_for_testing',
+            connection: null,
+            lastActive: new Date().toISOString()
         };
 
         memoryStorage.sessions.set(S_KEY, session);
@@ -178,7 +216,122 @@ class AccountManager {
         return true;
     }
 
-    // Остальные методы (заглушки для совместимости)
+    // Получение сессии по ID пользователя или S_KEY
+    static async getSession(sessionKey) {
+        console.log(`🔍 Поиск сессии: ${sessionKey}`);
+        
+        // Если sessionKey - число (userID)
+        if (typeof sessionKey === 'number') {
+            // Ищем сессию по userID
+            for (const [sKey, session] of memoryStorage.sessions.entries()) {
+                if (session.uid === sessionKey) {
+                    console.log(`✅ Сессия найдена для пользователя ${sessionKey}`);
+                    return {
+                        ID: session.uid,
+                        uid: session.uid,
+                        s_key: sKey,
+                        aesKey: session.aesKey || 'mock_aes_key',
+                        mesKey: session.mesKey || 'mock_mes_key',
+                        connection: session.connection || null,
+                        device_type: session.device_type,
+                        device: session.device,
+                        create_date: session.create_date,
+                        lastActive: session.lastActive || session.create_date,
+                        messenger_size: 0
+                    };
+                }
+            }
+        } 
+        // Если sessionKey - строка (S_KEY)
+        else if (typeof sessionKey === 'string') {
+            const session = memoryStorage.sessions.get(sessionKey);
+            if (session) {
+                console.log(`✅ Сессия найдена по ключу: ${sessionKey.substring(0, 10)}...`);
+                return {
+                    ID: session.uid,
+                    uid: session.uid,
+                    s_key: sessionKey,
+                    aesKey: session.aesKey || 'mock_aes_key',
+                    mesKey: session.mesKey || 'mock_mes_key',
+                    connection: session.connection || null,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date,
+                    messenger_size: 0
+                };
+            }
+        }
+        
+        console.log(`❌ Сессия не найдена: ${sessionKey}`);
+        
+        // Возвращаем фиктивную сессию для совместимости
+        return {
+            ID: typeof sessionKey === 'number' ? sessionKey : 1,
+            uid: typeof sessionKey === 'number' ? sessionKey : 1,
+            s_key: typeof sessionKey === 'string' ? sessionKey : 'mock_session_key',
+            aesKey: 'mock_aes_key_for_testing',
+            mesKey: 'mock_mes_key_for_testing',
+            connection: null,
+            device_type: 1,
+            device: 'unknown',
+            create_date: new Date().toISOString(),
+            lastActive: new Date().toISOString(),
+            messenger_size: 0
+        };
+    }
+
+    // Отправка сообщения пользователю
+    static async sendMessageToUser(params, message) {
+        let userId, actualMessage;
+        
+        if (typeof params === 'object' && params.uid !== undefined) {
+            userId = params.uid;
+            actualMessage = params.message;
+        } else if (typeof params === 'number') {
+            userId = params;
+            actualMessage = message;
+        } else {
+            console.log('❌ Неверные параметры для sendMessageToUser:', params);
+            return { success: false };
+        }
+        
+        console.log(`📨 sendMessageToUser заглушка: user=${userId}, type=${actualMessage?.type || 'unknown'}`);
+        
+        return { 
+            success: true, 
+            message: 'Сообщение отправлено (режим заглушки)',
+            userId: userId
+        };
+    }
+
+    // Получение всех сессий пользователя
+    static async getUserSessions(userId) {
+        const sessions = [];
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.uid === userId) {
+                sessions.push({
+                    s_key: sKey,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date
+                });
+            }
+        }
+        return sessions;
+    }
+
+    // Удаление сессии
+    static async deleteSession(sessionKey) {
+        const deleted = memoryStorage.sessions.delete(sessionKey);
+        if (deleted) {
+            console.log(`🗑️  Сессия удалена: ${sessionKey.substring(0, 10)}...`);
+        }
+        return deleted;
+    }
+
+    // Дополнительные заглушки для совместимости
     async getGoldStatus() { 
         return { activated: false, date_get: null };
     }
@@ -240,115 +393,38 @@ class AccountManager {
         return; 
     }
 
-    // Получение сессии по ID пользователя или S_KEY
-    static async getSession(sessionKey) {
-        console.log(`🔍 Поиск сессии: ${sessionKey}`);
+    // Получение сессии по connection ID (дополнительная заглушка)
+    static async getSessionByConnection(connectionId) {
+        console.log(`🔍 Поиск сессии по connection: ${connectionId}`);
         
-        // Если sessionKey - число (userID)
-        if (typeof sessionKey === 'number') {
-            // Ищем сессию по userID
-            for (const [sKey, session] of memoryStorage.sessions.entries()) {
-                if (session.uid === sessionKey) {
-                    console.log(`✅ Сессия найдена для пользователя ${sessionKey}`);
-                    return {
-                        ID: session.uid,
-                        uid: session.uid,
-                        s_key: sKey,
-                        aesKey: session.aesKey || 'mock_aes_key',
-                        mesKey: session.mesKey || 'mock_mes_key',
-                        connection: null,
-                        device_type: session.device_type,
-                        device: session.device,
-                        create_date: session.create_date,
-                        messenger_size: 0  // Добавлено для совместимости с upload_file.js
-                    };
-                }
-            }
-        } 
-        // Если sessionKey - строка (S_KEY)
-        else if (typeof sessionKey === 'string') {
-            const session = memoryStorage.sessions.get(sessionKey);
-            if (session) {
-                console.log(`✅ Сессия найдена по ключу: ${sessionKey.substring(0, 10)}...`);
+        // Ищем сессию по connection
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.connection && session.connection.id === connectionId) {
+                console.log(`✅ Сессия найдена по connection ${connectionId}`);
                 return {
                     ID: session.uid,
                     uid: session.uid,
-                    s_key: sessionKey,
+                    s_key: sKey,
                     aesKey: session.aesKey || 'mock_aes_key',
                     mesKey: session.mesKey || 'mock_mes_key',
-                    connection: null,
+                    connection: session.connection,
                     device_type: session.device_type,
                     device: session.device,
                     create_date: session.create_date,
-                    messenger_size: 0  // Добавлено для совместимости с upload_file.js
+                    lastActive: session.lastActive || session.create_date,
+                    messenger_size: 0
                 };
             }
         }
         
-        console.log(`❌ Сессия не найдена: ${sessionKey}`);
-        
-        // Возвращаем фиктивную сессию для совместимости
-        return {
-            ID: typeof sessionKey === 'number' ? sessionKey : 1,
-            uid: typeof sessionKey === 'number' ? sessionKey : 1,
-            s_key: typeof sessionKey === 'string' ? sessionKey : 'mock_session_key',
-            aesKey: 'mock_aes_key_for_testing',
-            mesKey: 'mock_mes_key_for_testing',
-            connection: null,
-            device_type: 1,
-            device: 'unknown',
-            create_date: new Date().toISOString(),
-            messenger_size: 0  // Добавлено для совместимости с upload_file.js
-        };
+        console.log(`❌ Сессия по connection ${connectionId} не найдена`);
+        return null;
     }
 
-    // Отправка сообщения пользователю
-    static async sendMessageToUser(params, message) {
-        let userId, actualMessage;
-        
-        if (typeof params === 'object' && params.uid !== undefined) {
-            userId = params.uid;
-            actualMessage = params.message;
-        } else if (typeof params === 'number') {
-            userId = params;
-            actualMessage = message;
-        } else {
-            console.log('❌ Неверные параметры для sendMessageToUser:', params);
-            return { success: false };
-        }
-        
-        console.log(`📨 sendMessageToUser заглушка: user=${userId}, type=${actualMessage?.type || 'unknown'}`);
-        
-        return { 
-            success: true, 
-            message: 'Сообщение отправлено (режим заглушки)',
-            userId: userId
-        };
-    }
-
-    // Получение всех сессий пользователя
-    static async getUserSessions(userId) {
-        const sessions = [];
-        for (const [sKey, session] of memoryStorage.sessions.entries()) {
-            if (session.uid === userId) {
-                sessions.push({
-                    s_key: sKey,
-                    device_type: session.device_type,
-                    device: session.device,
-                    create_date: session.create_date
-                });
-            }
-        }
-        return sessions;
-    }
-
-    // Удаление сессии
-    static async deleteSession(sessionKey) {
-        const deleted = memoryStorage.sessions.delete(sessionKey);
-        if (deleted) {
-            console.log(`🗑️  Сессия удалена: ${sessionKey.substring(0, 10)}...`);
-        }
-        return deleted;
+    // Универсальный обработчик для любых функций (на будущее)
+    static async __missingFunction(name, ...args) {
+        console.log(`⚠️  [AccountManager] Вызвана отсутствующая функция: ${name} с аргументами:`, args);
+        return null;
     }
 }
 
@@ -359,7 +435,9 @@ export const getUserSessions = AccountManager.getUserSessions;
 export const deleteSession = AccountManager.deleteSession;
 export const createAccount = AccountManager.createAccount;
 export const getInstance = AccountManager.getInstance;
-export const updateAccount = AccountManager.updateAccount; // <-- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ
+export const updateAccount = AccountManager.updateAccount;
+export const updateSession = AccountManager.updateSession; // ДОБАВЛЕНО
+export const getSessionByConnection = AccountManager.getSessionByConnection; // Дополнительно для совместимости
 
 // Экспорт для отладки
 export const debugMemory = () => ({
@@ -376,7 +454,9 @@ export const debugMemory = () => ({
     sessions: Array.from(memoryStorage.sessions.entries()).map(([key, session]) => ({
         key: key.substring(0, 10) + '...',
         uid: session.uid,
-        device: session.device
+        device: session.device,
+        connection: session.connection ? 'yes' : 'no',
+        lastActive: session.lastActive || session.create_date
     }))
 });
 
