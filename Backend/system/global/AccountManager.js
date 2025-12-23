@@ -1,10 +1,9 @@
 // Backend/system/global/AccountManager.js
-
 import crypto from 'crypto';
 
 // Временное хранилище аккаунтов и сессий в памяти
 const accounts = new Map();   // key: account ID, value: account object
-const sessions = new Map();   // key: session key, value: account ID
+const sessions = new Map();   // key: session key, value: session object
 let nextAccountId = 1000;
 
 export default class AccountManager {
@@ -30,7 +29,7 @@ export default class AccountManager {
             device,
             createdAt: new Date(),
         };
-        sessions.set(sessionKey, this.accountId);
+        sessions.set(sessionKey, session);
         return sessionKey;
     }
 
@@ -57,9 +56,18 @@ export default class AccountManager {
 
     // Получение сессии по ключу
     static getSession(sessionKey) {
-        const accountId = sessions.get(sessionKey);
-        if (!accountId) return null;
-        return accounts.get(accountId) || null;
+        const session = sessions.get(sessionKey);
+        if (!session) return null;
+        return accounts.get(session.accountId) || null;
+    }
+
+    // Обновление сессии (новый экспорт для твоих контроллеров)
+    static updateSession(sessionKey, data) {
+        const session = sessions.get(sessionKey);
+        if (!session) return false;
+        Object.assign(session, data);
+        sessions.set(sessionKey, session);
+        return true;
     }
 
     // Создание нового аккаунта
@@ -97,4 +105,7 @@ export function getSession(sessionKey) {
 export function updateAccount(accountId, data) {
     const manager = new AccountManager(accountId);
     return manager.updateAccount(data);
+}
+export function updateSession(sessionKey, data) {
+    return AccountManager.updateSession(sessionKey, data);
 }
