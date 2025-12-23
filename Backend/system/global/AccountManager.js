@@ -114,36 +114,108 @@ class AccountManager {
         }
     }
 
-    // Статический метод для обновления сессии (ДОБАВЛЕНО)
-    static async updateSession(params) {
-        console.log(`[AccountManager] updateSession вызван с параметрами:`, params);
+    // Статический метод для обновления сессии (ПОЛНАЯ РЕАЛИЗАЦИЯ)
+    static async updateSession(sessionKeyOrId, updates) {
+        console.log(`[AccountManager] updateSession вызван:`, { sessionKeyOrId, updates });
         
         try {
-            // Эта функция обычно обновляет поля сессии (connection, aesKey и т.д.)
-            // В режиме заглушки просто логируем вызов
-            const { sessionKey, updates } = params || {};
+            // Поддерживаем два формата вызова:
+            // 1. updateSession(account.ID, { mesKey: data.key }) - из messenger.ts
+            // 2. updateSession({ sessionKey, updates }) - старый формат
             
-            if (!sessionKey) {
+            let actualSessionKey, actualUpdates;
+            
+            if (arguments.length === 2) {
+                // Новый формат: два аргумента
+                actualSessionKey = sessionKeyOrId;
+                actualUpdates = updates;
+            } else if (arguments.length === 1 && typeof sessionKeyOrId === 'object') {
+                // Старый формат: один объект
+                actualSessionKey = sessionKeyOrId.sessionKey;
+                actualUpdates = sessionKeyOrId.updates;
+            } else {
+                console.warn('[AccountManager] updateSession: неверные параметры');
+                return false;
+            }
+            
+            if (!actualSessionKey) {
                 console.warn('[AccountManager] updateSession: отсутствует sessionKey');
                 return false;
             }
             
-            // Если передан S_KEY (строка), пытаемся найти сессию в памяти
-            if (typeof sessionKey === 'string') {
-                const session = memoryStorage.sessions.get(sessionKey);
-                if (session && updates) {
-                    // Обновляем сессию в памяти
-                    Object.assign(session, updates);
-                    memoryStorage.sessions.set(sessionKey, session);
-                    console.log(`✅ Сессия ${sessionKey.substring(0, 10)}... обновлена в памяти`);
+            // Если sessionKey - число (ID пользователя), ищем его сессию
+            let targetSessionKey = actualSessionKey;
+            if (typeof actualSessionKey === 'number') {
+                // Ищем первую сессию пользователя
+                for (const [sKey, session] of memoryStorage.sessions.entries()) {
+                    if (session.uid === actualSessionKey) {
+                        targetSessionKey = sKey;
+                        break;
+                    }
+                }
+                
+                // Если не нашли сессию, создаем ключ для нового пользователя
+                if (typeof targetSessionKey === 'number') {
+                    targetSessionKey = `user_${actualSessionKey}_${Date.now()}`;
+                }
+            }
+            
+            // Обновляем сессию в памяти
+            if (typeof targetSessionKey === 'string') {
+                if (memoryStorage.sessions.has(targetSessionKey)) {
+                    // Обновляем существующую сессию
+                    const session = memoryStorage.sessions.get(targetSessionKey);
+                    
+                    if (actualUpdates) {
+                        // Сохраняем старые важные поля
+                        const preservedFields = ['uid', 's_key', 'create_date'];
+                        preservedFields.forEach(field => {
+                            if (session[field] && actualUpdates[field]) {
+                                delete actualUpdates[field]; // Не перезаписываем системные поля
+                            }
+                        });
+                        
+                        Object.assign(session, actualUpdates);
+                        memoryStorage.sessions.set(targetSessionKey, session);
+                        
+                        // Обновляем lastActive при любом обновлении
+                        session.lastActive = new Date().toISOString();
+                        
+                        console.log(`✅ Сессия ${targetSessionKey.substring(0, 10)}... обновлена:`, 
+                            Object.keys(actualUpdates).join(', '));
+                    }
+                    
+                    return true;
+                } else {
+                    // Создаем новую сессию, если не найдена
+                    console.log(`⚠️  Сессия не найдена, создаем новую для пользователя ${actualSessionKey}`);
+                    
+                    const newSession = {
+                        uid: typeof actualSessionKey === 'number' ? actualSessionKey : 1,
+                        s_key: targetSessionKey,
+                        device_type: 1,
+                        device: 'websocket',
+                        create_date: new Date().toISOString(),
+                        aesKey: 'mock_aes_key_for_testing',
+                        mesKey: 'mock_mes_key_for_testing',
+                        connection: null,
+                        lastActive: new Date().toISOString()
+                    };
+                    
+                    if (actualUpdates) {
+                        Object.assign(newSession, actualUpdates);
+                    }
+                    
+                    memoryStorage.sessions.set(targetSessionKey, newSession);
+                    
+                    console.log(`✅ Новая сессия создана: ${targetSessionKey.substring(0, 10)}...`);
                     return true;
                 }
             }
             
-            // Если переданы другие параметры или не найдена сессия
-            console.log(`✅ Сессия обновлена (заглушка): ${typeof sessionKey === 'string' ? sessionKey.substring(0, 10) + '...' : sessionKey}`);
+            console.warn('[AccountManager] updateSession: неверный формат sessionKey');
+            return false;
             
-            return true;
         } catch (error) {
             console.error('[AccountManager] Ошибка в updateSession:', error.message);
             return false;
@@ -331,7 +403,35 @@ class AccountManager {
         return deleted;
     }
 
-    // Дополнительные заглушки для совместимости
+    // Получение сессии по connection ID
+    static async getSessionByConnection(connectionId) {
+        console.log(`🔍 Поиск сессии по connection: ${connectionId}`);
+        
+        // Ищем сессию по connection
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.connection && session.connection.id === connectionId) {
+                console.log(`✅ Сессия найдена по connection ${connectionId}`);
+                return {
+                    ID: session.uid,
+                    uid: session.uid,
+                    s_key: sKey,
+                    aesKey: session.aesKey || 'mock_aes_key',
+                    mesKey: session.mesKey || 'mock_mes_key',
+                    connection: session.connection,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date,
+                    messenger_size: 0
+                };
+            }
+        }
+        
+        console.log(`❌ Сессия по connection ${connectionId} не найдена`);
+        return null;
+    }
+
+    // Дополнительные методы для совместимости
     async getGoldStatus() { 
         return { activated: false, date_get: null };
     }
@@ -393,35 +493,34 @@ class AccountManager {
         return; 
     }
 
-    // Получение сессии по connection ID (дополнительная заглушка)
-    static async getSessionByConnection(connectionId) {
-        console.log(`🔍 Поиск сессии по connection: ${connectionId}`);
+    // Получение аккаунта по email или username (дополнительная заглушка)
+    static async getAccountByEmailOrUsername(identifier) {
+        console.log(`🔍 Поиск аккаунта: ${identifier}`);
         
-        // Ищем сессию по connection
-        for (const [sKey, session] of memoryStorage.sessions.entries()) {
-            if (session.connection && session.connection.id === connectionId) {
-                console.log(`✅ Сессия найдена по connection ${connectionId}`);
+        for (const [id, account] of memoryStorage.accounts.entries()) {
+            if (account.Email === identifier || account.Username === identifier) {
+                console.log(`✅ Аккаунт найден: ${account.Username} (ID: ${id})`);
                 return {
-                    ID: session.uid,
-                    uid: session.uid,
-                    s_key: sKey,
-                    aesKey: session.aesKey || 'mock_aes_key',
-                    mesKey: session.mesKey || 'mock_mes_key',
-                    connection: session.connection,
-                    device_type: session.device_type,
-                    device: session.device,
-                    create_date: session.create_date,
-                    lastActive: session.lastActive || session.create_date,
-                    messenger_size: 0
+                    ID: id,
+                    Name: account.Name,
+                    Username: account.Username,
+                    Email: account.Email,
+                    Password: account.Password,
+                    CreateDate: account.CreateDate,
+                    Avatar: account.Avatar,
+                    Cover: account.Cover,
+                    Description: account.Description,
+                    Eballs: account.Eballs,
+                    Notifications: account.Notifications
                 };
             }
         }
         
-        console.log(`❌ Сессия по connection ${connectionId} не найдена`);
+        console.log(`❌ Аккаунт не найден: ${identifier}`);
         return null;
     }
 
-    // Универсальный обработчик для любых функций (на будущее)
+    // Универсальный обработчик для любых функций
     static async __missingFunction(name, ...args) {
         console.log(`⚠️  [AccountManager] Вызвана отсутствующая функция: ${name} с аргументами:`, args);
         return null;
@@ -436,8 +535,9 @@ export const deleteSession = AccountManager.deleteSession;
 export const createAccount = AccountManager.createAccount;
 export const getInstance = AccountManager.getInstance;
 export const updateAccount = AccountManager.updateAccount;
-export const updateSession = AccountManager.updateSession; // ДОБАВЛЕНО
-export const getSessionByConnection = AccountManager.getSessionByConnection; // Дополнительно для совместимости
+export const updateSession = AccountManager.updateSession;
+export const getSessionByConnection = AccountManager.getSessionByConnection;
+export const getAccountByEmailOrUsername = AccountManager.getAccountByEmailOrUsername; // На случай если понадобится
 
 // Экспорт для отладки
 export const debugMemory = () => ({
@@ -455,7 +555,8 @@ export const debugMemory = () => ({
         key: key.substring(0, 10) + '...',
         uid: session.uid,
         device: session.device,
-        connection: session.connection ? 'yes' : 'no',
+        mesKey: session.mesKey ? 'установлен' : 'нет',
+        connection: session.connection ? 'да' : 'нет',
         lastActive: session.lastActive || session.create_date
     }))
 });
