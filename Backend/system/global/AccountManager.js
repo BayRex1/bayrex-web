@@ -1,11 +1,8 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Config from './Config.js';
 import AppError from '../../services/system/AppError.js';
 
-// ==================================
-// In-memory mock storage
-// ==================================
+// Хранилище в памяти
 const memoryStorage = {
     accounts: new Map(),
     sessions: new Map(),
@@ -18,44 +15,42 @@ class AccountManager {
         if (!id || typeof id !== 'number' || id <= 0) {
             throw new AppError('Некорректный идентификатор аккаунта');
         }
-
+        
+        this.accountID = id;
+        
         if (!memoryStorage.accounts.has(id)) {
             throw new AppError('Аккаунт не найден');
         }
-
-        this.accountID = id;
+        
         this.accountData = memoryStorage.accounts.get(id);
     }
 
-    // ==================================
-    // Account creation
-    // ==================================
+    // Создание аккаунта
     static async createAccount({ name, username, email, password }) {
-        for (const acc of memoryStorage.accounts.values()) {
-            if (acc.Username === username) throw new AppError('Логин занят');
-            if (acc.Email === email) throw new AppError('Email занят');
+        for (const [, acc] of memoryStorage.accounts.entries()) {
+            if (acc.Username.toLowerCase() === username.toLowerCase()) {
+                throw new AppError('Этот логин уже занят');
+            }
+            if (acc.Email.toLowerCase() === email.toLowerCase()) {
+                throw new AppError('Этот email уже используется');
+            }
         }
 
-        const id = memoryStorage.nextAccountId++;
+        const newId = memoryStorage.nextAccountId++;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const account = {
-            ID: id,
+        const newAccount = {
+            ID: newId,
             Name: name,
             Username: username,
             Email: email,
             Password: hashedPassword,
-            CreateDate: new Date().toISOString(),
-            Avatar: null,
-            Cover: null,
-            Description: '',
-            Eballs: 100,
-            Notifications: 0
+            CreateDate: new Date().toISOString()
         };
 
-        memoryStorage.accounts.set(id, account);
-        memoryStorage.permissions.set(id, {
-            UserID: id,
+        memoryStorage.accounts.set(newId, newAccount);
+        memoryStorage.permissions.set(newId, {
+            UserID: newId,
             Posts: true,
             Comments: true,
             NewChats: true,
@@ -65,147 +60,44 @@ class AccountManager {
             Fake: false
         });
 
-        console.log(`✅ Account created: ${username} (${id})`);
-        return { id, account };
+        return { id: newId, account: newAccount };
     }
 
-    static getInstance(id) {
-        return new AccountManager(id);
+    // Проверка пароля
+    async verifyPassword(password) {
+        return await bcrypt.compare(password, this.accountData.Password);
     }
 
-    // ==================================
-    // Sessions
-    // ==================================
+    // Создание сессии
     async startSession(deviceType, device) {
-        const sKey = crypto.randomBytes(32).toString('hex');
-
-        memoryStorage.sessions.set(sKey, {
+        const S_KEY = crypto.randomBytes(32).toString('hex');
+        const session = {
             uid: this.accountID,
-            s_key: sKey,
+            s_key: S_KEY,
             device_type: deviceType === 'browser' ? 1 : 0,
             device: device || 'unknown',
-            create_date: new Date().toISOString(),
-            aesKey: 'mock_aes_key',
-            mesKey: 'mock_mes_key'
-        });
+            create_date: new Date().toISOString()
+        };
 
-        return sKey;
+        memoryStorage.sessions.set(S_KEY, session);
+        return S_KEY;
     }
 
-    static async connectAccount(accountId, deviceType = 'browser', device = 'unknown') {
-        if (!memoryStorage.accounts.has(accountId)) return null;
-
-        const sKey = crypto.randomBytes(32).toString('hex');
-
-        memoryStorage.sessions.set(sKey, {
-            uid: accountId,
-            s_key: sKey,
-            device_type: deviceType === 'browser' ? 1 : 0,
-            device,
-            create_date: new Date().toISOString(),
-            aesKey: 'mock_aes_key',
-            mesKey: 'mock_mes_key'
-        });
-
-        return sKey;
+    // Получение всех аккаунтов и сессий для отладки
+    static debugMemory() {
+        return {
+            totalAccounts: memoryStorage.accounts.size,
+            totalSessions: memoryStorage.sessions.size,
+            nextAccountId: memoryStorage.nextAccountId,
+            accounts: Array.from(memoryStorage.accounts.values()),
+            sessions: Array.from(memoryStorage.sessions.values())
+        };
     }
 
-    static async getSession(key) {
-        if (typeof key === 'string') {
-            return memoryStorage.sessions.get(key) || null;
-        }
-
-        if (typeof key === 'number') {
-            for (const session of memoryStorage.sessions.values()) {
-                if (session.uid === key) return session;
-            }
-        }
-
-        return null;
-    }
-
-    // 🔥 НОВОЕ: вернуть ВСЕ сессии
-    static async getSessions() {
-        return Array.from(memoryStorage.sessions.values());
-    }
-
-    static async getUserSessions(userId) {
-        return Array.from(memoryStorage.sessions.values())
-            .filter(s => s.uid === userId);
-    }
-
-    static async updateSession(sessionKey, patch = {}) {
-        const session = memoryStorage.sessions.get(sessionKey);
-        if (!session) return false;
-
-        memoryStorage.sessions.set(sessionKey, {
-            ...session,
-            ...patch
-        });
-
-        return true;
-    }
-
-    static async deleteSession(sessionKey) {
-        return memoryStorage.sessions.delete(sessionKey);
-    }
-
-    // ==================================
-    // Account methods
-    // ==================================
-    async verifyPassword(password) {
-        return bcrypt.compare(password, this.accountData.Password);
-    }
-
-    async getAccountData() {
-        const { Password, ...safe } = this.accountData;
-        return safe;
-    }
-
-    async updateAccountData(patch) {
-        this.accountData = { ...this.accountData, ...patch };
-        memoryStorage.accounts.set(this.accountID, this.accountData);
-        return true;
-    }
-
-    static async updateAccount(accountId, patch = {}) {
-        const acc = memoryStorage.accounts.get(accountId);
-        if (!acc) return false;
-
-        memoryStorage.accounts.set(accountId, { ...acc, ...patch });
-        return true;
-    }
-
-    async getPermissions() {
-        return memoryStorage.permissions.get(this.accountID);
-    }
-
-    // ==================================
-    // Stubs
-    // ==================================
-    async getGoldStatus() { return { activated: false }; }
-    async getGoldHistory() { return []; }
-    async getChannels() { return []; }
-    async getMessengerNotifications() { return 0; }
-
-    static async sendMessageToUser(params, message) {
-        const uid = typeof params === 'object' ? params.uid : params;
-        return { success: true, uid };
-    }
+    // Доступ к памяти из других модулей
+    static memory = memoryStorage;
 }
 
-// ==================================
-// Named exports (FINAL SET)
-// ==================================
-export const getSession = AccountManager.getSession;
-export const getSessions = AccountManager.getSessions;
-export const getUserSessions = AccountManager.getUserSessions;
-export const connectAccount = AccountManager.connectAccount;
-export const updateSession = AccountManager.updateSession;
-export const updateAccount = AccountManager.updateAccount;
-export const deleteSession = AccountManager.deleteSession;
-export const createAccount = AccountManager.createAccount;
-export const getInstance = AccountManager.getInstance;
-export const sendMessageToUser = AccountManager.sendMessageToUser;
-
 export default AccountManager;
+export const debugMemory = AccountManager.debugMemory;
+export const memory = AccountManager.memory;
