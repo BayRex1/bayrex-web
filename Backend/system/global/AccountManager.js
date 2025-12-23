@@ -1,4 +1,3 @@
-// AccountManager.js - с правильным путем импорта
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import Config from './Config.js';
@@ -55,7 +54,8 @@ class AccountManager {
             Avatar: null,
             Cover: null,
             Description: '',
-            Eballs: 100
+            Eballs: 100,
+            Notifications: 0
         };
 
         memoryStorage.accounts.set(newId, newAccount);
@@ -91,12 +91,14 @@ class AccountManager {
             s_key: S_KEY,
             device_type: deviceType === 'browser' ? 1 : 0,
             device: device || 'unknown',
-            create_date: new Date().toISOString()
+            create_date: new Date().toISOString(),
+            aesKey: 'mock_aes_key_for_testing',
+            mesKey: 'mock_mes_key_for_testing'
         };
 
         memoryStorage.sessions.set(S_KEY, session);
         
-        console.log(`✅ Сессия создана для аккаунта ${this.accountID}`);
+        console.log(`✅ Сессия создана для аккаунта ${this.accountID}: ${S_KEY.substring(0, 10)}...`);
         return S_KEY;
     }
 
@@ -111,6 +113,13 @@ class AccountManager {
 
     // Получение данных аккаунта
     async getAccountData() {
+        // Возвращаем копию без пароля
+        const { Password, ...safeData } = this.accountData;
+        return safeData;
+    }
+
+    // Получение полных данных (с паролем для внутреннего использования)
+    async getFullAccountData() {
         return this.accountData;
     }
 
@@ -127,31 +136,212 @@ class AccountManager {
         };
     }
 
-    // Остальные методы
-    async getGoldStatus() { return false; }
-    async getGoldHistory() { return []; }
-    async getChannels() { return []; }
-    async getMessengerNotifications() { return 0; }
-    async changeAvatar() { return { status: 'success', avatar: null }; }
-    async changeCover() { return { status: 'success', cover: null }; }
-    async changeName() { return { status: 'success' }; }
-    async changeUsername() { return { status: 'success' }; }
-    async changeDescription() { return { status: 'success' }; }
-    async changeEmail() { return { status: 'success' }; }
-    async changePassword() { return { status: 'success' }; }
-    async addEballs() { return; }
-    async maybeReward() { return; }
+    // Обновление данных аккаунта
+    async updateAccountData(updates) {
+        const updatedAccount = { ...this.accountData, ...updates };
+        memoryStorage.accounts.set(this.accountID, updatedAccount);
+        this.accountData = updatedAccount;
+        
+        console.log(`✅ Данные аккаунта ${this.accountID} обновлены`);
+        return true;
+    }
+
+    // Остальные методы (заглушки для совместимости)
+    async getGoldStatus() { 
+        return { activated: false, date_get: null };
+    }
+    
+    async getGoldHistory() { 
+        return []; 
+    }
+    
+    async getChannels() { 
+        return []; 
+    }
+    
+    async getMessengerNotifications() { 
+        return 0; 
+    }
+    
+    async changeAvatar(avatar) { 
+        console.log(`📦 changeAvatar заглушка для аккаунта ${this.accountID}`);
+        return { status: 'success', avatar: null }; 
+    }
+    
+    async changeCover(cover) { 
+        console.log(`📦 changeCover заглушка для аккаунта ${this.accountID}`);
+        return { status: 'success', cover: null }; 
+    }
+    
+    async changeName(name) { 
+        console.log(`📦 changeName заглушка: ${name}`);
+        return { status: 'success' }; 
+    }
+    
+    async changeUsername(username) { 
+        console.log(`📦 changeUsername заглушка: ${username}`);
+        return { status: 'success' }; 
+    }
+    
+    async changeDescription(description) { 
+        console.log(`📦 changeDescription заглушка: ${description}`);
+        return { status: 'success' }; 
+    }
+    
+    async changeEmail(email) { 
+        console.log(`📦 changeEmail заглушка: ${email}`);
+        return { status: 'success' }; 
+    }
+    
+    async changePassword(password) { 
+        console.log(`📦 changePassword заглушка для аккаунта ${this.accountID}`);
+        return { status: 'success' }; 
+    }
+    
+    async addEballs(count) { 
+        console.log(`📦 addEballs заглушка: ${count} eballs`);
+        return; 
+    }
+    
+    async maybeReward(type) { 
+        console.log(`📦 maybeReward заглушка: ${type}`);
+        return; 
+    }
+
+    // Получение сессии по ID пользователя или S_KEY
+    static async getSession(sessionKey) {
+        console.log(`🔍 Поиск сессии: ${sessionKey}`);
+        
+        // Если sessionKey - число (userID)
+        if (typeof sessionKey === 'number') {
+            // Ищем сессию по userID
+            for (const [sKey, session] of memoryStorage.sessions.entries()) {
+                if (session.uid === sessionKey) {
+                    console.log(`✅ Сессия найдена для пользователя ${sessionKey}`);
+                    return {
+                        ID: session.uid,
+                        uid: session.uid,
+                        s_key: sKey,
+                        aesKey: session.aesKey || 'mock_aes_key',
+                        mesKey: session.mesKey || 'mock_mes_key',
+                        connection: null,
+                        device_type: session.device_type,
+                        device: session.device,
+                        create_date: session.create_date
+                    };
+                }
+            }
+        } 
+        // Если sessionKey - строка (S_KEY)
+        else if (typeof sessionKey === 'string') {
+            const session = memoryStorage.sessions.get(sessionKey);
+            if (session) {
+                console.log(`✅ Сессия найдена по ключу: ${sessionKey.substring(0, 10)}...`);
+                return {
+                    ID: session.uid,
+                    uid: session.uid,
+                    s_key: sessionKey,
+                    aesKey: session.aesKey || 'mock_aes_key',
+                    mesKey: session.mesKey || 'mock_mes_key',
+                    connection: null,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date
+                };
+            }
+        }
+        
+        console.log(`❌ Сессия не найдена: ${sessionKey}`);
+        
+        // Возвращаем фиктивную сессию для совместимости
+        return {
+            ID: typeof sessionKey === 'number' ? sessionKey : 1,
+            uid: typeof sessionKey === 'number' ? sessionKey : 1,
+            s_key: typeof sessionKey === 'string' ? sessionKey : 'mock_session_key',
+            aesKey: 'mock_aes_key_for_testing',
+            mesKey: 'mock_mes_key_for_testing',
+            connection: null,
+            device_type: 1,
+            device: 'unknown',
+            create_date: new Date().toISOString()
+        };
+    }
+
+    // Отправка сообщения пользователю
+    static async sendMessageToUser(params, message) {
+        let userId, actualMessage;
+        
+        if (typeof params === 'object' && params.uid !== undefined) {
+            userId = params.uid;
+            actualMessage = params.message;
+        } else if (typeof params === 'number') {
+            userId = params;
+            actualMessage = message;
+        } else {
+            console.log('❌ Неверные параметры для sendMessageToUser:', params);
+            return { success: false };
+        }
+        
+        console.log(`📨 sendMessageToUser заглушка: user=${userId}, type=${actualMessage?.type || 'unknown'}`);
+        
+        return { 
+            success: true, 
+            message: 'Сообщение отправлено (режим заглушки)',
+            userId: userId
+        };
+    }
+
+    // Получение всех сессий пользователя
+    static async getUserSessions(userId) {
+        const sessions = [];
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.uid === userId) {
+                sessions.push({
+                    s_key: sKey,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date
+                });
+            }
+        }
+        return sessions;
+    }
+
+    // Удаление сессии
+    static async deleteSession(sessionKey) {
+        const deleted = memoryStorage.sessions.delete(sessionKey);
+        if (deleted) {
+            console.log(`🗑️  Сессия удалена: ${sessionKey.substring(0, 10)}...`);
+        }
+        return deleted;
+    }
 }
 
-export default AccountManager;
+// Экспорт функций для совместимости с другими модулями
+export const getSession = AccountManager.getSession;
+export const sendMessageToUser = AccountManager.sendMessageToUser;
+export const getUserSessions = AccountManager.getUserSessions;
+export const deleteSession = AccountManager.deleteSession;
+export const createAccount = AccountManager.createAccount;
+export const getInstance = AccountManager.getInstance;
 
 // Экспорт для отладки
 export const debugMemory = () => ({
     totalAccounts: memoryStorage.accounts.size,
     totalSessions: memoryStorage.sessions.size,
-    accounts: Array.from(memoryStorage.accounts.values()).map(acc => ({
-        ID: acc.ID,
+    nextAccountId: memoryStorage.nextAccountId,
+    accounts: Array.from(memoryStorage.accounts.entries()).map(([id, acc]) => ({
+        ID: id,
         Username: acc.Username,
-        Email: acc.Email
+        Email: acc.Email,
+        Name: acc.Name
+    })),
+    sessions: Array.from(memoryStorage.sessions.entries()).map(([key, session]) => ({
+        key: key.substring(0, 10) + '...',
+        uid: session.uid,
+        device: session.device
     }))
 });
+
+// Экспорт класса как default
+export default AccountManager;
