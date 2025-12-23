@@ -11,6 +11,40 @@ const memoryStorage = {
     nextAccountId: 1000
 };
 
+// Создаем тестовый аккаунт по умолчанию
+(() => {
+    const testAccountId = 1;
+    const hashedPassword = bcrypt.hashSync('test123', 10);
+    
+    memoryStorage.accounts.set(testAccountId, {
+        ID: testAccountId,
+        Name: 'Тестовый пользователь',
+        Username: 'testuser',
+        Email: 'test@example.com',
+        Password: hashedPassword,
+        CreateDate: new Date().toISOString(),
+        Avatar: null,
+        Cover: null,
+        Description: 'Тестовый аккаунт для разработки',
+        Eballs: 1000,
+        Notifications: 0,
+        messenger_size: 0
+    });
+    
+    memoryStorage.permissions.set(testAccountId, {
+        UserID: testAccountId,
+        Posts: true,
+        Comments: true,
+        NewChats: true,
+        MusicUpload: true,
+        Admin: true,
+        Verified: true,
+        Fake: false
+    });
+    
+    console.log(`✅ Тестовый аккаунт создан: testuser / test123 (ID: ${testAccountId})`);
+})();
+
 class AccountManager {
     constructor(id) {
         if (!id || typeof id !== 'number' || id <= 0) {
@@ -78,6 +112,151 @@ class AccountManager {
         return { id: newId, account: newAccount };
     }
 
+    // Статический метод для авторизации (подключения) аккаунта
+    static async connectAccount(loginData) {
+        console.log(`[AccountManager] connectAccount вызван:`, 
+            loginData.email ? `email: ${loginData.email}` : `username: ${loginData.username}`);
+        
+        try {
+            const { email, username, password, device = 'unknown' } = loginData;
+            
+            if (!password) {
+                throw new AppError('Пароль обязателен');
+            }
+            
+            if (!email && !username) {
+                throw new AppError('Укажите email или логин');
+            }
+            
+            // Ищем аккаунт по email или username
+            let foundAccount = null;
+            let accountId = null;
+            
+            for (const [id, account] of memoryStorage.accounts.entries()) {
+                if ((email && account.Email === email) || 
+                    (username && account.Username === username)) {
+                    foundAccount = account;
+                    accountId = id;
+                    break;
+                }
+            }
+            
+            if (!foundAccount) {
+                console.log(`❌ Аккаунт не найден: ${email || username}`);
+                
+                // Для удобства разработки: если логин 'test' и пароль 'test', создаем тестовый аккаунт
+                if ((email === 'test@example.com' || username === 'test') && password === 'test') {
+                    console.log('⚠️  Создаем тестовый аккаунт для разработки');
+                    
+                    const testId = memoryStorage.nextAccountId++;
+                    const hashedTestPassword = await bcrypt.hash('test', 10);
+                    
+                    const testAccount = {
+                        ID: testId,
+                        Name: 'Тестовый пользователь',
+                        Username: 'test' + testId,
+                        Email: 'test' + testId + '@example.com',
+                        Password: hashedTestPassword,
+                        CreateDate: new Date().toISOString(),
+                        Avatar: null,
+                        Cover: null,
+                        Description: 'Автосозданный тестовый аккаунт',
+                        Eballs: 500,
+                        Notifications: 0,
+                        messenger_size: 0
+                    };
+                    
+                    memoryStorage.accounts.set(testId, testAccount);
+                    memoryStorage.permissions.set(testId, {
+                        UserID: testId,
+                        Posts: true,
+                        Comments: true,
+                        NewChats: true,
+                        MusicUpload: true,
+                        Admin: false,
+                        Verified: false,
+                        Fake: false
+                    });
+                    
+                    foundAccount = testAccount;
+                    accountId = testId;
+                    
+                    console.log(`✅ Тестовый аккаунт создан: ${testAccount.Username} (ID: ${testId})`);
+                } else {
+                    throw new AppError('Неверный логин или пароль');
+                }
+            }
+            
+            // Проверяем пароль
+            const passwordMatch = await bcrypt.compare(password, foundAccount.Password);
+            
+            if (!passwordMatch) {
+                console.log(`❌ Неверный пароль для аккаунта: ${foundAccount.Username}`);
+                throw new AppError('Неверный логин или пароль');
+            }
+            
+            // Создаем сессию
+            const sessionKey = crypto.randomBytes(32).toString('hex');
+            const session = {
+                uid: accountId,
+                s_key: sessionKey,
+                device_type: 1, // browser
+                device: device,
+                create_date: new Date().toISOString(),
+                aesKey: 'mock_aes_key_for_testing',
+                mesKey: 'mock_mes_key_for_testing',
+                connection: null,
+                lastActive: new Date().toISOString()
+            };
+            
+            memoryStorage.sessions.set(sessionKey, session);
+            
+            console.log(`✅ Авторизация успешна: ${foundAccount.Username} (ID: ${accountId})`);
+            
+            // Возвращаем данные для авторизации
+            return {
+                status: 'success',
+                account: {
+                    ID: accountId,
+                    Name: foundAccount.Name,
+                    Username: foundAccount.Username,
+                    Email: foundAccount.Email,
+                    Avatar: foundAccount.Avatar,
+                    Cover: foundAccount.Cover,
+                    Description: foundAccount.Description,
+                    Eballs: foundAccount.Eballs,
+                    Notifications: foundAccount.Notifications,
+                    CreateDate: foundAccount.CreateDate
+                },
+                session: {
+                    s_key: sessionKey,
+                    aesKey: session.aesKey,
+                    mesKey: session.mesKey,
+                    device_type: session.device_type,
+                    device: session.device
+                },
+                permissions: memoryStorage.permissions.get(accountId) || {
+                    Posts: true,
+                    Comments: true,
+                    NewChats: true,
+                    MusicUpload: false,
+                    Admin: false,
+                    Verified: false,
+                    Fake: false
+                }
+            };
+            
+        } catch (error) {
+            console.error('[AccountManager] Ошибка в connectAccount:', error.message);
+            
+            if (error instanceof AppError) {
+                throw error;
+            }
+            
+            throw new AppError('Ошибка при авторизации');
+        }
+    }
+
     // Получение экземпляра AccountManager
     static getInstance(id) {
         return new AccountManager(id);
@@ -114,7 +293,7 @@ class AccountManager {
         }
     }
 
-    // Статический метод для обновления сессии (ПОЛНАЯ РЕАЛИЗАЦИЯ)
+    // Статический метод для обновления сессии
     static async updateSession(sessionKeyOrId, updates) {
         console.log(`[AccountManager] updateSession вызван:`, { sessionKeyOrId, updates });
         
@@ -493,7 +672,7 @@ class AccountManager {
         return; 
     }
 
-    // Получение аккаунта по email или username (дополнительная заглушка)
+    // Получение аккаунта по email или username
     static async getAccountByEmailOrUsername(identifier) {
         console.log(`🔍 Поиск аккаунта: ${identifier}`);
         
@@ -520,6 +699,51 @@ class AccountManager {
         return null;
     }
 
+    // Выход из аккаунта (logout)
+    static async logout(sessionKey) {
+        console.log(`[AccountManager] logout для сессии: ${typeof sessionKey === 'string' ? sessionKey.substring(0, 10) + '...' : sessionKey}`);
+        
+        if (typeof sessionKey === 'string') {
+            const deleted = memoryStorage.sessions.delete(sessionKey);
+            if (deleted) {
+                console.log(`✅ Сессия удалена при выходе`);
+                return true;
+            }
+        }
+        
+        return true;
+    }
+
+    // Проверка токена (для WebSocket авторизации)
+    static async validateToken(token) {
+        console.log(`[AccountManager] validateToken: ${token?.substring(0, 10)}...`);
+        
+        // Простая проверка: если токен есть в сессиях
+        if (typeof token === 'string' && memoryStorage.sessions.has(token)) {
+            const session = memoryStorage.sessions.get(token);
+            return {
+                valid: true,
+                userId: session.uid,
+                session: session
+            };
+        }
+        
+        // Или если это числовой ID пользователя
+        if (typeof token === 'number' && memoryStorage.accounts.has(token)) {
+            return {
+                valid: true,
+                userId: token,
+                session: null
+            };
+        }
+        
+        return {
+            valid: false,
+            userId: null,
+            session: null
+        };
+    }
+
     // Универсальный обработчик для любых функций
     static async __missingFunction(name, ...args) {
         console.log(`⚠️  [AccountManager] Вызвана отсутствующая функция: ${name} с аргументами:`, args);
@@ -537,7 +761,10 @@ export const getInstance = AccountManager.getInstance;
 export const updateAccount = AccountManager.updateAccount;
 export const updateSession = AccountManager.updateSession;
 export const getSessionByConnection = AccountManager.getSessionByConnection;
-export const getAccountByEmailOrUsername = AccountManager.getAccountByEmailOrUsername; // На случай если понадобится
+export const getAccountByEmailOrUsername = AccountManager.getAccountByEmailOrUsername;
+export const connectAccount = AccountManager.connectAccount;
+export const logout = AccountManager.logout;
+export const validateToken = AccountManager.validateToken;
 
 // Экспорт для отладки
 export const debugMemory = () => ({
