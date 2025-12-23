@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import Config from './Config.js';
 import AppError from '../../services/system/AppError.js';
 
-// ================================
-// In-memory storage (mock)
-// ================================
+// ==================================
+// In-memory mock storage
+// ==================================
 const memoryStorage = {
     accounts: new Map(),
     sessions: new Map(),
@@ -27,9 +27,9 @@ class AccountManager {
         this.accountData = memoryStorage.accounts.get(id);
     }
 
-    // ================================
+    // ==================================
     // Account creation
-    // ================================
+    // ==================================
     static async createAccount({ name, username, email, password }) {
         for (const acc of memoryStorage.accounts.values()) {
             if (acc.Username === username) throw new AppError('Логин занят');
@@ -73,9 +73,9 @@ class AccountManager {
         return new AccountManager(id);
     }
 
-    // ================================
+    // ==================================
     // Sessions
-    // ================================
+    // ==================================
     async startSession(deviceType, device) {
         const sKey = crypto.randomBytes(32).toString('hex');
 
@@ -89,6 +89,29 @@ class AccountManager {
             mesKey: 'mock_mes_key'
         });
 
+        return sKey;
+    }
+
+    static async connectAccount(accountId, deviceType = 'browser', device = 'unknown') {
+        const account = memoryStorage.accounts.get(accountId);
+        if (!account) {
+            console.log(`❌ connectAccount: аккаунт ${accountId} не найден`);
+            return null;
+        }
+
+        const sKey = crypto.randomBytes(32).toString('hex');
+
+        memoryStorage.sessions.set(sKey, {
+            uid: accountId,
+            s_key: sKey,
+            device_type: deviceType === 'browser' ? 1 : 0,
+            device,
+            create_date: new Date().toISOString(),
+            aesKey: 'mock_aes_key',
+            mesKey: 'mock_mes_key'
+        });
+
+        console.log(`✅ connectAccount: user ${accountId}, session ${sKey.substring(0, 8)}...`);
         return sKey;
     }
 
@@ -127,9 +150,9 @@ class AccountManager {
         return [...memoryStorage.sessions.values()].filter(s => s.uid === userId);
     }
 
-    // ================================
+    // ==================================
     // Account methods
-    // ================================
+    // ==================================
     async verifyPassword(password) {
         return bcrypt.compare(password, this.accountData.Password);
     }
@@ -158,9 +181,9 @@ class AccountManager {
         return memoryStorage.permissions.get(this.accountID);
     }
 
-    // ================================
+    // ==================================
     // Stubs
-    // ================================
+    // ==================================
     async getGoldStatus() { return { activated: false }; }
     async getGoldHistory() { return []; }
     async getChannels() { return []; }
@@ -173,10 +196,11 @@ class AccountManager {
     }
 }
 
-// ================================
+// ==================================
 // Named exports (CRITICAL)
-// ================================
+// ==================================
 export const getSession = AccountManager.getSession;
+export const connectAccount = AccountManager.connectAccount;
 export const updateSession = AccountManager.updateSession;
 export const deleteSession = AccountManager.deleteSession;
 export const getUserSessions = AccountManager.getUserSessions;
