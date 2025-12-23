@@ -1,104 +1,122 @@
-import webPush from 'web-push';
-import AccountDataHelper from '../services/account/AccountDataHelper.js';
-import { getDate } from '../system/global/Function.js';
-import { getSession, sendMessageToUser } from '../system/global/AccountManager.js';
-import { sendAES } from '../system/global/Crypto.js';
+// notify_service/send.ts - Полная заглушка для режима без БД
 import Config from '../system/global/Config.js';
-import { dbE } from '../lib/db.js';
 
-webPush.setVapidDetails(
-    'mailto:elemsupport@proton.me',
-    Config.VAPID.PUBLIC_KEY,
-    Config.VAPID.PRIVATE_KEY
-);
+console.log('📦 Notify service: РЕЖИМ ЗАГЛУШКИ (без WebPush, без БД)');
 
-export async function send(uid, payload) {
+// Заглушка для web-push (если он не установлен)
+let webPush: any = {
+    setVapidDetails: () => console.log('📦 WebPush заглушка: VAPID детали установлены'),
+    sendNotification: async () => {
+        console.log('📦 WebPush заглушка: уведомление "отправлено"');
+        return { status: 'mock-success' };
+    }
+};
+
+try {
+    // Пробуем импортировать реальный web-push
+    const webPushModule = await import('web-push');
+    webPush = webPushModule.default || webPushModule;
+    console.log('✅ WebPush загружен');
+} catch (error) {
+    console.log('⚠️  WebPush недоступен, используем заглушку');
+}
+
+// Заглушка для getSession
+export const getSession = async (sessionId: string | number) => {
+    console.log(`📦 getSession заглушка для: ${sessionId}`);
+    
+    // Возвращаем фиктивную сессию
+    return {
+        uid: typeof sessionId === 'number' ? sessionId : 1,
+        s_key: typeof sessionId === 'string' ? sessionId : 'mock_session_key',
+        connection: null,
+        aesKey: 'mock_aes_key_for_testing'
+    };
+};
+
+// Заглушка для sendMessageToUser
+export const sendMessageToUser = async (params: { uid: number; message: any } | number, message?: any) => {
+    let userId: number;
+    let actualMessage: any;
+    
+    if (typeof params === 'object' && params.uid) {
+        userId = params.uid;
+        actualMessage = params.message;
+    } else {
+        userId = params as number;
+        actualMessage = message;
+    }
+    
+    console.log(`📦 sendMessageToUser заглушка: user=${userId}, type=${actualMessage?.type || 'unknown'}`);
+    
+    // В реальном режиме здесь была бы отправка через WebSocket
+    // Для заглушки просто логируем
+    return { success: true, message: 'Сообщение отправлено (режим заглушки)' };
+};
+
+// Заглушка для sendAES
+const sendAES = async ({ data, key }: { data: any; key: string }) => {
+    console.log(`📦 sendAES заглушка: шифрование данных типа ${data?.type || 'unknown'}`);
+    return data; // Возвращаем данные как есть
+};
+
+// Главная функция send - полная заглушка
+export async function send(uid: number, payload: any) {
     try {
-        if (!uid || !payload?.from || !payload?.action || !payload?.content) {
-            throw new Error('Недостаточно данных для отправки уведомления');
-        }
+        console.log('📦 Notify.send заглушка вызвана:', {
+            uid,
+            from: payload?.from,
+            action: payload?.action
+        });
 
-        const isValidSender = await AccountDataHelper.validateAccount(uid);
-        const isValidReceiver = await AccountDataHelper.validateAccount(payload.from);
-
-        if (!isValidSender || !isValidReceiver) {
-            throw new Error('Некорректный идентификатор пользователя');
-        }
-
-        const notificationExists = await dbE.query(
-            'SELECT COUNT(*) as count FROM notifications WHERE `for` = ? AND `from` = ? AND action = ? AND content = ?',
-            [uid, payload.from, payload.action, JSON.stringify(payload.content)]
-        );
-        if (notificationExists[0].count > 0) {
+        if (!uid || !payload?.from || !payload?.action) {
+            console.log('⚠️  Пропускаем уведомление: недостаточно данных');
             return;
         }
 
-        const date = getDate();
-        const notification = await dbE.query(
-            'INSERT INTO notifications (`for`, `from`, action, content, date) VALUES (?, ?, ?, ?, ?)',
-            [uid, payload.from, payload.action, JSON.stringify(payload.content), date]
-        );
-        const notificationsCount = await dbE.query(
-            'SELECT COUNT(*) as count FROM notifications WHERE `for` = ? AND viewed = 0',
-            [uid]
-        );
-        await dbE.query(
-            'UPDATE accounts SET Notifications = ? WHERE ID = ?',
-            [notificationsCount[0].count, uid]
-        );
+        // Логируем "отправку" уведомления
+        console.log(`📨 Заглушка: Уведомление для пользователя ${uid} от ${payload.from} (${payload.action})`);
         
-        const accountDataHelper = new AccountDataHelper();
-        const author = await accountDataHelper.getAuthorData(payload.from);
-
-        const subscriptions = await dbE.query(
-            'SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?',
-            [uid]
-        );
-
-        const data = {
-            id: notification.insertId,
-            author: author,
-            action: payload.action,
-            content: payload.content,
-            viewed: 0,
-            date: date,
-        }
-
-        console.log('Отправка пуш-уведомления:', data);
-
-        for (const sub of subscriptions) {
-            try {
-                await webPush.sendNotification(
-                    {
-                        endpoint: sub.endpoint,
-                        keys: {
-                            p256dh: sub.p256dh,
-                            auth: sub.auth
-                        }
-                    },
-                    JSON.stringify(data)
-                );
-            } catch (err) {
-                console.error('Ошибка при пуше на', sub.endpoint, err);
+        // Пытаемся отправить через WebSocket (заглушка)
+        try {
+            const session = await getSession(uid);
+            
+            if (session) {
+                await sendMessageToUser({
+                    uid: uid,
+                    message: await sendAES({
+                        data: {
+                            type: 'social',
+                            action: 'notify',
+                            notification: {
+                                id: Date.now(),
+                                author: { id: payload.from, name: 'System' },
+                                action: payload.action,
+                                content: payload.content || {},
+                                viewed: 0,
+                                date: new Date().toISOString()
+                            }
+                        },
+                        key: session.aesKey || 'mock_key'
+                    })
+                });
+                console.log('✅ Заглушка: WebSocket уведомление "отправлено"');
             }
+        } catch (wsError) {
+            console.log('⚠️  Заглушка: Ошибка WebSocket отправки (игнорируем)', wsError.message);
         }
 
-        const session = await getSession(uid);
-
-        if (session && session.connection) {
-            sendMessageToUser({
-                uid: uid,
-                message: await sendAES({
-                    data: {
-                        type: 'social',
-                        action: 'notify',
-                        notification: data
-                    },
-                    key: session.aesKey
-                })
-            })
-        }
+        return { status: 'mock-success', message: 'Уведомление обработано в режиме заглушки' };
+        
     } catch (error) {
-        console.error('Ошибка при отправке уведомления:', error);
+        console.error('❌ Ошибка в notify заглушке:', error.message);
+        return { status: 'mock-error', error: error.message };
     }
 }
+
+// Экспорт по умолчанию
+export default {
+    send,
+    getSession,
+    sendMessageToUser
+};
