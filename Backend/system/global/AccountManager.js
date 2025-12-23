@@ -1,87 +1,100 @@
-// system/global/AccountManager.js
+// Backend/system/global/AccountManager.js
 
 import crypto from 'crypto';
 
-// Простейшая "память" для аккаунтов и сессий
-const memoryStorage = {
-    accounts: new Map(),       // key: account ID, value: account data
-    sessions: new Map(),       // key: session key, value: { accountId, device, type }
-};
+// Временное хранилище аккаунтов и сессий в памяти
+const accounts = new Map();   // key: account ID, value: account object
+const sessions = new Map();   // key: session key, value: account ID
+let nextAccountId = 1000;
 
-class AccountManager {
+export default class AccountManager {
     constructor(accountId) {
         this.accountId = accountId;
+        this.account = accounts.get(accountId);
     }
 
-    // Проверка пароля (предполагается хранение хеша)
+    // Проверка пароля
     async verifyPassword(password) {
-        const account = memoryStorage.accounts.get(this.accountId);
-        if (!account) return false;
-        return account.password === password; // В реальном проекте использовать bcrypt
+        if (!this.account) return false;
+        // Можно заменить на bcrypt для продакшена
+        return this.account.password === password;
     }
 
     // Создание сессии
     async startSession(deviceType = null, device = null) {
-        const S_KEY = crypto.randomBytes(16).toString('hex');
-        memoryStorage.sessions.set(S_KEY, {
+        const sessionKey = crypto.randomBytes(16).toString('hex');
+        const session = {
+            key: sessionKey,
             accountId: this.accountId,
             deviceType,
             device,
             createdAt: new Date(),
-        });
-        return S_KEY;
+        };
+        sessions.set(sessionKey, this.accountId);
+        return sessionKey;
     }
 
-    // Статические методы для работы с памятью
-
-    static getSession(S_KEY) {
-        return memoryStorage.sessions.get(S_KEY) || null;
+    // Обновление данных аккаунта
+    async updateAccount(data) {
+        if (!this.account) return false;
+        Object.assign(this.account, data);
+        accounts.set(this.accountId, this.account);
+        return true;
     }
 
-    static getUserSessions(accountId) {
-        const sessions = [];
-        for (const [key, session] of memoryStorage.sessions.entries()) {
-            if (session.accountId === accountId) sessions.push({ key, ...session });
+    // Получение аккаунта по ID
+    static getAccount(accountId) {
+        return accounts.get(accountId) || null;
+    }
+
+    // Получение аккаунта по email
+    static getAccountByEmail(email) {
+        for (const account of accounts.values()) {
+            if (account.email === email) return account;
         }
-        return sessions;
+        return null;
     }
 
-    static deleteSession(S_KEY) {
-        return memoryStorage.sessions.delete(S_KEY);
+    // Получение сессии по ключу
+    static getSession(sessionKey) {
+        const accountId = sessions.get(sessionKey);
+        if (!accountId) return null;
+        return accounts.get(accountId) || null;
     }
 
-    static debugMemory() {
-        return memoryStorage;
-    }
+    // Создание нового аккаунта
+    static createAccount({ username, email, password, name }) {
+        const existing = this.getAccountByEmail(email);
+        if (existing) return null;
 
-    static getAccounts() {
-        return Array.from(memoryStorage.accounts.values());
-    }
-
-    static async updateAccount(id, updates) {
-        if (!memoryStorage.accounts.has(id)) {
-            throw new Error('Аккаунт не найден');
-        }
-        const account = memoryStorage.accounts.get(id);
-        const updated = { ...account, ...updates };
-        memoryStorage.accounts.set(id, updated);
-        return updated;
-    }
-
-    static async createAccount({ username, email, password, name }) {
-        const id = memoryStorage.accounts.size + 1000;
-        const account = { ID: id, username, email, name, password };
-        memoryStorage.accounts.set(id, account);
+        const accountId = nextAccountId++;
+        const account = {
+            ID: accountId,
+            username,
+            email,
+            password,  // для продакшена использовать хеш
+            name,
+            createdAt: new Date(),
+        };
+        accounts.set(accountId, account);
         return account;
+    }
+
+    // Для отладки памяти
+    static debugMemory() {
+        return {
+            accounts: Array.from(accounts.values()),
+            sessions: Array.from(sessions.entries()),
+        };
     }
 }
 
-// Экспорт по дефолту и по именам
-export default AccountManager;
-export const debugMemory = AccountManager.debugMemory;
-export const getSession = AccountManager.getSession;
-export const getUserSessions = AccountManager.getUserSessions;
-export const deleteSession = AccountManager.deleteSession;
-export const updateAccount = AccountManager.updateAccount;
-export const createAccount = AccountManager.createAccount;
-export const getAccounts = AccountManager.getAccounts;
+// Дополнительно экспортируем функции для удобства
+export { accounts, sessions, AccountManager };
+export function getSession(sessionKey) {
+    return AccountManager.getSession(sessionKey);
+}
+export function updateAccount(accountId, data) {
+    const manager = new AccountManager(accountId);
+    return manager.updateAccount(data);
+}
