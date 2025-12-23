@@ -4,7 +4,7 @@ import Config from './Config.js';
 import AppError from '../../services/system/AppError.js';
 
 // ================================
-// In-memory хранилище (заглушка)
+// In-memory storage (mock)
 // ================================
 const memoryStorage = {
     accounts: new Map(),
@@ -19,35 +19,28 @@ class AccountManager {
             throw new AppError('Некорректный идентификатор аккаунта');
         }
 
-        this.accountID = id;
-
         if (!memoryStorage.accounts.has(id)) {
             throw new AppError('Аккаунт не найден');
         }
 
+        this.accountID = id;
         this.accountData = memoryStorage.accounts.get(id);
     }
 
     // ================================
-    // Создание аккаунта
+    // Account creation
     // ================================
-    static async createAccount(accountData) {
-        const { name, username, email, password } = accountData;
-
+    static async createAccount({ name, username, email, password }) {
         for (const acc of memoryStorage.accounts.values()) {
-            if (acc.Username === username) {
-                throw new AppError('Этот логин уже занят');
-            }
-            if (acc.Email === email) {
-                throw new AppError('Этот email уже используется');
-            }
+            if (acc.Username === username) throw new AppError('Логин занят');
+            if (acc.Email === email) throw new AppError('Email занят');
         }
 
-        const newId = memoryStorage.nextAccountId++;
+        const id = memoryStorage.nextAccountId++;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newAccount = {
-            ID: newId,
+        const account = {
+            ID: id,
             Name: name,
             Username: username,
             Email: email,
@@ -60,10 +53,9 @@ class AccountManager {
             Notifications: 0
         };
 
-        memoryStorage.accounts.set(newId, newAccount);
-
-        memoryStorage.permissions.set(newId, {
-            UserID: newId,
+        memoryStorage.accounts.set(id, account);
+        memoryStorage.permissions.set(id, {
+            UserID: id,
             Posts: true,
             Comments: true,
             NewChats: true,
@@ -73,8 +65,8 @@ class AccountManager {
             Fake: false
         });
 
-        console.log(`✅ Аккаунт создан: ${username} (ID ${newId})`);
-        return { id: newId, account: newAccount };
+        console.log(`✅ Account created: ${username} (${id})`);
+        return { id, account };
     }
 
     static getInstance(id) {
@@ -82,64 +74,49 @@ class AccountManager {
     }
 
     // ================================
-    // Сессии
+    // Sessions
     // ================================
     async startSession(deviceType, device) {
-        const S_KEY = crypto.randomBytes(32).toString('hex');
+        const sKey = crypto.randomBytes(32).toString('hex');
 
-        const session = {
+        memoryStorage.sessions.set(sKey, {
             uid: this.accountID,
-            s_key: S_KEY,
+            s_key: sKey,
             device_type: deviceType === 'browser' ? 1 : 0,
             device: device || 'unknown',
             create_date: new Date().toISOString(),
             aesKey: 'mock_aes_key',
             mesKey: 'mock_mes_key'
-        };
+        });
 
-        memoryStorage.sessions.set(S_KEY, session);
-
-        console.log(`✅ Сессия создана: ${S_KEY.substring(0, 8)}...`);
-        return S_KEY;
+        return sKey;
     }
 
-    static async getSession(sessionKey) {
-        if (typeof sessionKey === 'number') {
-            for (const [sKey, session] of memoryStorage.sessions.entries()) {
-                if (session.uid === sessionKey) {
-                    return {
-                        ID: session.uid,
-                        uid: session.uid,
-                        s_key: sKey,
-                        aesKey: session.aesKey,
-                        mesKey: session.mesKey,
-                        connection: null,
-                        device_type: session.device_type,
-                        device: session.device,
-                        create_date: session.create_date
-                    };
-                }
-            }
+    static async getSession(key) {
+        if (typeof key === 'string') {
+            return memoryStorage.sessions.get(key) || null;
         }
 
-        if (typeof sessionKey === 'string') {
-            const session = memoryStorage.sessions.get(sessionKey);
-            if (session) {
-                return {
-                    ID: session.uid,
-                    uid: session.uid,
-                    s_key: sessionKey,
-                    aesKey: session.aesKey,
-                    mesKey: session.mesKey,
-                    connection: null,
-                    device_type: session.device_type,
-                    device: session.device,
-                    create_date: session.create_date
-                };
+        if (typeof key === 'number') {
+            for (const session of memoryStorage.sessions.values()) {
+                if (session.uid === key) return session;
             }
         }
 
         return null;
+    }
+
+    static async updateSession(sessionKey, patch = {}) {
+        const session = memoryStorage.sessions.get(sessionKey);
+        if (!session) return false;
+
+        memoryStorage.sessions.set(sessionKey, {
+            ...session,
+            ...patch
+        });
+
+        console.log(`✅ updateSession: ${sessionKey.substring(0, 8)}...`);
+        return true;
     }
 
     static async deleteSession(sessionKey) {
@@ -147,22 +124,11 @@ class AccountManager {
     }
 
     static async getUserSessions(userId) {
-        const result = [];
-        for (const [key, session] of memoryStorage.sessions.entries()) {
-            if (session.uid === userId) {
-                result.push({
-                    s_key: key,
-                    device_type: session.device_type,
-                    device: session.device,
-                    create_date: session.create_date
-                });
-            }
-        }
-        return result;
+        return [...memoryStorage.sessions.values()].filter(s => s.uid === userId);
     }
 
     // ================================
-    // Аккаунт
+    // Account methods
     // ================================
     async verifyPassword(password) {
         return bcrypt.compare(password, this.accountData.Password);
@@ -173,74 +139,50 @@ class AccountManager {
         return safe;
     }
 
-    async getFullAccountData() {
-        return this.accountData;
+    async updateAccountData(patch) {
+        this.accountData = { ...this.accountData, ...patch };
+        memoryStorage.accounts.set(this.accountID, this.accountData);
+        return true;
+    }
+
+    static async updateAccount(accountId, patch = {}) {
+        const acc = memoryStorage.accounts.get(accountId);
+        if (!acc) return false;
+
+        memoryStorage.accounts.set(accountId, { ...acc, ...patch });
+        console.log(`✅ updateAccount: ${accountId}`);
+        return true;
     }
 
     async getPermissions() {
         return memoryStorage.permissions.get(this.accountID);
     }
 
-    async updateAccountData(updates) {
-        const updated = { ...this.accountData, ...updates };
-        memoryStorage.accounts.set(this.accountID, updated);
-        this.accountData = updated;
-        return true;
-    }
-
     // ================================
-    // 🔧 КЛЮЧЕВАЯ ЗАГЛУШКА
+    // Stubs
     // ================================
-    static async updateAccount(accountId, updates = {}) {
-        const account = memoryStorage.accounts.get(accountId);
-        if (!account) {
-            console.log(`❌ updateAccount: аккаунт ${accountId} не найден`);
-            return false;
-        }
-
-        memoryStorage.accounts.set(accountId, {
-            ...account,
-            ...updates
-        });
-
-        console.log(`✅ updateAccount обновил аккаунт ${accountId}`);
-        return true;
-    }
-
-    // ================================
-    // Заглушки
-    // ================================
-    async getGoldStatus() { return { activated: false, date_get: null }; }
+    async getGoldStatus() { return { activated: false }; }
     async getGoldHistory() { return []; }
     async getChannels() { return []; }
     async getMessengerNotifications() { return 0; }
 
-    async changeAvatar() { return { status: 'success' }; }
-    async changeCover() { return { status: 'success' }; }
-    async changeName() { return { status: 'success' }; }
-    async changeUsername() { return { status: 'success' }; }
-    async changeDescription() { return { status: 'success' }; }
-    async changeEmail() { return { status: 'success' }; }
-    async changePassword() { return { status: 'success' }; }
-    async addEballs() { return true; }
-    async maybeReward() { return true; }
-
     static async sendMessageToUser(params, message) {
-        const userId = typeof params === 'object' ? params.uid : params;
-        console.log(`📨 sendMessageToUser → user ${userId}`);
+        const uid = typeof params === 'object' ? params.uid : params;
+        console.log(`📨 sendMessageToUser → ${uid}`);
         return { success: true };
     }
 }
 
 // ================================
-// Экспорты для совместимости
+// Named exports (CRITICAL)
 // ================================
 export const getSession = AccountManager.getSession;
-export const sendMessageToUser = AccountManager.sendMessageToUser;
-export const getUserSessions = AccountManager.getUserSessions;
+export const updateSession = AccountManager.updateSession;
 export const deleteSession = AccountManager.deleteSession;
+export const getUserSessions = AccountManager.getUserSessions;
 export const createAccount = AccountManager.createAccount;
 export const getInstance = AccountManager.getInstance;
 export const updateAccount = AccountManager.updateAccount;
+export const sendMessageToUser = AccountManager.sendMessageToUser;
 
 export default AccountManager;
