@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
-import { rsaEncrypt, rsaDecrypt, aesEncrypt, aesDecrypt, arrayBufferToPem, blobToUint8Array, generateAESKey } from '../System/Modules/Crypto';
 import BaseConfig from '../Configs/Base';
-import { decode, encode } from '@msgpack/msgpack';
 import { errorReporter } from '../System/Services/ErrorReporter.js';
 
 class WebSocketClient extends EventEmitter {
@@ -10,12 +8,6 @@ class WebSocketClient extends EventEmitter {
     socket: WebSocket | null;
     isConnected: boolean;
 
-    rsaPublic: ArrayBuffer | null;
-    rsaPrivate: ArrayBuffer | null;
-    rsaPublicServer: string | null;
-    aesKey: string | null;
-    aesServerKey: string | null;
-    keysReady: boolean;
     socketReady: boolean;
 
     eventListeners: { [key: string]: Array<(data: any) => void> };
@@ -33,12 +25,6 @@ class WebSocketClient extends EventEmitter {
         this.socket = null;
         this.isConnected = false;
 
-        this.rsaPublic = null;
-        this.rsaPrivate = null;
-        this.rsaPublicServer = null;
-        this.aesKey = null;
-        this.aesServerKey = null;
-        this.keysReady = false;
         this.socketReady = false;
 
         this.eventListeners = {};
@@ -47,26 +33,6 @@ class WebSocketClient extends EventEmitter {
         this.processingMessages = false;
         this.mesCount = 0;
         this.reconnectTimeout = null;
-    }
-
-    async generateKeys(): Promise<boolean> {
-        console.log('🔑 Генерация RSA ключей...');
-        try {
-            const keyPair = await window.crypto.subtle.generateKey({
-                name: 'RSA-OAEP',
-                modulusLength: 2048,
-                publicExponent: new Uint8Array([1, 0, 1]),
-                hash: { name: 'SHA-256' }
-            }, true, ['encrypt', 'decrypt']);
-            this.rsaPublic = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
-            this.rsaPrivate = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-            this.keysReady = true;
-            console.log('✅ RSA ключи сгенерированы');
-            return true;
-        } catch (error) {
-            console.error('❌ Ошибка генерации ключей:', error);
-            return false;
-        }
     }
 
     connect(): void {
@@ -84,111 +50,36 @@ class WebSocketClient extends EventEmitter {
             console.log('✅ Соединение установлено');
             this.emit('socket_connect');
             
-            // ВАРИАНТ 1: БЕЗ ШИФРОВАНИЯ (для теста - раскомментируйте)
-            /*
-            console.log('⚠️  Использую режим без шифрования для теста');
+            // РЕЖИМ БЕЗ ШИФРОВАНИЯ
+            console.log('⚠️  Использую режим без шифрования (бэкенд в TEST MODE)');
             this.socketReady = true;
             this.isConnected = true;
             this.emit('socket_ready');
             console.log('✅ Сокет готов (без шифрования)');
             errorReporter.setWebSocketClient(this);
             this.processQueue();
-            return;
-            */
-            
-            // ВАРИАНТ 2: С ШИФРОВАНИЕМ (по умолчанию)
-            const keysGenerated = await this.generateKeys();
-            if (!keysGenerated) {
-                console.error('❌ Не удалось сгенерировать ключи');
-                this.disconnect();
-                return;
-            }
-            
-            const publicKeyPem = arrayBufferToPem(this.rsaPublic as ArrayBuffer, 'PUBLIC KEY');
-            console.log('🔑 Отправляю публичный ключ на сервер...');
-
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                this.socket.send(JSON.stringify({
-                    type: 'key_exchange',
-                    key: publicKeyPem
-                }));
-                console.log('✅ Публичный ключ отправлен');
-                this.isConnected = true;
-                this.processQueue();
-            }
         };
 
         this.socket.onmessage = async (event: MessageEvent) => {
             console.log('📨 Получено сообщение от сервера');
             
-            const rawData = event.data;
-
-            if (this.rsaPublicServer) {
-                if (this.aesServerKey) {
-                    try {
-                        const unit8Array = await blobToUint8Array(rawData);
-                        const decryptedAes = await aesDecrypt(unit8Array.buffer, this.aesKey as string);
-                        const decryptedData: any = decode(decryptedAes);
-                        console.log(`📨 Расшифрованное сообщение: ${decryptedData.type || 'unknown'}`);
-                        
-                        const listeners = this.eventListeners[decryptedData.type];
-                        if (Array.isArray(listeners)) {
-                            if (decryptedData.type === 'messenger' && decryptedData.action === 'download_file') {
-                                this.mesCount++;
-                                console.log(`📥 count: ${this.mesCount}`);
-                            }
-                            listeners.forEach(callback => {
-                                callback(decryptedData);
-                            });
-                        }
-                    } catch (error) {
-                        console.error('❌ Ошибка расшифровки AES:', error);
-                    }
-                } else {
-                    try {
-                        if (!this.rsaPrivate) {
-                            console.error('RSA private key не готов');
-                            return;
-                        }
-                        const unit8Array = await blobToUint8Array(rawData);
-                        const decryptedRsa = await rsaDecrypt(unit8Array.buffer, this.rsaPrivate as ArrayBuffer);
-                        const decryptedData: any = decode(decryptedRsa);
-                        console.log('🔑 Получен ответ от сервера:', decryptedData.type);
-                        
-                        if (decryptedData.type && decryptedData.type === 'aes_key') {
-                            this.aesServerKey = decryptedData.key;
-                            this.socketReady = true;
-                            this.emit('socket_ready');
-                            console.log('✅ Сокет полностью готов (AES ключ получен)');
-                            errorReporter.setWebSocketClient(this);
-                            this.processQueue();
-                        }
-                    } catch (error) {
-                        console.error('❌ Ошибка обработки RSA сообщения:', error);
-                        this.disconnect();
-                    }
+            try {
+                const data = JSON.parse(event.data);
+                console.log(`📨 Сообщение от сервера: ${data.type || 'unknown'}`);
+                
+                // Обработка connection_ready от сервера
+                if (data.type === 'connection_ready') {
+                    console.log('✅ Сервер подтвердил подключение:', data.message);
                 }
-            } else {
-                try {
-                    const data: any = JSON.parse(rawData);
-                    console.log('🔑 Ответ сервера:', data.type);
-                    
-                    if (data.type === 'key_exchange') {
-                        this.rsaPublicServer = data.key;
-                        this.aesKey = generateAESKey();
-                        console.log('🔑 Отправляю AES ключ на сервер...');
-                        
-                        const aesKeyPayload = encode({
-                            type: 'aes_key',
-                            key: this.aesKey
-                        });
-                        const encryptedPayload = await rsaEncrypt(aesKeyPayload, this.rsaPublicServer as string);
-                        this.socket?.send(encryptedPayload);
-                        console.log('✅ AES ключ отправлен');
-                    }
-                } catch (error) {
-                    console.error('❌ Ошибка парсинга JSON:', error, rawData);
+                
+                const listeners = this.eventListeners[data.type];
+                if (Array.isArray(listeners)) {
+                    listeners.forEach(callback => {
+                        callback(data);
+                    });
                 }
+            } catch (error) {
+                console.error('❌ Ошибка парсинга сообщения:', error, event.data);
             }
         };
 
@@ -223,21 +114,17 @@ class WebSocketClient extends EventEmitter {
         const ray_id = this.generateRayID();
         console.log(`📤 Отправка: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
 
-        const binaryData = encode({ ray_id, ...data });
-        const encrypted = await aesEncrypt(binaryData, this.aesServerKey as string);
-        this.socket.send(encrypted as any);
+        // Отправляем как JSON (без шифрования)
+        this.socket.send(JSON.stringify({ ray_id, ...data }));
 
         return new Promise((resolve, reject) => {
             const onMessage = async (event: MessageEvent) => {
                 try {
-                    const unit8Array = await blobToUint8Array(event.data);
-                    const decryptedAes = await aesDecrypt(unit8Array.buffer, this.aesKey as string);
-                    const decryptedData: any = decode(decryptedAes);
-
-                    if (decryptedData.ray_id === ray_id) {
+                    const response = JSON.parse(event.data);
+                    if (response.ray_id === ray_id) {
                         this.socket?.removeEventListener('message', onMessage);
                         console.log(`📨 Получен ответ для: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
-                        resolve(decryptedData);
+                        resolve(response);
                     }
                 } catch (error) {
                     reject(error);
@@ -249,7 +136,8 @@ class WebSocketClient extends EventEmitter {
             setTimeout(() => {
                 this.socket?.removeEventListener('message', onMessage);
                 console.log(`⏱️  Таймаут ожидания ответа для: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
-                // reject(new Error(`Превышено время ожидания для ray_id: ${ray_id}`));
+                // Не реджектим, чтобы не ломать существующий код
+                resolve({ status: 'timeout', ray_id });
             }, 5000);
         });
     }
@@ -298,14 +186,6 @@ class WebSocketClient extends EventEmitter {
         }
 
         this.isConnected = false;
-
-        this.rsaPublic = null;
-        this.rsaPrivate = null;
-        this.rsaPublicServer = null;
-        this.aesKey = null;
-        this.aesServerKey = null;
-
-        this.keysReady = false;
         this.socketReady = false;
         this.emit('socket_disconnect');
         this.emit('socket_not_ready');
@@ -344,10 +224,8 @@ class WebSocketClient extends EventEmitter {
     }
 }
 
-// ИСПРАВЛЕННЫЙ URL: подключаемся к правильному бэкенду на Render
+// Подключаемся к бэкенду на Render
 export const websocketClient = new WebSocketClient([
-    'wss://bayrex-backend.onrender.com/user_api',
-    'ws://bayrex-backend.onrender.com/user_api'
-    // Для локальной разработки можно раскомментировать:
-    // 'ws://localhost:10000/user_api'
+    'wss://bayrex-backend.onrender.com/user_api'
+    // Только wss (без ws, так как сайт на HTTPS)
 ]);
