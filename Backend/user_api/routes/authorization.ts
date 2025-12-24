@@ -1,5 +1,4 @@
-import { getSession, setWsToSession } from '../../system/global/AccountManager.js';
-import AccountManager from '../../services/account/AccountManager.js';
+import AccountManager from '../../system/global/AccountManager.js';
 import LinkManager from '../../services/account/LinkManager.js';
 import { dbE } from '../../lib/db.js';
 
@@ -8,23 +7,23 @@ const connect = async (ws, data) => {
     return 'S-KEY не найден.';
   }
 
-  // Используем getSession вместо connectAccount
-  const session = await getSession(data.S_KEY);
-
-  if (!session || !session.ID) {
+  // Получаем сессию напрямую из БД
+  const sessionResult = await dbE.query(
+    'SELECT accounts.*, accounts_sessions.* FROM `accounts_sessions` ' +
+    'INNER JOIN `accounts` ON accounts.ID = accounts_sessions.uid ' +
+    'WHERE accounts_sessions.s_key = ?',
+    [data.S_KEY]
+  );
+  
+  if (!sessionResult || sessionResult.length === 0) {
     return { status: 'error', message: 'S-KEY не актуален.' };
   }
+  
+  const session = sessionResult[0];
+  
+  console.log(`✅ Сессия найдена для пользователя ID: ${session.ID}, Username: ${session.Username}`);
 
-  console.log(`✅ Сессия найдена для пользователя ID: ${session.ID}`);
-
-  // Обновляем WebSocket в сессии
-  try {
-    await setWsToSession(data.S_KEY, ws);
-  } catch (error) {
-    console.log(`⚠️ Не удалось обновить WebSocket в сессии: ${error.message}`);
-  }
-
-  // Получаем данные аккаунта
+  // Создаем AccountManager для этого пользователя
   const accountManager = new AccountManager(session.ID);
   
   if (!accountManager) {
@@ -40,8 +39,8 @@ const connect = async (ws, data) => {
     [session.ID]
   );
 
-  // Получаем базовые данные аккаунта
-  const accountData = await accountManager.account();
+  // Получаем данные аккаунта через accountManager
+  const accountData = await accountManager.getAccountData();
   
   if (!accountData) {
     return { status: 'error', message: 'Данные аккаунта не получены.' };
@@ -50,23 +49,30 @@ const connect = async (ws, data) => {
   // Устанавливаем аккаунт в WebSocket
   ws.account = { 
     ID: session.ID,
-    ...accountData, 
-    permissions: permissions 
+    Name: accountData.Name,
+    Username: accountData.Username,
+    Email: accountData.Email,
+    Avatar: accountData.Avatar,
+    Cover: accountData.Cover,
+    Description: accountData.Description,
+    Eballs: accountData.Eballs,
+    permissions: permissions,
+    s_key: data.S_KEY
   };
 
-  console.log(`✅ Успешное подключение: ${accountData.Username || session.Username}`);
+  console.log(`✅ Успешное подключение: ${accountData.Username}`);
 
   return {
     status: 'success',
     accountData: {
       id: session.ID,
-      name: accountData.Name || session.Name,
-      username: accountData.Username || session.Username,
-      email: accountData.Email || session.Email,
-      avatar: accountData.Avatar || session.Avatar,
-      cover: accountData.Cover || session.Cover,
-      description: accountData.Description || session.Description,
-      e_balls: accountData.Eballs || session.Eballs || 0,
+      name: accountData.Name,
+      username: accountData.Username,
+      email: accountData.Email,
+      avatar: accountData.Avatar,
+      cover: accountData.Cover,
+      description: accountData.Description,
+      e_balls: accountData.Eballs,
       permissions: permissions,
       channels: await accountManager.getChannels(),
       gold_status: goldStatus?.activated || false,
