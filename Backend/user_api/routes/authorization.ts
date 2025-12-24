@@ -1,4 +1,4 @@
-import { connectAccount } from '../../system/global/AccountManager.js';
+import { getSession, setWsToSession } from '../../system/global/AccountManager.js';
 import AccountManager from '../../services/account/AccountManager.js';
 import LinkManager from '../../services/account/LinkManager.js';
 import { dbE } from '../../lib/db.js';
@@ -8,18 +8,30 @@ const connect = async (ws, data) => {
     return 'S-KEY не найден.';
   }
 
-  const session = await connectAccount({ S_KEY: data.S_KEY, ws: ws });
+  // Используем getSession вместо connectAccount
+  const session = await getSession(data.S_KEY);
 
-  if (!session) {
+  if (!session || !session.ID) {
     return { status: 'error', message: 'S-KEY не актуален.' };
   }
 
-  const accountManager = new AccountManager(session.ID);
+  console.log(`✅ Сессия найдена для пользователя ID: ${session.ID}`);
 
+  // Обновляем WebSocket в сессии
+  try {
+    await setWsToSession(data.S_KEY, ws);
+  } catch (error) {
+    console.log(`⚠️ Не удалось обновить WebSocket в сессии: ${error.message}`);
+  }
+
+  // Получаем данные аккаунта
+  const accountManager = new AccountManager(session.ID);
+  
   if (!accountManager) {
     return { status: 'error', message: 'Аккаунт не найден.' };
   }
 
+  // Получаем дополнительные данные
   const linkManager = new LinkManager(session.ID);
   const goldStatus = await accountManager.getGoldStatus();
   const permissions = await accountManager.getPermissions();
@@ -28,26 +40,40 @@ const connect = async (ws, data) => {
     [session.ID]
   );
 
-  ws.account = { ...session, permissions: permissions };
+  // Получаем базовые данные аккаунта
+  const accountData = await accountManager.account();
+  
+  if (!accountData) {
+    return { status: 'error', message: 'Данные аккаунта не получены.' };
+  }
+
+  // Устанавливаем аккаунт в WebSocket
+  ws.account = { 
+    ID: session.ID,
+    ...accountData, 
+    permissions: permissions 
+  };
+
+  console.log(`✅ Успешное подключение: ${accountData.Username || session.Username}`);
 
   return {
     status: 'success',
     accountData: {
       id: session.ID,
-      name: session.Name,
-      username: session.Username,
-      email: session.Email,
-      avatar: session.Avatar,
-      cover: session.Cover,
-      description: session.Description,
-      e_balls: session.Eballs,
+      name: accountData.Name || session.Name,
+      username: accountData.Username || session.Username,
+      email: accountData.Email || session.Email,
+      avatar: accountData.Avatar || session.Avatar,
+      cover: accountData.Cover || session.Cover,
+      description: accountData.Description || session.Description,
+      e_balls: accountData.Eballs || session.Eballs || 0,
       permissions: permissions,
       channels: await accountManager.getChannels(),
-      gold_status: goldStatus && goldStatus?.activated || false,
+      gold_status: goldStatus?.activated || false,
       gold_history: await accountManager.getGoldHistory(),
       links: await linkManager.getLinks(),
       messenger_notifications: await accountManager.getMessengerNotifications(),
-      notifications: notificationsCount[0].count || 0,
+      notifications: notificationsCount[0]?.count || 0,
     }
   }
 }
@@ -67,7 +93,7 @@ const logout = async (ws, data) => {
     await dbE.query('DELETE FROM `accounts_sessions` WHERE `s_key` = ?', [data.S_KEY]);
   }
 
-  if (session[0].uid === ws.account.ID) {
+  if (session[0].uid === ws.account?.ID) {
     ws.account = null;
   }
 
