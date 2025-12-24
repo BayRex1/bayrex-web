@@ -2,6 +2,16 @@ import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import Config from '../../../../system/global/Config.js';
+
+// ⭐ ИМПОРТИРУЕМ ГЛОБАЛЬНОЕ ХРАНИЛИЩЕ ⭐
+import { getMemoryStorage } from '../../../../services/account/AccountStorage.js';
+
+// Удаляем локальное хранилище:
+// const memoryStorage = { ... }; // ⚠️ УДАЛИТЬ!
+
+// Вместо этого используем глобальное:
+const getStorage = () => getMemoryStorage();
+
 // Локальные реализации на случай отсутствия импортов
 const LocalRouterHelper = {
     success: (data: any) => ({
@@ -34,16 +44,10 @@ const LocalValidator = {
 
 const getDate = () => new Date().toISOString();
 
-// Хранилище аккаунтов в памяти
-const memoryStorage = {
-    accounts: new Map<number, any>(),
-    sessions: new Map<string, any>(),
-    permissions: new Map<number, any>(),
-    nextAccountId: 1000
-};
-
 // Проверка уникальности username и email
 const checkUniqueCredentials = (username: string, email: string) => {
+    const memoryStorage = getStorage();
+    
     for (const [id, account] of memoryStorage.accounts.entries()) {
         if (account.Username === username) {
             throw new Error('Этот логин уже занят');
@@ -70,6 +74,7 @@ const createAccountInMemory = async (accountData: {
     password: string;
 }) => {
     const { name, username, email, password } = accountData;
+    const memoryStorage = getStorage();
     
     // Проверяем уникальность
     checkUniqueCredentials(username, email);
@@ -77,7 +82,7 @@ const createAccountInMemory = async (accountData: {
     // Хэшируем пароль
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Создаем новый ID
+    // Создаем новый ID (используем глобальный счетчик)
     const newId = memoryStorage.nextAccountId++;
     
     // Создаем объект аккаунта
@@ -96,10 +101,14 @@ const createAccountInMemory = async (accountData: {
         last_comment: null as string | null,
         last_song: null as string | null,
         messenger_size: 0,
-        Keyword: 0
+        Keyword: 0,
+        Posts: 0,
+        Subscribers: 0,
+        Subscriptions: 0,
+        Links: 0
     };
 
-    // Сохраняем в память
+    // Сохраняем в ГЛОБАЛЬНОЕ хранилище
     memoryStorage.accounts.set(newId, newAccount);
     
     // Создаем дефолтные права
@@ -114,13 +123,14 @@ const createAccountInMemory = async (accountData: {
         Fake: false
     });
 
-    console.log(`✅ Аккаунт создан в памяти: ${username} (ID: ${newId}, Email: ${email})`);
+    console.log(`✅ Аккаунт создан в ГЛОБАЛЬНОМ хранилище: ${username} (ID: ${newId}, Email: ${email})`);
     
     return newAccount;
 };
 
 // Создание сессии
 const createSession = (accountId: number, deviceType: string = 'browser', device: string | null = null) => {
+    const memoryStorage = getStorage();
     const S_KEY = crypto.randomBytes(32).toString('hex');
     
     const session = {
@@ -133,19 +143,22 @@ const createSession = (accountId: number, deviceType: string = 'browser', device
         device: device || 'unknown',
         create_date: getDate(),
         aesKey: 'mock_aes_key_for_testing',
-        mesKey: 'mock_mes_key_for_testing'
+        mesKey: 'mock_mes_key_for_testing',
+        connection: null,
+        lastActive: getDate()
     };
 
-    // Сохраняем сессию
+    // Сохраняем сессию в ГЛОБАЛЬНОЕ хранилище
     memoryStorage.sessions.set(S_KEY, session);
     
-    console.log(`✅ Сессия создана для аккаунта ${accountId}: ${S_KEY.substring(0, 10)}...`);
+    console.log(`✅ Сессия создана в ГЛОБАЛЬНОМ хранилище для аккаунта ${accountId}: ${S_KEY.substring(0, 10)}...`);
     
     return S_KEY;
 };
 
 // Получение данных аккаунта
 const getAccountData = (accountId: number) => {
+    const memoryStorage = getStorage();
     const account = memoryStorage.accounts.get(accountId);
     if (!account) {
         throw new Error('Аккаунт не найден');
@@ -157,7 +170,7 @@ const getAccountData = (accountId: number) => {
 };
 
 export const reg = async ({ data }: { data: any }) => {
-    console.log('📝 Начало регистрации (TypeScript версия):', {
+    console.log('📝 Начало регистрации (исправленная версия):', {
         username: data.username,
         email: data.email?.substring(0, 10) + '...',
         name: data.name
@@ -225,8 +238,8 @@ export const reg = async ({ data }: { data: any }) => {
             console.log('⚠️  Капча отключена, пропускаем проверку');
         }
 
-        // Создаем аккаунт в памяти
-        console.log('👤 Создаю аккаунт в памяти...');
+        // Создаем аккаунт в ГЛОБАЛЬНОМ хранилище
+        console.log('👤 Создаю аккаунт в ГЛОБАЛЬНОМ хранилище...');
         const account = await createAccountInMemory({
             name: name!,
             username: username!,
@@ -234,7 +247,7 @@ export const reg = async ({ data }: { data: any }) => {
             password: password!
         });
 
-        // Создаем сессию
+        // Создаем сессию в ГЛОБАЛЬНОМ хранилище
         console.log('🔑 Создаю сессию...');
         const S_KEY = createSession(
             account.ID,
@@ -248,20 +261,36 @@ export const reg = async ({ data }: { data: any }) => {
         console.log('🎉 Регистрация успешно завершена!', {
             accountId: account.ID,
             username: account.Username,
+            email: account.Email,
             sessionKey: S_KEY.substring(0, 10) + '...'
         });
 
         // Статистика
-        console.log(`📊 Всего аккаунтов в памяти: ${memoryStorage.accounts.size}`);
+        const memoryStorage = getStorage();
+        console.log(`📊 Всего аккаунтов в ГЛОБАЛЬНОМ хранилище: ${memoryStorage.accounts.size}`);
         console.log(`📊 Всего активных сессий: ${memoryStorage.sessions.size}`);
+
+        // ⭐ ВАЖНО: Добавляем permissions в ответ
+        const permissions = memoryStorage.permissions.get(account.ID) || {
+            Posts: true,
+            Comments: true,
+            NewChats: true,
+            MusicUpload: false,
+            Admin: false,
+            Verified: false,
+            Fake: false
+        };
 
         return LocalRouterHelper.success({
             S_KEY: S_KEY,
             accountID: account.ID,
-            accountData: accountData,
+            accountData: {
+                ...accountData,
+                permissions: permissions
+            },
             message: 'Регистрация успешно завершена! Добро пожаловать!',
             serverTime: getDate(),
-            mode: 'memory-storage'
+            mode: 'global-memory-storage'
         });
 
     } catch (error: any) {
@@ -284,8 +313,9 @@ export const reg = async ({ data }: { data: any }) => {
     }
 };
 
-// Дополнительные экспорты для отладки
+// Экспорт для отладки
 export const debugMemory = () => {
+    const memoryStorage = getStorage();
     return {
         totalAccounts: memoryStorage.accounts.size,
         totalSessions: memoryStorage.sessions.size,
@@ -297,14 +327,4 @@ export const debugMemory = () => {
     };
 };
 
-// Очистка памяти (для тестов)
-export const clearMemoryStorage = () => {
-    memoryStorage.accounts.clear();
-    memoryStorage.sessions.clear();
-    memoryStorage.permissions.clear();
-    memoryStorage.nextAccountId = 1000;
-    console.log('🧹 Память очищена');
-};
-
 export default reg;
-
