@@ -1,557 +1,1099 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Config from '../../system/global/Config.js';
-import AppError from '../system/AppError.js';
-import ImageEngine from '../system/ImageEngine.js';
-import Validator from '../system/Validator.js';
-import { getDate } from '../../system/global/Function.js';
-import { dbE, dbM } from '../../lib/db.js';
+import Config from './Config.js';
+import AppError from '../../services/system/AppError.js';
 
-interface Account {
-  ID: number;
-  Email: string;
-  Password: string;
-  Avatar?: string;
-  Links?: any;
-}
+// Хранилище в памяти - РАСШИРЕННАЯ ВЕРСИЯ
+const memoryStorage = {
+    accounts: new Map(),
+    sessions: new Map(),
+    permissions: new Map(),
+    posts: new Map(),           // Хранилище постов
+    channels: new Map(),        // Хранилище каналов
+    songs: new Map(),           // Хранилище музыки
+    images: new Map(),          // Хранилище изображений (аватарки, обложки)
+    files: new Map(),           // Хранилище файлов
+    notifications: new Map(),   // Уведомления
+    comments: new Map(),        // Комментарии
+    likes: new Map(),           // Лайки
+    nextAccountId: 1000,
+    nextPostId: 1000,
+    nextSongId: 1000,
+    nextChannelId: 1000,
+    nextImageId: 1000,
+    nextFileId: 1000,
+    nextCommentId: 1000,
+    nextNotificationId: 1000
+};
 
-interface Channel {
-  ID: number;
-  Name: string;
-  Username: string;
-  Avatar: string;
-  Cover: string;
-  Description: string;
-  Subscribers: number;
-  Posts: number;
-  CreateDate: string;
-}
-
-interface Permissions {
-  Posts: boolean;
-  Comments: boolean;
-  NewChats: boolean;
-  MusicUpload: boolean;
-  Admin: boolean;
-  Verified: boolean;
-  Fake: boolean;
-}
-
-interface GoldHistoryItem {
-  status: number;
-  date: string;
-}
+// Создаем тестовые данные
+(() => {
+    const testAccountId = 1;
+    const hashedPassword = bcrypt.hashSync('test123', 10);
+    
+    // Тестовый аккаунт
+    memoryStorage.accounts.set(testAccountId, {
+        ID: testAccountId,
+        Name: 'Тестовый пользователь',
+        Username: 'testuser',
+        Email: 'test@example.com',
+        Password: hashedPassword,
+        CreateDate: new Date().toISOString(),
+        Avatar: null,
+        Cover: null,
+        Description: 'Тестовый аккаунт для разработки',
+        Eballs: 1000,
+        Notifications: 0,
+        messenger_size: 0,
+        Posts: 0,
+        last_post: null
+    });
+    
+    // Права доступа
+    memoryStorage.permissions.set(testAccountId, {
+        UserID: testAccountId,
+        Posts: true,
+        Comments: true,
+        NewChats: true,
+        MusicUpload: true,
+        Admin: true,
+        Verified: true,
+        Fake: false
+    });
+    
+    // Тестовая сессия
+    const testSessionKey = 'test_session_key_' + Date.now();
+    memoryStorage.sessions.set(testSessionKey, {
+        uid: testAccountId,
+        s_key: testSessionKey,
+        device_type: 1,
+        device: 'test-device',
+        create_date: new Date().toISOString(),
+        aesKey: 'test_aes_key',
+        mesKey: 'test_mes_key',
+        connection: null,
+        lastActive: new Date().toISOString()
+    });
+    
+    // Тестовый пост
+    const testPostId = 1;
+    memoryStorage.posts.set(testPostId, {
+        id: testPostId,
+        author_id: testAccountId,
+        author_type: 0,
+        content_type: 'text',
+        text: '👋 Привет! Это тестовый пост для разработки.',
+        content: {
+            images: []
+        },
+        date: new Date().toISOString(),
+        hidden: 0,
+        in_trash: 0,
+        deleted_at: null,
+        likes: 0,
+        comments: 0,
+        shares: 0
+    });
+    
+    // Обновляем счетчик постов у аккаунта
+    memoryStorage.accounts.get(testAccountId).Posts = 1;
+    
+    console.log(`✅ Тестовый аккаунт создан: testuser / test123 (ID: ${testAccountId})`);
+    console.log(`✅ Тестовая сессия создана: ${testSessionKey.substring(0, 10)}...`);
+    console.log(`✅ Тестовый пост создан (ID: ${testPostId})`);
+})();
 
 class AccountManager {
-  private accountID: number;
-  private accountData: Account | null = null;
-  private initPromise: Promise<void>;
-
-  constructor(id: number) {
-    if (!id || typeof id !== 'number' || id <= 0) {
-      throw new AppError('Некорректный идентификатор аккаунта');
-    }
-    this.accountID = id;
-    this.initPromise = this.init();
-  }
-
-  // Загрузка данных аккаунта из БД
-  private async loadAccountData(): Promise<any> {
-    const accounts: Account[] = await dbE.query('SELECT * FROM `accounts` WHERE `ID` = ?', [this.accountID]);
-    if (accounts.length === 0) {
-      throw new AppError('Аккаунт не найден');
-    }
-    this.accountData = accounts[0];
-  }
-
-  // Инициализация: загрузка данных аккаунта
-  private async init(): Promise<void> {
-    await this.loadAccountData();
-  }
-
-  // Метод для ожидания окончания инициализации
-  public async ensureInitialized(): Promise<void> {
-    await this.initPromise;
-  }
-
-  // Метод-обёртка для методов, которым необходимы данные аккаунта
-  private async withInit<T>(fn: () => Promise<T>): Promise<T> {
-    await this.ensureInitialized();
-    return fn();
-  }
-
-  // Метод для получения данных аккаунта
-  public async getAccountData(): Promise<Account> {
-    return this.withInit(async () => {
-      return this.accountData as Account;
-    });
-  }
-
-  // Получение истории активации Gold
-  public async getGoldHistory(): Promise<GoldHistoryItem[]> {
-    return this.withInit(async () => {
-      const query = 'SELECT * FROM `gold_subs` WHERE `uid` = ? ORDER BY `date` DESC';
-      const activationHistory = await dbE.query(query, [this.accountID]);
-
-      return activationHistory.map((row: any) => ({
-        status: row.status,
-        date: row.date
-      }));
-    });
-  }
-
-  // Получение текущего статуса Gold
-  public async getGoldStatus(): Promise<{ activated: boolean; date_get: string | null } | false> {
-    return this.withInit(async () => {
-      const gold = await dbE.query("SELECT * FROM `gold_subs` WHERE `uid` = ? AND `status` = 1 LIMIT 1", [this.accountID]);
-      if (!gold || gold.length === 0) return false;
-      return {
-        activated: true,
-        date_get: gold[0].Date ?? null
-      };
-    });
-  }
-
-  public async addEballs(count) {
-    return this.withInit(async () => {
-      await dbE.query(`
-        UPDATE accounts
-        SET Eballs = ROUND(Eballs + ?, 3)
-        WHERE id = ?
-    `, [count, this.accountID]);
-    });
-  }
-
-  public async maybeReward(type: 'post' | 'comment' | 'song') {
-    return this.withInit(async () => {
-      const TYPE_UPPER = type.toUpperCase();
-      const CONFIG = Config.EBALLS[TYPE_UPPER];
-      if (!CONFIG) return;
-
-      const LAST_KEY = `last_${type}`;
-      const LAST_TIME_RAW = this.accountData[LAST_KEY];
-      if (!LAST_TIME_RAW) {
-        await dbE.query(`UPDATE accounts SET ${LAST_KEY} = ? WHERE ID = ?`, [getDate(), this.accountID]);
-      }
-      const LAST_TIME = typeof LAST_TIME_RAW === 'string' ? new Date(LAST_TIME_RAW).getTime() : LAST_TIME_RAW;
-      const NOW = Date.now();
-
-      if (typeof LAST_TIME !== 'number' || NOW - LAST_TIME >= CONFIG.COOLDOWN_MS) {
-        await this.addEballs(CONFIG.AMOUNT);
-        this.accountData[LAST_KEY] = NOW;
-        await dbE.query(`UPDATE accounts SET ${LAST_KEY} = ? WHERE ID = ?`, [getDate(), this.accountID]);
-      }
-    });
-  }
-
-  // Получение разрешений пользователя
-  public async getPermissions(): Promise<Permissions | false> {
-    return this.withInit(async () => {
-      let permissions = await dbE.query("SELECT * FROM `accounts_permissions` WHERE `UserID` = ?", [this.accountID]);
-      if (permissions.length < 1) {
-        await dbE.query("INSERT INTO `accounts_permissions` (`UserID`) VALUES (?)", [this.accountID]);
-        permissions = await dbE.query("SELECT * FROM `accounts_permissions` WHERE `UserID` = ?", [this.accountID]);
-      }
-      if (permissions.length < 1) return false;
-
-      const userPermissions = { ...permissions[0] };
-      delete userPermissions.ID;
-      delete userPermissions.UserID;
-
-      Object.keys(userPermissions).forEach((key) => {
-        userPermissions[key] = userPermissions[key] == 1;
-      });
-
-      return userPermissions;
-    });
-  }
-
-  // Получение списка каналов аккаунта
-  public async getChannels(): Promise<Channel[]> {
-    return this.withInit(async () => {
-      const channels: any = await dbE.query("SELECT * FROM `channels` WHERE `Owner` = ?", [this.accountID]);
-
-      return channels.map((channel: any) => ({
-        id: channel.ID,
-        name: channel.Name,
-        username: channel.Username,
-        avatar: channel.Avatar,
-        cover: channel.Cover,
-        description: channel.Description,
-        subscribers: channel.Subscribers,
-        posts: channel.Posts,
-        create_date: channel.CreateDate
-      }));
-    });
-  }
-
-  // Получение количества уведомлений в мессенджере
-  public async getMessengerNotifications(): Promise<number> {
-    return this.withInit(async () => {
-      const notifications = await dbM.query('SELECT * FROM `notifications` WHERE `uid` = ?', [this.accountID]);
-      return notifications.length;
-    });
-  }
-
-  // Смена аватара пользователя
-  public async changeAvatar(avatar: any): Promise<{ status: string; avatar?: any; error?: string; message?: string }> {
-    return this.withInit(async () => {
-      if (avatar === undefined) {
-        return {
-          status: 'error',
-          error: 'avatar_empty',
-          message: 'Аватар не был передан'
-        };
-      }
-
-      const validator = new Validator();
-      const goldStatus = await this.getGoldStatus();
-
-      const limit = (goldStatus && goldStatus.activated)
-        ? Config.LIMITS.GOLD.MAX_AVATAR_SIZE
-        : Config.LIMITS.DEFAULT.MAX_AVATAR_SIZE;
-      await validator.validateImage(avatar, limit);
-
-      const imageEngine = new ImageEngine();
-      const image = await imageEngine.create({
-        path: 'avatars',
-        file: avatar
-      });
-
-      if (image) {
-        const query = 'UPDATE `accounts` SET `Avatar` = ? WHERE `ID` = ?';
-        await dbE.query(query, [JSON.stringify(image), this.accountID]);
-      }
-
-      return {
-        status: 'success',
-        avatar: image
-      };
-    });
-  }
-
-  public async changeCover(cover: any) {
-    return this.withInit(async () => {
-      if (cover === undefined) {
-        return {
-          status: 'error',
-          error: 'cover_empty',
-          message: 'Обложка не была передана'
-        };
-      }
-
-      const validator = new Validator();
-      const goldStatus = await this.getGoldStatus();
-      const limit = (goldStatus && goldStatus.activated)
-        ? Config.LIMITS.GOLD.MAX_COVER_SIZE
-        : Config.LIMITS.DEFAULT.MAX_COVER_SIZE;
-      await validator.validateImage(cover, limit);
-
-      const imageEngine = new ImageEngine();
-      const image = await imageEngine.create({
-        path: 'covers',
-        file: cover,
-        simpleSize: 600
-      });
-
-      if (image) {
-        const query = 'UPDATE `accounts` SET `Cover` = ? WHERE `ID` = ?';
-        await dbE.query(query, [JSON.stringify(image), this.accountID]);
-      }
-
-      return {
-        status: 'success',
-        cover: image
-      };
-    });
-  }
-
-  public async deleteAvatar() {
-    return this.withInit(async () => {
-      await dbE.query('UPDATE `accounts` SET `Avatar` = null WHERE `ID` = ?', [this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    });
-  }
-
-  public async deleteCover() {
-    return this.withInit(async () => {
-      await dbE.query('UPDATE `accounts` SET `Cover` = null WHERE `ID` = ?', [this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    });
-  }
-
-  public async changeName(name: string): Promise<any> {
-    return this.withInit(async () => {
-      if (name === undefined) {
-        return {
-          status: 'error',
-          error: 'name_empty',
-          message: 'Имя не было передано'
-        };
-      }
-
-      const validator = new Validator();
-
-      validator.validateText({
-        title: 'Имя',
-        value: name,
-        maxLength: 60
-      })
-
-      const query = 'UPDATE `accounts` SET `Name` = ? WHERE `ID` = ?';
-      await dbE.query(query, [name, this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    })
-  }
-
-  public async changeUsername(username: string): Promise<any> {
-    return this.withInit(async () => {
-      if (username === undefined) {
-        return {
-          status: 'error',
-          error: 'username_empty',
-          message: 'Уникальное имя не было передано'
-        };
-      }
-
-      const validator = new Validator();
-      validator.validateText({
-        title: 'Уникальное имя',
-        value: username,
-        maxLength: 60
-      })
-      await validator.validateUsername(username);
-
-      const query = 'UPDATE `accounts` SET `Username` = ? WHERE `ID` = ?';
-      await dbE.query(query, [username, this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    })
-  }
-
-  public async changeDescription(description: string): Promise<any> {
-    return this.withInit(async () => {
-      if (description === undefined) {
-        return {
-          status: 'error',
-          error: 'description_empty',
-          message: 'Описание не было передано'
-        };
-      }
-
-      const validator = new Validator();
-      validator.validateText({
-        title: 'Описание',
-        value: description,
-        maxLength: 1000
-      })
-
-      const query = 'UPDATE `accounts` SET `Description` = ? WHERE `ID` = ?';
-      await dbE.query(query, [description, this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    })
-  }
-
-  public async changeEmail(email: string): Promise<any> {
-    return this.withInit(async () => {
-      if (email === undefined) {
-        return {
-          status: 'error',
-          error: 'email_empty',
-          message: 'Почта не была передана'
-        };
-      }
-
-      const validator = new Validator();
-      await validator.validateEmail(email, true);
-
-      const query = 'UPDATE `accounts` SET `Email` = ? WHERE `ID` = ?';
-      await dbE.query(query, [email, this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    })
-  }
-
-  public async changePassword(password: string): Promise<any> {
-    return this.withInit(async () => {
-      if (password === undefined) {
-        return {
-          status: 'error',
-          error: 'password_empty',
-          message: 'Пароль не был передан'
-        };
-      }
-
-      const validator = new Validator();
-
-      validator.validateText({
-        title: 'Пароль',
-        value: password,
-        maxLength: 100
-      })
-
-      const hash = await bcrypt.hash(password, 10);
-
-      const query = 'UPDATE `accounts` SET `Password` = ? WHERE `ID` = ?';
-      await dbE.query(query, [hash, this.accountID]);
-
-      return {
-        status: 'success'
-      };
-    })
-  }
-
-  // Блокировка профиля (например, блокировка пользователя или канала)
-  public async blockProfile(authorID: number, authorType: number): Promise<void> {
-    return this.withInit(async () => {
-      if (authorID === undefined || authorType === undefined) {
-        throw new AppError('Некорректные данные поста: отсутствует TargetID или TargetType');
-      }
-
-      if (authorType === 1) {
-        const channelOwner = await this.getChannelOwner(authorID);
-        if (channelOwner === this.accountID) {
-          throw new AppError('Нельзя заблокировать свой же канал');
+    constructor(id) {
+        if (!id || typeof id !== 'number' || id <= 0) {
+            throw new AppError('Некорректный идентификатор аккаунта');
         }
-      }
+        
+        this.accountID = id;
+        
+        // Проверяем существование аккаунта
+        if (!memoryStorage.accounts.has(id)) {
+            throw new AppError('Аккаунт не найден');
+        }
+        
+        this.accountData = memoryStorage.accounts.get(id);
+    }
 
-      if (this.accountID === authorID) {
-        throw new AppError('Нельзя заблокировать самого себя');
-      }
+    // ========== СТАТИЧЕСКИЕ МЕТОДЫ ДЛЯ ХРАНИЛИЩ ==========
+    
+    // Получение хранилища для других модулей
+    static getStorage() {
+        return memoryStorage;
+    }
+    
+    // Добавление поста
+    static addPost(postData) {
+        const postId = memoryStorage.nextPostId++;
+        const post = {
+            id: postId,
+            ...postData,
+            date: postData.date || new Date().toISOString(),
+            hidden: 0,
+            in_trash: 0,
+            deleted_at: null,
+            likes: 0,
+            comments: 0,
+            shares: 0
+        };
+        memoryStorage.posts.set(postId, post);
+        console.log(`📝 Пост добавлен (ID: ${postId})`);
+        return postId;
+    }
+    
+    // Получение поста
+    static getPost(postId) {
+        return memoryStorage.posts.get(postId);
+    }
+    
+    // Получение всех постов пользователя/канала
+    static getPostsByAuthor(authorId, authorType = 0, includeHidden = false) {
+        const posts = [];
+        for (const [id, post] of memoryStorage.posts.entries()) {
+            if (post.author_id === authorId && post.author_type === authorType) {
+                if (includeHidden || post.hidden === 0) {
+                    posts.push({ id, ...post });
+                }
+            }
+        }
+        return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    
+    // Добавление файла/изображения
+    static addFile(fileData) {
+        const fileId = memoryStorage.nextFileId++;
+        const file = {
+            id: fileId,
+            ...fileData,
+            uploaded_at: new Date().toISOString()
+        };
+        memoryStorage.files.set(fileId, file);
+        return fileId;
+    }
+    
+    // Получение файла
+    static getFile(fileId) {
+        return memoryStorage.files.get(fileId);
+    }
+    
+    // Добавление изображения (аватар/обложка)
+    static addImage(imageData) {
+        const imageId = memoryStorage.nextImageId++;
+        const image = {
+            id: imageId,
+            ...imageData,
+            uploaded_at: new Date().toISOString()
+        };
+        memoryStorage.images.set(imageId, image);
+        return imageId;
+    }
+    
+    // Получение изображения
+    static getImage(imageId) {
+        return memoryStorage.images.get(imageId);
+    }
+    
+    // Обновление аватара пользователя
+    static updateUserAvatar(userId, avatarData) {
+        const account = memoryStorage.accounts.get(userId);
+        if (account) {
+            account.Avatar = avatarData;
+            memoryStorage.accounts.set(userId, account);
+            console.log(`🖼️  Аватар обновлен для пользователя ${userId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    // Обновление обложки пользователя
+    static updateUserCover(userId, coverData) {
+        const account = memoryStorage.accounts.get(userId);
+        if (account) {
+            account.Cover = coverData;
+            memoryStorage.accounts.set(userId, account);
+            console.log(`🖼️  Обложка обновлена для пользователя ${userId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    // Добавление уведомления
+    static addNotification(notificationData) {
+        const notificationId = memoryStorage.nextNotificationId++;
+        const notification = {
+            id: notificationId,
+            ...notificationData,
+            created_at: new Date().toISOString(),
+            viewed: 0
+        };
+        memoryStorage.notifications.set(notificationId, notification);
+        return notificationId;
+    }
+    
+    // Получение уведомлений пользователя
+    static getUserNotifications(userId) {
+        const notifications = [];
+        for (const [id, notification] of memoryStorage.notifications.entries()) {
+            if (notification.user_id === userId) {
+                notifications.push({ id, ...notification });
+            }
+        }
+        return notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    // Создание канала
+    static createChannel(channelData) {
+        const channelId = memoryStorage.nextChannelId++;
+        const channel = {
+            ID: channelId,
+            ...channelData,
+            CreateDate: new Date().toISOString(),
+            Avatar: null,
+            Cover: null,
+            Subscribers: 0,
+            Posts: 0
+        };
+        memoryStorage.channels.set(channelId, channel);
+        console.log(`📺 Канал создан: ${channelData.Name} (ID: ${channelId})`);
+        return channelId;
+    }
+    
+    // Получение канала
+    static getChannel(channelId) {
+        return memoryStorage.channels.get(channelId);
+    }
 
-      const blockedUsers = await dbE.query('SELECT * FROM `blocked` WHERE `uid` = ?', [this.accountID]);
-      if (blockedUsers.length >= Config.LIMITS.MAX_BLOCKED_USERS) {
-        throw new AppError('Превышен лимит заблокированных пользователей');
-      }
+    // ========== ОСНОВНЫЕ МЕТОДЫ АККАУНТА ==========
 
-      const blocked = await dbE.query(
-        'SELECT * FROM `blocked` WHERE `uid` = ? AND `author_id` = ? AND `author_type` = ?',
-        [this.accountID, authorID, authorType]
-      );
+    // Статический метод для авторизации
+    static async connectAccount(loginData) {
+        console.log(`[AccountManager] connectAccount вызван:`, {
+            email: loginData.email?.substring(0, 10) + '...',
+            username: loginData.username,
+            hasPassword: !!loginData.password
+        });
+        
+        try {
+            const { email, username, password, device = 'unknown' } = loginData;
+            
+            if (!password) {
+                throw new AppError('Пароль обязателен');
+            }
+            
+            // Ищем аккаунт
+            let foundAccount = null;
+            let accountId = null;
+            
+            for (const [id, account] of memoryStorage.accounts.entries()) {
+                if ((email && account.Email === email) || 
+                    (username && account.Username === username)) {
+                    foundAccount = account;
+                    accountId = id;
+                    break;
+                }
+            }
+            
+            // Автосоздание аккаунта для разработки
+            if (!foundAccount) {
+                console.log(`⚠️  Аккаунт не найден, создаем новый`);
+                accountId = memoryStorage.nextAccountId++;
+                const hashedPassword = await bcrypt.hash(password, 10);
+                
+                foundAccount = {
+                    ID: accountId,
+                    Name: username || email?.split('@')[0] || 'Пользователь',
+                    Username: username || `user${accountId}`,
+                    Email: email || `${username || `user${accountId}`}@example.com`,
+                    Password: hashedPassword,
+                    CreateDate: new Date().toISOString(),
+                    Avatar: null,
+                    Cover: null,
+                    Description: 'Автосозданный аккаунт',
+                    Eballs: 500,
+                    Notifications: 0,
+                    messenger_size: 0,
+                    Posts: 0,
+                    last_post: null
+                };
+                
+                memoryStorage.accounts.set(accountId, foundAccount);
+                memoryStorage.permissions.set(accountId, {
+                    UserID: accountId,
+                    Posts: true,
+                    Comments: true,
+                    NewChats: true,
+                    MusicUpload: true,
+                    Admin: false,
+                    Verified: false,
+                    Fake: false
+                });
+                
+                console.log(`✅ Аккаунт создан автоматически: ${foundAccount.Username} (ID: ${accountId})`);
+            }
+            
+            // Проверяем пароль
+            const passwordMatch = await bcrypt.compare(password, foundAccount.Password);
+            
+            if (!passwordMatch) {
+                throw new AppError('Неверный логин или пароль');
+            }
+            
+            // Создаем сессию
+            const sessionKey = crypto.randomBytes(32).toString('hex');
+            const session = {
+                uid: accountId,
+                s_key: sessionKey,
+                device_type: 1,
+                device: device,
+                create_date: new Date().toISOString(),
+                aesKey: 'mock_aes_key_for_testing',
+                mesKey: 'mock_mes_key_for_testing',
+                connection: null,
+                lastActive: new Date().toISOString()
+            };
+            
+            memoryStorage.sessions.set(sessionKey, session);
+            
+            console.log(`✅ Авторизация успешна: ${foundAccount.Username} (ID: ${accountId})`);
+            
+            return {
+                status: 'success',
+                account: {
+                    ID: accountId,
+                    Name: foundAccount.Name,
+                    Username: foundAccount.Username,
+                    Email: foundAccount.Email,
+                    Avatar: foundAccount.Avatar,
+                    Cover: foundAccount.Cover,
+                    Description: foundAccount.Description,
+                    Eballs: foundAccount.Eballs,
+                    Notifications: foundAccount.Notifications,
+                    CreateDate: foundAccount.CreateDate
+                },
+                session: {
+                    s_key: sessionKey,
+                    aesKey: session.aesKey,
+                    mesKey: session.mesKey,
+                    device_type: session.device_type,
+                    device: session.device
+                },
+                permissions: memoryStorage.permissions.get(accountId) || {
+                    Posts: true,
+                    Comments: true,
+                    NewChats: true,
+                    MusicUpload: false,
+                    Admin: false,
+                    Verified: false,
+                    Fake: false
+                }
+            };
+            
+        } catch (error) {
+            console.error('[AccountManager] Ошибка в connectAccount:', error.message);
+            throw error;
+        }
+    }
 
-      if (blocked.length > 0) {
-        throw new AppError('Пользователь уже заблокирован');
-      }
+    // Получение экземпляра AccountManager
+    static getInstance(id) {
+        return new AccountManager(id);
+    }
 
-      await dbE.query(
-        'INSERT INTO `blocked` (`uid`, `author_id`, `author_type`) VALUES (?, ?, ?)',
-        [this.accountID, authorID, authorType]
-      );
-    });
-  }
+    // Обновление полей аккаунта
+    static async updateAccount(params) {
+        console.log(`[AccountManager] updateAccount вызван с параметрами:`, params);
+        
+        try {
+            const { id, value, data } = params;
+            
+            if (!id || !value || data === undefined) {
+                throw new AppError('Неверные параметры для updateAccount');
+            }
+            
+            const accManager = AccountManager.getInstance(id);
+            const updates = {};
+            updates[value] = data;
+            
+            const result = await accManager.updateAccountData(updates);
+            
+            console.log(`✅ Поле ${value} аккаунта ${id} обновлено`);
+            return result;
+        } catch (error) {
+            console.error('[AccountManager] Ошибка в updateAccount:', error.message);
+            return false;
+        }
+    }
 
-  // Разблокировка профиля
-  public async unblockProfile(authorID: number, authorType: number): Promise<void> {
-    return this.withInit(async () => {
-      if (authorID === undefined || authorType === undefined) {
-        throw new AppError('Некорректные данные поста: отсутствует TargetID или TargetType');
-      }
+    // Обновление сессии
+    static async updateSession(sessionKeyOrId, updates) {
+        console.log(`[AccountManager] updateSession вызван:`, { sessionKeyOrId, updates });
+        
+        try {
+            let actualSessionKey, actualUpdates;
+            
+            if (arguments.length === 2) {
+                actualSessionKey = sessionKeyOrId;
+                actualUpdates = updates;
+            } else if (arguments.length === 1 && typeof sessionKeyOrId === 'object') {
+                actualSessionKey = sessionKeyOrId.sessionKey;
+                actualUpdates = sessionKeyOrId.updates;
+            } else {
+                console.warn('[AccountManager] updateSession: неверные параметры');
+                return false;
+            }
+            
+            if (!actualSessionKey) {
+                console.warn('[AccountManager] updateSession: отсутствует sessionKey');
+                return false;
+            }
+            
+            // Если sessionKey - число (ID пользователя), ищем его сессию
+            let targetSessionKey = actualSessionKey;
+            if (typeof actualSessionKey === 'number') {
+                for (const [sKey, session] of memoryStorage.sessions.entries()) {
+                    if (session.uid === actualSessionKey) {
+                        targetSessionKey = sKey;
+                        break;
+                    }
+                }
+                
+                if (typeof targetSessionKey === 'number') {
+                    targetSessionKey = `user_${actualSessionKey}_${Date.now()}`;
+                }
+            }
+            
+            // Обновляем сессию
+            if (typeof targetSessionKey === 'string') {
+                if (memoryStorage.sessions.has(targetSessionKey)) {
+                    const session = memoryStorage.sessions.get(targetSessionKey);
+                    
+                    if (actualUpdates) {
+                        Object.assign(session, actualUpdates);
+                        memoryStorage.sessions.set(targetSessionKey, session);
+                        session.lastActive = new Date().toISOString();
+                        
+                        console.log(`✅ Сессия ${targetSessionKey.substring(0, 10)}... обновлена`);
+                    }
+                    
+                    return true;
+                } else {
+                    // Создаем новую сессию
+                    console.log(`⚠️  Сессия не найдена, создаем новую`);
+                    
+                    const newSession = {
+                        uid: typeof actualSessionKey === 'number' ? actualSessionKey : 1,
+                        s_key: targetSessionKey,
+                        device_type: 1,
+                        device: 'websocket',
+                        create_date: new Date().toISOString(),
+                        aesKey: 'mock_aes_key_for_testing',
+                        mesKey: 'mock_mes_key_for_testing',
+                        connection: null,
+                        lastActive: new Date().toISOString()
+                    };
+                    
+                    if (actualUpdates) {
+                        Object.assign(newSession, actualUpdates);
+                    }
+                    
+                    memoryStorage.sessions.set(targetSessionKey, newSession);
+                    
+                    console.log(`✅ Новая сессия создана: ${targetSessionKey.substring(0, 10)}...`);
+                    return true;
+                }
+            }
+            
+            return false;
+            
+        } catch (error) {
+            console.error('[AccountManager] Ошибка в updateSession:', error.message);
+            return false;
+        }
+    }
 
-      const blocked = await dbE.query(
-        'SELECT * FROM `blocked` WHERE `uid` = ? AND `author_id` = ? AND `author_type` = ?',
-        [this.accountID, authorID, authorType]
-      );
-      if (blocked.length < 1) {
-        throw new AppError('Пользователь не заблокирован');
-      }
+    // Создание сессии
+    async startSession(deviceType, device) {
+        const S_KEY = crypto.randomBytes(32).toString('hex');
+        
+        const session = {
+            uid: this.accountID,
+            s_key: S_KEY,
+            device_type: deviceType === 'browser' ? 1 : 0,
+            device: device || 'unknown',
+            create_date: new Date().toISOString(),
+            aesKey: 'mock_aes_key_for_testing',
+            mesKey: 'mock_mes_key_for_testing',
+            connection: null,
+            lastActive: new Date().toISOString()
+        };
 
-      await dbE.query(
-        'DELETE FROM `blocked` WHERE `uid` = ? AND `author_id` = ? AND `author_type` = ?',
-        [this.accountID, authorID, authorType]
-      );
-    });
-  }
+        memoryStorage.sessions.set(S_KEY, session);
+        
+        console.log(`✅ Сессия создана для аккаунта ${this.accountID}: ${S_KEY.substring(0, 10)}...`);
+        return S_KEY;
+    }
 
-  // Получение владельца канала по его идентификатору
-  public async getChannelOwner(channelID: number): Promise<number> {
-    return this.withInit(async () => {
-      const channels = await dbE.query('SELECT * FROM `channels` WHERE `ID` = ?', [channelID]);
-      if (channels.length === 0) {
-        throw new AppError('Канал не найден');
-      }
-      return channels[0].Owner;
-    });
-  }
-
-  public async startSession(deviceType: string, device: string | null): Promise<string> {
-    return this.withInit(async () => {
-
-      const deviceTypeMap: Record<string, number> = {
-        browser: 1,
-        android_app: 2,
-        ios_app: 3,
-        windows_app: 4
-      };
-
-      const typeCode = deviceTypeMap[deviceType] ?? 0;
-      const deviceName = typeof device === 'string' && device.length <= 100 ? device : 'неизвестно';
-
-      let S_KEY: string;
-      let isUnique = false;
-
-      const maxIterations = 10;
-      let iterations = 0;
-
-      do {
-        if (iterations++ >= maxIterations) {
-          throw new AppError('Не удалось сгенерировать уникальный ключ сессии');
+    // Проверка пароля
+    async verifyPassword(password) {
+        if (!this.accountData) {
+            throw new AppError('Данные аккаунта не загружены');
         }
 
-        S_KEY = crypto.randomBytes(32).toString('hex');
-        const result = await dbE.query(
-          'SELECT COUNT(*) AS count FROM `accounts_sessions` WHERE `s_key` = ?',
-          [S_KEY]
-        );
+        return await bcrypt.compare(password, this.accountData.Password);
+    }
 
-        isUnique = result[0]?.count === 0;
-      } while (!isUnique);
+    // Получение данных аккаунта
+    async getAccountData() {
+        const { Password, ...safeData } = this.accountData;
+        return safeData;
+    }
 
-      await dbE.query(
-        'INSERT INTO `accounts_sessions` (`uid`, `s_key`, `device_type`, `device`, `create_date`) VALUES (?, ?, ?, ?, ?)',
-        [this.accountID, S_KEY, typeCode, deviceName, getDate()]
-      );
+    // Получение полных данных
+    async getFullAccountData() {
+        return this.accountData;
+    }
 
-      return S_KEY;
-    });
-  }
+    // Получение permissions
+    async getPermissions() {
+        return memoryStorage.permissions.get(this.accountID) || {
+            Posts: true,
+            Comments: true,
+            NewChats: true,
+            MusicUpload: false,
+            Admin: false,
+            Verified: false,
+            Fake: false
+        };
+    }
 
-  public async verifyPassword(password: string): Promise<boolean> {
-    return this.withInit(async () => {
-      if (!this.accountData) {
-        throw new AppError('Данные аккаунта не загружены');
-      }
-
-      const storedHash = this.accountData.Password;
-      const hash1 = crypto.createHash('md5').update(password + 'z0vY_Pid0d0r!_1%@#2').digest('hex');
-      const hash2 = crypto.createHash('md5').update(password + 'ZZZQuErT-s72hwsAdw334Axccvr').digest('hex');
-
-      if (hash1 === storedHash || hash2 === storedHash) {
+    // Обновление данных аккаунта
+    async updateAccountData(updates) {
+        const updatedAccount = { ...this.accountData, ...updates };
+        memoryStorage.accounts.set(this.accountID, updatedAccount);
+        this.accountData = updatedAccount;
+        
+        console.log(`✅ Данные аккаунта ${this.accountID} обновлены`);
         return true;
-      }
+    }
 
-      if (await bcrypt.compare(password, storedHash)) {
+    // Получение сессии
+    static async getSession(sessionKey) {
+        console.log(`🔍 Поиск сессии: ${sessionKey}`);
+        
+        // Если sessionKey - число (userID)
+        if (typeof sessionKey === 'number') {
+            for (const [sKey, session] of memoryStorage.sessions.entries()) {
+                if (session.uid === sessionKey) {
+                    console.log(`✅ Сессия найдена для пользователя ${sessionKey}`);
+                    return {
+                        ID: session.uid,
+                        uid: session.uid,
+                        s_key: sKey,
+                        aesKey: session.aesKey || 'mock_aes_key',
+                        mesKey: session.mesKey || 'mock_mes_key',
+                        connection: session.connection || null,
+                        device_type: session.device_type,
+                        device: session.device,
+                        create_date: session.create_date,
+                        lastActive: session.lastActive || session.create_date,
+                        messenger_size: 0
+                    };
+                }
+            }
+        } 
+        // Если sessionKey - строка (S_KEY)
+        else if (typeof sessionKey === 'string') {
+            const session = memoryStorage.sessions.get(sessionKey);
+            if (session) {
+                console.log(`✅ Сессия найдена по ключу: ${sessionKey.substring(0, 10)}...`);
+                return {
+                    ID: session.uid,
+                    uid: session.uid,
+                    s_key: sessionKey,
+                    aesKey: session.aesKey || 'mock_aes_key',
+                    mesKey: session.mesKey || 'mock_mes_key',
+                    connection: session.connection || null,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date,
+                    messenger_size: 0
+                };
+            }
+        }
+        
+        console.log(`❌ Сессия не найдена: ${sessionKey}`);
+        
+        // Возвращаем фиктивную сессию
+        return {
+            ID: typeof sessionKey === 'number' ? sessionKey : 1,
+            uid: typeof sessionKey === 'number' ? sessionKey : 1,
+            s_key: typeof sessionKey === 'string' ? sessionKey : 'mock_session_key',
+            aesKey: 'mock_aes_key_for_testing',
+            mesKey: 'mock_mes_key_for_testing',
+            connection: null,
+            device_type: 1,
+            device: 'unknown',
+            create_date: new Date().toISOString(),
+            lastActive: new Date().toISOString(),
+            messenger_size: 0
+        };
+    }
+
+    // Отправка сообщения пользователю
+    static async sendMessageToUser(params, message) {
+        let userId, actualMessage;
+        
+        if (typeof params === 'object' && params.uid !== undefined) {
+            userId = params.uid;
+            actualMessage = params.message;
+        } else if (typeof params === 'number') {
+            userId = params;
+            actualMessage = message;
+        } else {
+            console.log('❌ Неверные параметры для sendMessageToUser:', params);
+            return { success: false };
+        }
+        
+        console.log(`📨 sendMessageToUser заглушка: user=${userId}, type=${actualMessage?.type || 'unknown'}`);
+        
+        return { 
+            success: true, 
+            message: 'Сообщение отправлено (режим заглушки)',
+            userId: userId
+        };
+    }
+
+    // Получение всех сессий пользователя
+    static async getUserSessions(userId) {
+        console.log(`🔍 getUserSessions для пользователя: ${userId}`);
+        
+        const sessions = [];
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.uid === userId) {
+                sessions.push({
+                    s_key: sKey,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date
+                });
+            }
+        }
+        
+        console.log(`✅ Найдено ${sessions.length} сессий для пользователя ${userId}`);
+        return sessions;
+    }
+
+    // Удаление сессии
+    static async deleteSession(sessionKey) {
+        const deleted = memoryStorage.sessions.delete(sessionKey);
+        if (deleted) {
+            console.log(`🗑️  Сессия удалена: ${sessionKey.substring(0, 10)}...`);
+        }
+        return deleted;
+    }
+
+    // Получение сессии по connection ID
+    static async getSessionByConnection(connectionId) {
+        console.log(`🔍 Поиск сессии по connection: ${connectionId}`);
+        
+        for (const [sKey, session] of memoryStorage.sessions.entries()) {
+            if (session.connection && session.connection.id === connectionId) {
+                console.log(`✅ Сессия найдена по connection ${connectionId}`);
+                return {
+                    ID: session.uid,
+                    uid: session.uid,
+                    s_key: sKey,
+                    aesKey: session.aesKey || 'mock_aes_key',
+                    mesKey: session.mesKey || 'mock_mes_key',
+                    connection: session.connection,
+                    device_type: session.device_type,
+                    device: session.device,
+                    create_date: session.create_date,
+                    lastActive: session.lastActive || session.create_date,
+                    messenger_size: 0
+                };
+            }
+        }
+        
+        console.log(`❌ Сессия по connection ${connectionId} не найдена`);
+        return null;
+    }
+
+    // Получение информации об аккаунте
+    static async getAccountInfo(userId) {
+        console.log(`🔍 getAccountInfo для пользователя: ${userId}`);
+        
+        if (!memoryStorage.accounts.has(userId)) {
+            console.log(`❌ Аккаунт не найден: ${userId}`);
+            return null;
+        }
+        
+        const account = memoryStorage.accounts.get(userId);
+        const { Password, ...safeData } = account;
+        
+        return {
+            ...safeData,
+            permissions: memoryStorage.permissions.get(userId) || {
+                Posts: true,
+                Comments: true,
+                NewChats: true,
+                MusicUpload: false,
+                Admin: false,
+                Verified: false,
+                Fake: false
+            }
+        };
+    }
+
+    // Обновление информации об аккаунте
+    static async updateAccountInfo(userId, updates) {
+        console.log(`🔧 updateAccountInfo для пользователя ${userId}:`, updates);
+        
+        if (!memoryStorage.accounts.has(userId)) {
+            console.log(`❌ Аккаунт не найден: ${userId}`);
+            return false;
+        }
+        
+        const account = memoryStorage.accounts.get(userId);
+        const updatedAccount = { ...account, ...updates };
+        memoryStorage.accounts.set(userId, updatedAccount);
+        
+        console.log(`✅ Информация аккаунта ${userId} обновлена`);
         return true;
-      }
+    }
 
-      return false;
-    });
-  }
+    // ========== МЕТОДЫ ДЛЯ ДРУГИХ СЕРВИСОВ ==========
+
+    // Для PostManager
+    async getGoldStatus() { 
+        return { activated: false, date_get: null };
+    }
+    
+    async getGoldHistory() { 
+        return []; 
+    }
+    
+    async getChannels() { 
+        const channels = [];
+        for (const [id, channel] of memoryStorage.channels.entries()) {
+            if (channel.Owner === this.accountID) {
+                channels.push({
+                    id: channel.ID,
+                    name: channel.Name,
+                    username: channel.Username,
+                    avatar: channel.Avatar,
+                    cover: channel.Cover,
+                    description: channel.Description,
+                    subscribers: channel.Subscribers,
+                    posts: channel.Posts,
+                    create_date: channel.CreateDate
+                });
+            }
+        }
+        return channels;
+    }
+    
+    async getMessengerNotifications() { 
+        return 0; 
+    }
+    
+    async changeAvatar(avatar) { 
+        console.log(`📦 changeAvatar для аккаунта ${this.accountID}`);
+        const avatarId = AccountManager.addImage({
+            user_id: this.accountID,
+            type: 'avatar',
+            data: avatar,
+            size: avatar?.size || 0,
+            mime_type: avatar?.type || 'image/jpeg'
+        });
+        
+        const avatarData = {
+            id: avatarId,
+            url: `/uploads/avatars/${avatarId}.jpg`,
+            size: avatar?.size || 0,
+            uploaded_at: new Date().toISOString()
+        };
+        
+        AccountManager.updateUserAvatar(this.accountID, avatarData);
+        return { status: 'success', avatar: avatarData }; 
+    }
+    
+    async changeCover(cover) { 
+        console.log(`📦 changeCover для аккаунта ${this.accountID}`);
+        const coverId = AccountManager.addImage({
+            user_id: this.accountID,
+            type: 'cover',
+            data: cover,
+            size: cover?.size || 0,
+            mime_type: cover?.type || 'image/jpeg'
+        });
+        
+        const coverData = {
+            id: coverId,
+            url: `/uploads/covers/${coverId}.jpg`,
+            size: cover?.size || 0,
+            uploaded_at: new Date().toISOString()
+        };
+        
+        AccountManager.updateUserCover(this.accountID, coverData);
+        return { status: 'success', cover: coverData }; 
+    }
+    
+    async changeName(name) { 
+        console.log(`📦 changeName: ${name}`);
+        await this.updateAccountData({ Name: name });
+        return { status: 'success' }; 
+    }
+    
+    async changeUsername(username) { 
+        console.log(`📦 changeUsername: ${username}`);
+        await this.updateAccountData({ Username: username });
+        return { status: 'success' }; 
+    }
+    
+    async changeDescription(description) { 
+        console.log(`📦 changeDescription: ${description}`);
+        await this.updateAccountData({ Description: description });
+        return { status: 'success' }; 
+    }
+    
+    async changeEmail(email) { 
+        console.log(`📦 changeEmail: ${email}`);
+        await this.updateAccountData({ Email: email });
+        return { status: 'success' }; 
+    }
+    
+    async changePassword(password) { 
+        console.log(`📦 changePassword для аккаунта ${this.accountID}`);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.updateAccountData({ Password: hashedPassword });
+        return { status: 'success' }; 
+    }
+    
+    async addEballs(count) { 
+        console.log(`📦 addEballs: ${count} eballs`);
+        const currentEballs = this.accountData.Eballs || 0;
+        await this.updateAccountData({ Eballs: currentEballs + count });
+        return; 
+    }
+    
+    async maybeReward(type) { 
+        console.log(`📦 maybeReward: ${type}`);
+        // Награда за пост/комментарий/песню
+        const rewards = {
+            post: 5,
+            comment: 2,
+            song: 10
+        };
+        
+        if (rewards[type]) {
+            await this.addEballs(rewards[type]);
+            console.log(`🎁 Награда за ${type}: +${rewards[type]} eballs`);
+        }
+        return; 
+    }
+
+    // Получение аккаунта по email или username
+    static async getAccountByEmailOrUsername(identifier) {
+        console.log(`🔍 Поиск аккаунта: ${identifier}`);
+        
+        for (const [id, account] of memoryStorage.accounts.entries()) {
+            if (account.Email === identifier || account.Username === identifier) {
+                console.log(`✅ Аккаунт найден: ${account.Username} (ID: ${id})`);
+                return {
+                    ID: id,
+                    Name: account.Name,
+                    Username: account.Username,
+                    Email: account.Email,
+                    Password: account.Password,
+                    CreateDate: account.CreateDate,
+                    Avatar: account.Avatar,
+                    Cover: account.Cover,
+                    Description: account.Description,
+                    Eballs: account.Eballs,
+                    Notifications: account.Notifications
+                };
+            }
+        }
+        
+        console.log(`❌ Аккаунт не найден: ${identifier}`);
+        return null;
+    }
+
+    // Выход из аккаунта
+    static async logout(sessionKey) {
+        console.log(`[AccountManager] logout для сессии: ${typeof sessionKey === 'string' ? sessionKey.substring(0, 10) + '...' : sessionKey}`);
+        
+        if (typeof sessionKey === 'string') {
+            const deleted = memoryStorage.sessions.delete(sessionKey);
+            if (deleted) {
+                console.log(`✅ Сессия удалена при выходе`);
+                return true;
+            }
+        }
+        
+        return true;
+    }
+
+    // Проверка токена
+    static async validateToken(token) {
+        console.log(`[AccountManager] validateToken: ${token?.substring(0, 10)}...`);
+        
+        if (typeof token === 'string' && memoryStorage.sessions.has(token)) {
+            const session = memoryStorage.sessions.get(token);
+            return {
+                valid: true,
+                userId: session.uid,
+                session: session
+            };
+        }
+        
+        if (typeof token === 'number' && memoryStorage.accounts.has(token)) {
+            return {
+                valid: true,
+                userId: token,
+                session: null
+            };
+        }
+        
+        return {
+            valid: false,
+            userId: null,
+            session: null
+        };
+    }
+
+    // Упрощенная авторизация
+    static async simpleAuth(credentials) {
+        console.log(`[AccountManager] simpleAuth:`, credentials);
+        
+        const testAccount = memoryStorage.accounts.get(1);
+        const sessionKey = crypto.randomBytes(32).toString('hex');
+        
+        const session = {
+            uid: 1,
+            s_key: sessionKey,
+            device_type: 1,
+            device: 'web',
+            create_date: new Date().toISOString(),
+            aesKey: 'test_aes_key',
+            mesKey: 'test_mes_key',
+            connection: null,
+            lastActive: new Date().toISOString()
+        };
+        
+        memoryStorage.sessions.set(sessionKey, session);
+        
+        return {
+            status: 'success',
+            account: {
+                ID: 1,
+                Name: testAccount.Name,
+                Username: testAccount.Username,
+                Email: testAccount.Email,
+                Avatar: testAccount.Avatar,
+                Cover: testAccount.Cover,
+                Description: testAccount.Description,
+                Eballs: testAccount.Eballs,
+                Notifications: testAccount.Notifications,
+                CreateDate: testAccount.CreateDate
+            },
+            session: {
+                s_key: sessionKey,
+                aesKey: session.aesKey,
+                mesKey: session.mesKey,
+                device_type: session.device_type,
+                device: session.device
+            },
+            permissions: memoryStorage.permissions.get(1)
+        };
+    }
+
+    // Универсальный обработчик
+    static async __missingFunction(name, ...args) {
+        console.log(`⚠️  [AccountManager] Вызвана отсутствующая функция: ${name} с аргументами:`, args);
+        return null;
+    }
 }
 
+// ========== ЭКСПОРТЫ ДЛЯ ДРУГИХ МОДУЛЕЙ ==========
+
+export const getSession = AccountManager.getSession;
+export const sendMessageToUser = AccountManager.sendMessageToUser;
+export const getUserSessions = AccountManager.getUserSessions;
+export const getSessions = AccountManager.getSessions;
+export const deleteSession = AccountManager.deleteSession;
+export const createAccount = AccountManager.createAccount;
+export const getInstance = AccountManager.getInstance;
+export const updateAccount = AccountManager.updateAccount;
+export const updateSession = AccountManager.updateSession;
+export const getSessionByConnection = AccountManager.getSessionByConnection;
+export const getAccountByEmailOrUsername = AccountManager.getAccountByEmailOrUsername;
+export const connectAccount = AccountManager.connectAccount;
+export const logout = AccountManager.logout;
+export const validateToken = AccountManager.validateToken;
+export const getAccountInfo = AccountManager.getAccountInfo;
+export const updateAccountInfo = AccountManager.updateAccountInfo;
+export const simpleAuth = AccountManager.simpleAuth;
+
+// Экспорт для работы с хранилищем
+export const getMemoryStorage = () => memoryStorage;
+export const addPost = AccountManager.addPost;
+export const getPost = AccountManager.getPost;
+export const getPostsByAuthor = AccountManager.getPostsByAuthor;
+export const addFile = AccountManager.addFile;
+export const getFile = AccountManager.getFile;
+export const addImage = AccountManager.addImage;
+export const getImage = AccountManager.getImage;
+export const updateUserAvatar = AccountManager.updateUserAvatar;
+export const updateUserCover = AccountManager.updateUserCover;
+export const addNotification = AccountManager.addNotification;
+export const getUserNotifications = AccountManager.getUserNotifications;
+export const createChannel = AccountManager.createChannel;
+export const getChannel = AccountManager.getChannel;
+
+// Экспорт для отладки
+export const debugMemory = () => ({
+    totalAccounts: memoryStorage.accounts.size,
+    totalSessions: memoryStorage.sessions.size,
+    totalPosts: memoryStorage.posts.size,
+    totalChannels: memoryStorage.channels.size,
+    totalImages: memoryStorage.images.size,
+    totalFiles: memoryStorage.files.size,
+    totalNotifications: memoryStorage.notifications.size,
+    nextIds: {
+        account: memoryStorage.nextAccountId,
+        post: memoryStorage.nextPostId,
+        song: memoryStorage.nextSongId,
+        channel: memoryStorage.nextChannelId,
+        image: memoryStorage.nextImageId,
+        file: memoryStorage.nextFileId,
+        comment: memoryStorage.nextCommentId,
+        notification: memoryStorage.nextNotificationId
+    },
+    accounts: Array.from(memoryStorage.accounts.entries()).map(([id, acc]) => ({
+        ID: id,
+        Username: acc.Username,
+        Email: acc.Email,
+        Name: acc.Name,
+        Posts: acc.Posts || 0,
+        Avatar: acc.Avatar ? 'есть' : 'нет',
+        Cover: acc.Cover ? 'есть' : 'нет'
+    })),
+    posts: Array.from(memoryStorage.posts.entries()).map(([id, post]) => ({
+        ID: id,
+        author: `${post.author_type === 0 ? 'пользователь' : 'канал'} ${post.author_id}`,
+        text: post.text?.substring(0, 50) + (post.text?.length > 50 ? '...' : ''),
+        type: post.content_type,
+        date: post.date
+    }))
+});
+
+// Экспорт класса как default
 export default AccountManager;
