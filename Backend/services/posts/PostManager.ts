@@ -1,14 +1,22 @@
+import { getDate } from '../../system/global/Function.js';
 import AccountDataHelper from '../account/AccountDataHelper.js';
 import RouterHelper from '../system/RouterHelper.js';
 import AccountManager from '../account/AccountManager.js';
-import Validator from '../system/Validator.js';
-import { getDate } from '../../system/global/Function.js';
+import { getMemoryStorage } from '../account/AccountManager.js';
 import AppError from '../system/AppError.js';
 
 class PostManager {
     static create = async ({ account, payload }) => {
         try {
-            console.log(`📝 Создание поста от пользователя ${account.ID}`, payload);
+            console.log('📝 PostManager.create вызван:', {
+                user: account?.Username,
+                text: payload.text?.substring(0, 50) + (payload.text?.length > 50 ? '...' : ''),
+                files: payload.files?.length || 0,
+                songs: payload.songs?.length || 0
+            });
+
+            // Получаем хранилище из памяти
+            const memoryStorage = getMemoryStorage();
             
             const accountManager = new AccountManager(account.ID);
             const currentPermissions = await accountManager.getPermissions();
@@ -28,7 +36,7 @@ class PostManager {
 
             if (from && from.id && from.type) {
                 if (from.type === 1) {
-                    // Проверяем владение каналом
+                    // Проверяем владение каналом через память
                     const channel = memoryStorage.channels.get(from.id);
                     if (channel && channel.Owner === account.ID) {
                         sender = {
@@ -52,63 +60,75 @@ class PostManager {
                 return RouterHelper.error('Отправить пост можно раз в 15 секунд');
             }
 
-            // Валидация текста
-            if (text) {
-                const validator = new Validator();
-                validator.validateText({
-                    title: 'Текст поста',
-                    value: text,
-                    maxLength: 30000
-                });
+            // Проверка текста
+            if (text && text.length > 30000) {
+                return RouterHelper.error('Текст поста не должен превышать 30000 символов');
+            }
+
+            // Проверка файлов
+            if (filesCount > 150) {
+                return RouterHelper.error('Максимальное количество файлов 150');
             }
 
             // Определяем тип контента
             let contentType = 'text';
             if (filesCount > 0) {
                 contentType = 'mixed';
-                if (filesCount > 150) {
-                    return RouterHelper.error('Максимальное количество файлов 150');
-                }
             }
 
-            // Формируем контент
+            // Формируем контент для хранения в памяти
             let content = {};
             
-            // Обработка музыки (заглушка)
+            // Музыка (заглушка для разработки)
             if (songs && songs.length > 0) {
                 content.songs = songs.map(songId => ({
-                    song_id: songId
+                    song_id: songId,
+                    title: `Трек ${songId}`,
+                    artist: 'Исполнитель'
                 }));
             }
 
-            // Обработка файлов (заглушка для разработки)
+            // Файлы (заглушка для разработки в памяти)
             if (files && files.length > 0) {
                 content.images = files
                     .filter(file => file.type?.startsWith('image/'))
-                    .map(file => ({
-                        img_data: { url: `mock://image/${file.name}` },
-                        file_name: file.name,
-                        file_size: file.size || 0
+                    .map((file, index) => ({
+                        img_data: { 
+                            url: `/mock/posts/images/${Date.now()}_${index}.jpg`,
+                            size: file.size || 1024,
+                            width: 1920,
+                            height: 1080,
+                            uploaded_at: getDate()
+                        },
+                        file_name: file.name || `image_${index}.jpg`,
+                        file_size: file.size || 1024
                     }));
                 
                 content.videos = files
                     .filter(file => file.type?.startsWith('video/'))
-                    .map(file => ({
-                        file: `mock://video/${file.name}`,
-                        name: file.name,
-                        size: file.size || 0,
-                        info: { width: 1920, height: 1080 }
+                    .map((file, index) => ({
+                        file: `/mock/posts/videos/${Date.now()}_${index}.mp4`,
+                        name: file.name || `video_${index}.mp4`,
+                        size: file.size || 5242880, // 5MB
+                        info: { 
+                            width: 1920, 
+                            height: 1080, 
+                            duration: 60,
+                            format: 'mp4'
+                        }
                     }));
                 
                 content.files = files
                     .filter(file => !file.type?.startsWith('image/') && !file.type?.startsWith('video/'))
-                    .map(file => ({
-                        file: `mock://file/${file.name}`,
-                        name: file.name,
-                        size: file.size || 0
+                    .map((file, index) => ({
+                        file: `/mock/posts/files/${Date.now()}_${index}.${getFileExtension(file.name)}`,
+                        name: file.name || `file_${index}`,
+                        size: file.size || 1024,
+                        type: file.type || 'application/octet-stream'
                     }));
             }
 
+            // Цензура
             if (settings?.censoring_img) {
                 content.censoring = true;
             }
@@ -125,35 +145,84 @@ class PostManager {
                 date: getDate(),
                 hidden: 0,
                 in_trash: 0,
-                deleted_at: null
+                deleted_at: null,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                views: 0
             };
 
+            // Сохраняем в память
             memoryStorage.posts.set(postId, newPost);
 
-            // Обработка стены (wall)
+            // Стена (wall) - заглушка
             if (type === 'wall' && wall && wall.username) {
-                // Заглушка для стены
                 console.log(`📌 Пост добавлен на стену пользователя ${wall.username}`);
+                // Можно добавить логику для стены позже
             }
 
-            // Награда за пост
-            await accountManager.maybeReward('post');
-            
             // Обновляем счетчик постов
             await this.recount(sender.id, sender.type);
 
-            console.log(`✅ Пост создан (ID: ${postId}) от ${sender.type === 0 ? 'пользователя' : 'канала'} ${sender.id}`);
+            // Награда за пост
+            await accountManager.maybeReward('post');
+
+            console.log(`✅ Пост создан (ID: ${postId})`);
             
-            return RouterHelper.success({ post_id: postId });
+            return RouterHelper.success({ 
+                post_id: postId,
+                message: 'Пост успешно создан'
+            });
             
         } catch (error) {
-            console.error('❌ Ошибка при создании поста:', error);
+            console.error('❌ Ошибка в PostManager.create:', error);
             return RouterHelper.error(error.message || 'Ошибка при создании поста');
         }
     }
 
+    // Вспомогательная функция для получения расширения файла
+    static sanitizeFileName(name) {
+        if (!name) return `file_${Date.now()}`;
+        const base = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        return base.length > 0 ? base : `file_${Date.now()}`;
+    }
+
+    // Проверка времени между постами
+    static async checkTime(from) {
+        try {
+            const memoryStorage = getMemoryStorage();
+            
+            // Находим последний пост от этого автора
+            let lastPost = null;
+            for (const post of memoryStorage.posts.values()) {
+                if (post.author_id === from.id && post.author_type === from.type) {
+                    if (!lastPost || new Date(post.date) > new Date(lastPost.date)) {
+                        lastPost = post;
+                    }
+                }
+            }
+
+            if (lastPost) {
+                const timeLimit = 15; // 15 секунд
+                const lastPostTime = new Date(lastPost.date).getTime() / 1000;
+                const currentTime = Math.floor(Date.now() / 1000);
+                const elapsedTime = currentTime - lastPostTime;
+
+                return elapsedTime < timeLimit;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ Ошибка при проверке времени:', error);
+            return false;
+        }
+    }
+
+    // Подсчет постов
     static async recount(author_id, author_type) {
         try {
+            const memoryStorage = getMemoryStorage();
+            
             // Считаем посты
             let postCount = 0;
             for (const post of memoryStorage.posts.values()) {
@@ -164,8 +233,8 @@ class PostManager {
                 }
             }
             
+            // Обновляем счетчик
             if (author_type === 0) {
-                // Обновляем счетчик у аккаунта
                 const account = memoryStorage.accounts.get(author_id);
                 if (account) {
                     account.Posts = postCount;
@@ -173,7 +242,6 @@ class PostManager {
                     console.log(`📊 У аккаунта ${author_id} теперь ${postCount} постов`);
                 }
             } else if (author_type === 1) {
-                // Обновляем счетчик у канала
                 const channel = memoryStorage.channels.get(author_id);
                 if (channel) {
                     channel.Posts = postCount;
@@ -188,11 +256,12 @@ class PostManager {
         }
     }
 
+    // Удаление поста
     static async moveToTrash({ account, pid }) {
         try {
-            console.log(`🗑️  Удаление поста ${pid} пользователем ${account.ID}`);
-            
+            const memoryStorage = getMemoryStorage();
             const post = memoryStorage.posts.get(Number(pid));
+            
             if (!post) {
                 return RouterHelper.error('Пост не найден');
             }
@@ -222,6 +291,9 @@ class PostManager {
             post.deleted_at = getDate();
             memoryStorage.posts.set(Number(pid), post);
 
+            // Обновляем счетчик
+            await this.recount(post.author_id, post.author_type);
+
             console.log(`✅ Пост ${pid} перемещен в корзину`);
             
             return RouterHelper.success({
@@ -234,38 +306,15 @@ class PostManager {
         }
     }
 
-    static async checkTime(from) {
-        try {
-            // Находим последний пост от этого автора
-            let lastPost = null;
-            for (const post of memoryStorage.posts.values()) {
-                if (post.author_id === from.id && post.author_type === from.type) {
-                    if (!lastPost || new Date(post.date) > new Date(lastPost.date)) {
-                        lastPost = post;
-                    }
-                }
-            }
+    // Дополнительные методы для совместимости
+    static async getFilesType(files) {
+        return 'mixed';
+    };
 
-            if (lastPost) {
-                const timeLimit = 15; // 15 секунд
-                const lastPostTime = new Date(lastPost.date).getTime() / 1000;
-                const currentTime = Math.floor(Date.now() / 1000);
-                const elapsedTime = currentTime - lastPostTime;
-
-                return elapsedTime < timeLimit;
-            }
-            
-            return false;
-        } catch (error) {
-            console.error('❌ Ошибка при проверке времени:', error);
-            return false;
-        }
-    }
-
-    // Новый метод для получения постов
+    // Получение постов (для контроллера load_posts)
     static async getPosts({ limit = 20, offset = 0, author_id, author_type } = {}) {
         try {
-            console.log(`📄 Получение постов: author=${author_id}, type=${author_type}, limit=${limit}`);
+            const memoryStorage = getMemoryStorage();
             
             let postsArray = Array.from(memoryStorage.posts.values())
                 .filter(post => post.hidden === 0 && post.in_trash === 0);
@@ -317,9 +366,10 @@ class PostManager {
                     date: post.date,
                     author: authorInfo,
                     stats: {
-                        likes: 0,
-                        comments: 0,
-                        shares: 0
+                        likes: post.likes || 0,
+                        comments: post.comments || 0,
+                        shares: post.shares || 0,
+                        views: post.views || 0
                     }
                 };
             }));
@@ -338,9 +388,11 @@ class PostManager {
         }
     }
 
-    // Метод для получения одного поста
+    // Получение одного поста
     static async getPostById(postId) {
+        const memoryStorage = getMemoryStorage();
         const post = memoryStorage.posts.get(Number(postId));
+        
         if (!post || post.hidden === 1 || post.in_trash === 1) {
             return null;
         }
@@ -377,12 +429,20 @@ class PostManager {
             date: post.date,
             author: authorInfo,
             stats: {
-                likes: 0,
-                comments: 0,
-                shares: 0
+                likes: post.likes || 0,
+                comments: post.comments || 0,
+                shares: post.shares || 0,
+                views: post.views || 0
             }
         };
     }
+}
+
+// Вспомогательная функция
+function getFileExtension(filename) {
+    if (!filename) return 'txt';
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : 'txt';
 }
 
 export default PostManager;
