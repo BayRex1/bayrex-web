@@ -2,15 +2,44 @@ import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import Config from '../../../../../system/global/Config.js';
-import RouterHelper from '../../../../../services/system/RouterHelper.js';
-import Validator from '../../../../../services/system/Validator.js';
-import { getDate } from '../../../../../system/global/Function.js';
+
+// Локальные реализации на случай отсутствия импортов
+const LocalRouterHelper = {
+    success: (data: any) => ({
+        status: 'success',
+        ...data
+    }),
+    error: (message: string) => ({
+        status: 'error',
+        message: message
+    })
+};
+
+const LocalValidator = {
+    validateEmail: async (email: string) => {
+        if (!email || !email.includes('@') || !email.includes('.')) {
+            throw new Error('Неверный формат email');
+        }
+        return true;
+    },
+    validateText: ({ title, value, maxLength }: { title: string; value: string; maxLength: number }) => {
+        if (!value || value.trim().length === 0) {
+            throw new Error(`${title} не может быть пустым`);
+        }
+        if (value.length > maxLength) {
+            throw new Error(`${title} слишком длинный (макс. ${maxLength} символов)`);
+        }
+        return true;
+    }
+};
+
+const getDate = () => new Date().toISOString();
 
 // Хранилище аккаунтов в памяти
 const memoryStorage = {
-    accounts: new Map(),
-    sessions: new Map(),
-    permissions: new Map(),
+    accounts: new Map<number, any>(),
+    sessions: new Map<string, any>(),
+    permissions: new Map<number, any>(),
     nextAccountId: 1000
 };
 
@@ -98,7 +127,10 @@ const createSession = (accountId: number, deviceType: string = 'browser', device
     const session = {
         uid: accountId,
         s_key: S_KEY,
-        device_type: deviceType === 'browser' ? 1 : 0,
+        device_type: deviceType === 'browser' ? 1 : 
+                    deviceType === 'android_app' ? 2 :
+                    deviceType === 'ios_app' ? 3 :
+                    deviceType === 'windows_app' ? 4 : 0,
         device: device || 'unknown',
         create_date: getDate(),
         aesKey: 'mock_aes_key_for_testing',
@@ -128,14 +160,14 @@ const getAccountData = (accountId: number) => {
 export const reg = async ({ data }: { data: any }) => {
     console.log('📝 Начало регистрации (TypeScript версия):', {
         username: data.username,
-        email: data.email,
+        email: data.email?.substring(0, 10) + '...',
         name: data.name
     });
 
     // Проверка включена ли регистрация
     if (Config.REGISTRATION === false) {
         console.log('❌ Регистрация отключена в конфигурации');
-        return RouterHelper.error('Регистрация временно отключена. Попробуйте позже.');
+        return LocalRouterHelper.error('Регистрация временно отключена. Попробуйте позже.');
     }
 
     // Подготовка username
@@ -146,42 +178,42 @@ export const reg = async ({ data }: { data: any }) => {
 
     // Базовая валидация
     if (!username || username.length < 3) {
-        return RouterHelper.error('Логин должен быть не короче 3 символов');
+        return LocalRouterHelper.error('Логин должен быть не короче 3 символов');
     }
     
     if (username.length > 40) {
-        return RouterHelper.error('Логин слишком длинный (макс. 40 символов)');
+        return LocalRouterHelper.error('Логин слишком длинный (макс. 40 символов)');
     }
     
     // Проверка допустимых символов в username
     const usernameRegex = /^[a-zA-Z0-9_.-]+$/;
     if (!usernameRegex.test(username)) {
-        return RouterHelper.error('Логин может содержать только буквы, цифры, точки, дефисы и подчеркивания');
+        return LocalRouterHelper.error('Логин может содержать только буквы, цифры, точки, дефисы и подчеркивания');
     }
     
     if (!email || !email.includes('@') || !email.includes('.')) {
-        return RouterHelper.error('Пожалуйста, введите корректный email адрес');
+        return LocalRouterHelper.error('Пожалуйста, введите корректный email адрес');
     }
     
     if (!name || name.length < 2) {
-        return RouterHelper.error('Имя должно быть не короче 2 символов');
+        return LocalRouterHelper.error('Имя должно быть не короче 2 символов');
     }
     
     if (name.length > 60) {
-        return RouterHelper.error('Имя слишком длинное (макс. 60 символов)');
+        return LocalRouterHelper.error('Имя слишком длинное (макс. 60 символов)');
     }
     
     if (!password || password.length < 6) {
-        return RouterHelper.error('Пароль должен быть не короче 6 символов');
+        return LocalRouterHelper.error('Пароль должен быть не короче 6 символов');
     }
     
     if (password.length > 100) {
-        return RouterHelper.error('Пароль слишком длинный (макс. 100 символов)');
+        return LocalRouterHelper.error('Пароль слишком длинный (макс. 100 символов)');
     }
 
     // Проверка согласия с правилами
     if (!data.accept || data.accept !== true) {
-        return RouterHelper.error('Вы должны принять пользовательское соглашение');
+        return LocalRouterHelper.error('Вы должны принять пользовательское соглашение');
     }
 
     try {
@@ -224,7 +256,7 @@ export const reg = async ({ data }: { data: any }) => {
         console.log(`📊 Всего аккаунтов в памяти: ${memoryStorage.accounts.size}`);
         console.log(`📊 Всего активных сессий: ${memoryStorage.sessions.size}`);
 
-        return RouterHelper.success({
+        return LocalRouterHelper.success({
             S_KEY: S_KEY,
             accountID: account.ID,
             accountData: accountData,
@@ -243,11 +275,11 @@ export const reg = async ({ data }: { data: any }) => {
             error.message.includes('пароль') ||
             error.message.includes('email') ||
             error.message.includes('логин')) {
-            return RouterHelper.error(error.message);
+            return LocalRouterHelper.error(error.message);
         }
         
         // Системные ошибки
-        return RouterHelper.error(
+        return LocalRouterHelper.error(
             'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз.'
         );
     }
