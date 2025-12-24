@@ -3,19 +3,36 @@ import crypto from 'crypto';
 import Config from './Config.js';
 import AppError from '../../services/system/AppError.js';
 
-// Хранилище в памяти - РАСШИРЕННАЯ ВЕРСИЯ
+// Хранилище в памяти - ПОЛНАЯ ВЕРСИЯ
 const memoryStorage = {
+    // Основные хранилища
     accounts: new Map(),
     sessions: new Map(),
     permissions: new Map(),
-    posts: new Map(),           // Хранилище постов
-    channels: new Map(),        // Хранилище каналов
-    songs: new Map(),           // Хранилище музыки
-    images: new Map(),          // Хранилище изображений (аватарки, обложки)
-    files: new Map(),           // Хранилище файлов
-    notifications: new Map(),   // Уведомления
-    comments: new Map(),        // Комментарии
-    likes: new Map(),           // Лайки
+    
+    // Контент
+    posts: new Map(),
+    channels: new Map(),
+    songs: new Map(),
+    images: new Map(),
+    files: new Map(),
+    comments: new Map(),
+    
+    // Взаимодействия
+    likes: new Map(),           // ключ: `${postId}_${userId}`, значение: объект лайка
+    postLikes: new Map(),       // ключ: `post_${postId}`, значение: {likes: Set, dislikes: Set}
+    subscriptions: new Map(),   // ключ: `${userId}_${targetId}_${targetType}`
+    blocks: new Map(),          // ключ: `${userId}_${authorId}_${authorType}`
+    
+    // Уведомления и прочее
+    notifications: new Map(),
+    messages: new Map(),
+    gifts: new Map(),
+    reports: new Map(),
+    appeals: new Map(),
+    punishments: new Map(),
+    
+    // Счетчики для генерации ID
     nextAccountId: 1000,
     nextPostId: 1000,
     nextSongId: 1000,
@@ -23,15 +40,21 @@ const memoryStorage = {
     nextImageId: 1000,
     nextFileId: 1000,
     nextCommentId: 1000,
-    nextNotificationId: 1000
+    nextLikeId: 1000,
+    nextNotificationId: 1000,
+    nextMessageId: 1000,
+    nextGiftId: 1000,
+    nextReportId: 1000,
+    nextAppealId: 1000,
+    nextPunishmentId: 1000
 };
 
-// Создаем тестовые данные
+// Инициализация тестовых данных
 (() => {
+    // Тестовый аккаунт 1
     const testAccountId = 1;
     const hashedPassword = bcrypt.hashSync('test123', 10);
     
-    // Тестовый аккаунт
     memoryStorage.accounts.set(testAccountId, {
         ID: testAccountId,
         Name: 'Тестовый пользователь',
@@ -45,11 +68,10 @@ const memoryStorage = {
         Eballs: 1000,
         Notifications: 0,
         messenger_size: 0,
-        Posts: 0,
-        last_post: null
+        Posts: 1,
+        last_post: new Date().toISOString()
     });
     
-    // Права доступа
     memoryStorage.permissions.set(testAccountId, {
         UserID: testAccountId,
         Posts: true,
@@ -61,16 +83,61 @@ const memoryStorage = {
         Fake: false
     });
     
-    // Тестовая сессия
-    const testSessionKey = 'test_session_key_' + Date.now();
-    memoryStorage.sessions.set(testSessionKey, {
+    // Тестовый аккаунт 2 (для взаимодействий)
+    const testAccountId2 = 2;
+    const hashedPassword2 = bcrypt.hashSync('test456', 10);
+    
+    memoryStorage.accounts.set(testAccountId2, {
+        ID: testAccountId2,
+        Name: 'Второй пользователь',
+        Username: 'user2',
+        Email: 'user2@example.com',
+        Password: hashedPassword2,
+        CreateDate: new Date().toISOString(),
+        Avatar: null,
+        Cover: null,
+        Description: 'Второй тестовый аккаунт',
+        Eballs: 500,
+        Notifications: 0,
+        messenger_size: 0,
+        Posts: 0,
+        last_post: null
+    });
+    
+    memoryStorage.permissions.set(testAccountId2, {
+        UserID: testAccountId2,
+        Posts: true,
+        Comments: true,
+        NewChats: true,
+        MusicUpload: false,
+        Admin: false,
+        Verified: false,
+        Fake: false
+    });
+    
+    // Тестовые сессии
+    const testSessionKey1 = 'test_session_key_1_' + Date.now();
+    memoryStorage.sessions.set(testSessionKey1, {
         uid: testAccountId,
-        s_key: testSessionKey,
+        s_key: testSessionKey1,
         device_type: 1,
-        device: 'test-device',
+        device: 'Chrome Windows',
         create_date: new Date().toISOString(),
-        aesKey: 'test_aes_key',
-        mesKey: 'test_mes_key',
+        aesKey: 'test_aes_key_1',
+        mesKey: 'test_mes_key_1',
+        connection: null,
+        lastActive: new Date().toISOString()
+    });
+    
+    const testSessionKey2 = 'test_session_key_2_' + Date.now();
+    memoryStorage.sessions.set(testSessionKey2, {
+        uid: testAccountId2,
+        s_key: testSessionKey2,
+        device_type: 1,
+        device: 'Firefox Mac',
+        create_date: new Date().toISOString(),
+        aesKey: 'test_aes_key_2',
+        mesKey: 'test_mes_key_2',
         connection: null,
         lastActive: new Date().toISOString()
     });
@@ -90,17 +157,57 @@ const memoryStorage = {
         hidden: 0,
         in_trash: 0,
         deleted_at: null,
-        likes: 0,
+        likes: 1,
+        dislikes: 0,
         comments: 0,
-        shares: 0
+        shares: 0,
+        views: 0
     });
     
-    // Обновляем счетчик постов у аккаунта
-    memoryStorage.accounts.get(testAccountId).Posts = 1;
+    // Тестовый лайк
+    const testLikeId = memoryStorage.nextLikeId++;
+    memoryStorage.likes.set(`1_1`, {
+        id: testLikeId,
+        postId: 1,
+        userId: 1,
+        type: 'like',
+        date: new Date().toISOString()
+    });
     
-    console.log(`✅ Тестовый аккаунт создан: testuser / test123 (ID: ${testAccountId})`);
-    console.log(`✅ Тестовая сессия создана: ${testSessionKey.substring(0, 10)}...`);
-    console.log(`✅ Тестовый пост создан (ID: ${testPostId})`);
+    const postKey = `post_1`;
+    memoryStorage.postLikes.set(postKey, {
+        likes: new Set([1]),
+        dislikes: new Set()
+    });
+    
+    // Тестовый канал
+    const testChannelId = 1;
+    memoryStorage.channels.set(testChannelId, {
+        ID: testChannelId,
+        Name: 'Тестовый канал',
+        Username: 'testchannel',
+        Owner: testAccountId,
+        Avatar: null,
+        Cover: null,
+        Description: 'Тестовый канал для разработки',
+        Subscribers: 0,
+        Posts: 0,
+        CreateDate: new Date().toISOString()
+    });
+    
+    console.log('========================================');
+    console.log('✅ ИНИЦИАЛИЗАЦИЯ ПАМЯТИ ЗАВЕРШЕНА');
+    console.log(`📊 Аккаунты: ${memoryStorage.accounts.size}`);
+    console.log(`📊 Сессии: ${memoryStorage.sessions.size}`);
+    console.log(`📊 Посты: ${memoryStorage.posts.size}`);
+    console.log(`📊 Лайки: ${memoryStorage.likes.size}`);
+    console.log(`📊 Каналы: ${memoryStorage.channels.size}`);
+    console.log('========================================');
+    console.log('🔑 Тестовый аккаунт 1: testuser / test123');
+    console.log('🔑 Тестовый аккаунт 2: user2 / test456');
+    console.log('📝 Тестовый пост ID: 1 (уже с лайком)');
+    console.log('📺 Тестовый канал: testchannel');
+    console.log('========================================');
 })();
 
 class AccountManager {
@@ -119,14 +226,14 @@ class AccountManager {
         this.accountData = memoryStorage.accounts.get(id);
     }
 
-    // ========== СТАТИЧЕСКИЕ МЕТОДЫ ДЛЯ ХРАНИЛИЩ ==========
+    // ========== СТАТИЧЕСКИЕ МЕТОДЫ ДЛЯ РАБОТЫ С ПАМЯТЬЮ ==========
     
-    // Получение хранилища для других модулей
     static getStorage() {
         return memoryStorage;
     }
     
-    // Добавление поста
+    // ========== МЕТОДЫ ДЛЯ ПОСТОВ ==========
+    
     static addPost(postData) {
         const postId = memoryStorage.nextPostId++;
         const post = {
@@ -137,20 +244,28 @@ class AccountManager {
             in_trash: 0,
             deleted_at: null,
             likes: 0,
+            dislikes: 0,
             comments: 0,
-            shares: 0
+            shares: 0,
+            views: 0
         };
         memoryStorage.posts.set(postId, post);
+        
+        // Создаем запись для лайков этого поста
+        const postKey = `post_${postId}`;
+        memoryStorage.postLikes.set(postKey, {
+            likes: new Set(),
+            dislikes: new Set()
+        });
+        
         console.log(`📝 Пост добавлен (ID: ${postId})`);
         return postId;
     }
     
-    // Получение поста
     static getPost(postId) {
         return memoryStorage.posts.get(postId);
     }
     
-    // Получение всех постов пользователя/канала
     static getPostsByAuthor(authorId, authorType = 0, includeHidden = false) {
         const posts = [];
         for (const [id, post] of memoryStorage.posts.entries()) {
@@ -163,89 +278,168 @@ class AccountManager {
         return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
     
-    // Добавление файла/изображения
-    static addFile(fileData) {
-        const fileId = memoryStorage.nextFileId++;
-        const file = {
-            id: fileId,
-            ...fileData,
-            uploaded_at: new Date().toISOString()
-        };
-        memoryStorage.files.set(fileId, file);
-        return fileId;
-    }
-    
-    // Получение файла
-    static getFile(fileId) {
-        return memoryStorage.files.get(fileId);
-    }
-    
-    // Добавление изображения (аватар/обложка)
-    static addImage(imageData) {
-        const imageId = memoryStorage.nextImageId++;
-        const image = {
-            id: imageId,
-            ...imageData,
-            uploaded_at: new Date().toISOString()
-        };
-        memoryStorage.images.set(imageId, image);
-        return imageId;
-    }
-    
-    // Получение изображения
-    static getImage(imageId) {
-        return memoryStorage.images.get(imageId);
-    }
-    
-    // Обновление аватара пользователя
-    static updateUserAvatar(userId, avatarData) {
-        const account = memoryStorage.accounts.get(userId);
-        if (account) {
-            account.Avatar = avatarData;
-            memoryStorage.accounts.set(userId, account);
-            console.log(`🖼️  Аватар обновлен для пользователя ${userId}`);
+    static updatePost(postId, updates) {
+        const post = memoryStorage.posts.get(postId);
+        if (post) {
+            const updatedPost = { ...post, ...updates };
+            memoryStorage.posts.set(postId, updatedPost);
+            console.log(`✏️  Пост ${postId} обновлен`);
             return true;
         }
         return false;
     }
     
-    // Обновление обложки пользователя
-    static updateUserCover(userId, coverData) {
-        const account = memoryStorage.accounts.get(userId);
-        if (account) {
-            account.Cover = coverData;
-            memoryStorage.accounts.set(userId, account);
-            console.log(`🖼️  Обложка обновлена для пользователя ${userId}`);
+    static deletePost(postId) {
+        const post = memoryStorage.posts.get(postId);
+        if (post) {
+            post.in_trash = 1;
+            post.deleted_at = new Date().toISOString();
+            memoryStorage.posts.set(postId, post);
+            console.log(`🗑️  Пост ${postId} перемещен в корзину`);
             return true;
         }
         return false;
     }
     
-    // Добавление уведомления
-    static addNotification(notificationData) {
-        const notificationId = memoryStorage.nextNotificationId++;
-        const notification = {
-            id: notificationId,
-            ...notificationData,
-            created_at: new Date().toISOString(),
-            viewed: 0
-        };
-        memoryStorage.notifications.set(notificationId, notification);
-        return notificationId;
-    }
+    // ========== МЕТОДЫ ДЛЯ ЛАЙКОВ ==========
     
-    // Получение уведомлений пользователя
-    static getUserNotifications(userId) {
-        const notifications = [];
-        for (const [id, notification] of memoryStorage.notifications.entries()) {
-            if (notification.user_id === userId) {
-                notifications.push({ id, ...notification });
+    static addLike(postId, userId, type = 'like') {
+        const key = `${postId}_${userId}`;
+        const postKey = `post_${postId}`;
+        
+        // Удаляем противоположную реакцию если была
+        const oppositeType = type === 'like' ? 'dislike' : 'like';
+        const oppositeKey = `${postId}_${userId}`;
+        
+        if (memoryStorage.likes.has(oppositeKey)) {
+            memoryStorage.likes.delete(oppositeKey);
+            
+            const postLikes = memoryStorage.postLikes.get(postKey) || { likes: new Set(), dislikes: new Set() };
+            if (type === 'like') {
+                postLikes.dislikes.delete(userId);
+            } else {
+                postLikes.likes.delete(userId);
             }
         }
-        return notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        // Добавляем новую реакцию
+        const likeId = memoryStorage.nextLikeId++;
+        memoryStorage.likes.set(key, {
+            id: likeId,
+            postId,
+            userId,
+            type,
+            date: new Date().toISOString()
+        });
+        
+        // Обновляем счетчик поста
+        let postLikes = memoryStorage.postLikes.get(postKey);
+        if (!postLikes) {
+            postLikes = { likes: new Set(), dislikes: new Set() };
+            memoryStorage.postLikes.set(postKey, postLikes);
+        }
+        
+        if (type === 'like') {
+            postLikes.likes.add(userId);
+        } else {
+            postLikes.dislikes.add(userId);
+        }
+        
+        // Обновляем счетчик в посте
+        const post = memoryStorage.posts.get(postId);
+        if (post) {
+            post.likes = postLikes.likes.size;
+            post.dislikes = postLikes.dislikes.size;
+            memoryStorage.posts.set(postId, post);
+        }
+        
+        console.log(`❤️  ${type === 'like' ? 'Лайк' : 'Дизлайк'} добавлен: пост ${postId}, пользователь ${userId}`);
+        return likeId;
     }
     
-    // Создание канала
+    static removeLike(postId, userId) {
+        const key = `${postId}_${userId}`;
+        const postKey = `post_${postId}`;
+        
+        if (memoryStorage.likes.has(key)) {
+            const like = memoryStorage.likes.get(key);
+            memoryStorage.likes.delete(key);
+            
+            // Обновляем счетчик поста
+            const postLikes = memoryStorage.postLikes.get(postKey);
+            if (postLikes) {
+                if (like.type === 'like') {
+                    postLikes.likes.delete(userId);
+                } else {
+                    postLikes.dislikes.delete(userId);
+                }
+            }
+            
+            // Обновляем счетчик в посте
+            const post = memoryStorage.posts.get(postId);
+            if (post) {
+                post.likes = postLikes?.likes.size || 0;
+                post.dislikes = postLikes?.dislikes.size || 0;
+                memoryStorage.posts.set(postId, post);
+            }
+            
+            console.log(`🗑️  Реакция удалена: пост ${postId}, пользователь ${userId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static getUserReaction(postId, userId) {
+        const key = `${postId}_${userId}`;
+        const like = memoryStorage.likes.get(key);
+        return like ? like.type : null;
+    }
+    
+    static getPostStats(postId) {
+        const postKey = `post_${postId}`;
+        const postLikes = memoryStorage.postLikes.get(postKey) || { likes: new Set(), dislikes: new Set() };
+        return {
+            likes: postLikes.likes.size,
+            dislikes: postLikes.dislikes.size,
+            userLikes: Array.from(postLikes.likes),
+            userDislikes: Array.from(postLikes.dislikes)
+        };
+    }
+    
+    static toggleLike(postId, userId) {
+        const currentReaction = AccountManager.getUserReaction(postId, userId);
+        
+        if (currentReaction === 'like') {
+            AccountManager.removeLike(postId, userId);
+            return { action: 'removed', type: 'like' };
+        } else if (currentReaction === 'dislike') {
+            AccountManager.removeLike(postId, userId);
+            AccountManager.addLike(postId, userId, 'like');
+            return { action: 'switched', from: 'dislike', to: 'like' };
+        } else {
+            AccountManager.addLike(postId, userId, 'like');
+            return { action: 'added', type: 'like' };
+        }
+    }
+    
+    static toggleDislike(postId, userId) {
+        const currentReaction = AccountManager.getUserReaction(postId, userId);
+        
+        if (currentReaction === 'dislike') {
+            AccountManager.removeLike(postId, userId);
+            return { action: 'removed', type: 'dislike' };
+        } else if (currentReaction === 'like') {
+            AccountManager.removeLike(postId, userId);
+            AccountManager.addLike(postId, userId, 'dislike');
+            return { action: 'switched', from: 'like', to: 'dislike' };
+        } else {
+            AccountManager.addLike(postId, userId, 'dislike');
+            return { action: 'added', type: 'dislike' };
+        }
+    }
+    
+    // ========== МЕТОДЫ ДЛЯ КАНАЛОВ ==========
+    
     static createChannel(channelData) {
         const channelId = memoryStorage.nextChannelId++;
         const channel = {
@@ -262,14 +456,212 @@ class AccountManager {
         return channelId;
     }
     
-    // Получение канала
     static getChannel(channelId) {
         return memoryStorage.channels.get(channelId);
     }
-
+    
+    static getChannelsByOwner(ownerId) {
+        const channels = [];
+        for (const [id, channel] of memoryStorage.channels.entries()) {
+            if (channel.Owner === ownerId) {
+                channels.push({ id, ...channel });
+            }
+        }
+        return channels;
+    }
+    
+    static updateChannel(channelId, updates) {
+        const channel = memoryStorage.channels.get(channelId);
+        if (channel) {
+            const updatedChannel = { ...channel, ...updates };
+            memoryStorage.channels.set(channelId, updatedChannel);
+            console.log(`✏️  Канал ${channelId} обновлен`);
+            return true;
+        }
+        return false;
+    }
+    
+    // ========== МЕТОДЫ ДЛЯ ФАЙЛОВ И ИЗОБРАЖЕНИЙ ==========
+    
+    static addFile(fileData) {
+        const fileId = memoryStorage.nextFileId++;
+        const file = {
+            id: fileId,
+            ...fileData,
+            uploaded_at: new Date().toISOString()
+        };
+        memoryStorage.files.set(fileId, file);
+        return fileId;
+    }
+    
+    static getFile(fileId) {
+        return memoryStorage.files.get(fileId);
+    }
+    
+    static addImage(imageData) {
+        const imageId = memoryStorage.nextImageId++;
+        const image = {
+            id: imageId,
+            ...imageData,
+            uploaded_at: new Date().toISOString()
+        };
+        memoryStorage.images.set(imageId, image);
+        return imageId;
+    }
+    
+    static getImage(imageId) {
+        return memoryStorage.images.get(imageId);
+    }
+    
+    static updateUserAvatar(userId, avatarData) {
+        const account = memoryStorage.accounts.get(userId);
+        if (account) {
+            account.Avatar = avatarData;
+            memoryStorage.accounts.set(userId, account);
+            console.log(`🖼️  Аватар обновлен для пользователя ${userId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static updateUserCover(userId, coverData) {
+        const account = memoryStorage.accounts.get(userId);
+        if (account) {
+            account.Cover = coverData;
+            memoryStorage.accounts.set(userId, account);
+            console.log(`🖼️  Обложка обновлена для пользователя ${userId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    // ========== МЕТОДЫ ДЛЯ ПОДПИСОК И БЛОКИРОВОК ==========
+    
+    static addSubscription(userId, targetId, targetType) {
+        const key = `${userId}_${targetId}_${targetType}`;
+        
+        if (!memoryStorage.subscriptions.has(key)) {
+            memoryStorage.subscriptions.set(key, {
+                userId,
+                targetId,
+                targetType,
+                date: new Date().toISOString()
+            });
+            
+            // Обновляем счетчик подписчиков
+            if (targetType === 0) {
+                const account = memoryStorage.accounts.get(targetId);
+                if (account) {
+                    // Можно добавить счетчик подписчиков к аккаунту
+                }
+            } else if (targetType === 1) {
+                const channel = memoryStorage.channels.get(targetId);
+                if (channel) {
+                    channel.Subscribers = (channel.Subscribers || 0) + 1;
+                    memoryStorage.channels.set(targetId, channel);
+                }
+            }
+            
+            console.log(`📌 Подписка добавлена: ${userId} → ${targetType === 0 ? 'пользователь' : 'канал'} ${targetId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static removeSubscription(userId, targetId, targetType) {
+        const key = `${userId}_${targetId}_${targetType}`;
+        
+        if (memoryStorage.subscriptions.has(key)) {
+            memoryStorage.subscriptions.delete(key);
+            
+            // Обновляем счетчик подписчиков
+            if (targetType === 1) {
+                const channel = memoryStorage.channels.get(targetId);
+                if (channel && channel.Subscribers > 0) {
+                    channel.Subscribers -= 1;
+                    memoryStorage.channels.set(targetId, channel);
+                }
+            }
+            
+            console.log(`📌 Подписка удалена: ${userId} → ${targetType === 0 ? 'пользователь' : 'канал'} ${targetId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static isSubscribed(userId, targetId, targetType) {
+        const key = `${userId}_${targetId}_${targetType}`;
+        return memoryStorage.subscriptions.has(key);
+    }
+    
+    static addBlock(userId, authorId, authorType) {
+        const key = `${userId}_${authorId}_${authorType}`;
+        
+        if (!memoryStorage.blocks.has(key)) {
+            memoryStorage.blocks.set(key, {
+                userId,
+                authorId,
+                authorType,
+                date: new Date().toISOString()
+            });
+            console.log(`🚫 Блокировка добавлена: ${userId} → ${authorType === 0 ? 'пользователь' : 'канал'} ${authorId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static removeBlock(userId, authorId, authorType) {
+        const key = `${userId}_${authorId}_${authorType}`;
+        
+        if (memoryStorage.blocks.has(key)) {
+            memoryStorage.blocks.delete(key);
+            console.log(`🚫 Блокировка удалена: ${userId} → ${authorType === 0 ? 'пользователь' : 'канал'} ${authorId}`);
+            return true;
+        }
+        return false;
+    }
+    
+    static isBlocked(userId, authorId, authorType) {
+        const key = `${userId}_${authorId}_${authorType}`;
+        return memoryStorage.blocks.has(key);
+    }
+    
+    // ========== МЕТОДЫ ДЛЯ УВЕДОМЛЕНИЙ ==========
+    
+    static addNotification(notificationData) {
+        const notificationId = memoryStorage.nextNotificationId++;
+        const notification = {
+            id: notificationId,
+            ...notificationData,
+            created_at: new Date().toISOString(),
+            viewed: 0
+        };
+        memoryStorage.notifications.set(notificationId, notification);
+        return notificationId;
+    }
+    
+    static getUserNotifications(userId) {
+        const notifications = [];
+        for (const [id, notification] of memoryStorage.notifications.entries()) {
+            if (notification.user_id === userId) {
+                notifications.push({ id, ...notification });
+            }
+        }
+        return notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    static markNotificationAsViewed(notificationId) {
+        const notification = memoryStorage.notifications.get(notificationId);
+        if (notification) {
+            notification.viewed = 1;
+            memoryStorage.notifications.set(notificationId, notification);
+            return true;
+        }
+        return false;
+    }
+    
     // ========== ОСНОВНЫЕ МЕТОДЫ АККАУНТА ==========
 
-    // Статический метод для авторизации
     static async connectAccount(loginData) {
         console.log(`[AccountManager] connectAccount вызван:`, {
             email: loginData.email?.substring(0, 10) + '...',
@@ -770,7 +1162,6 @@ class AccountManager {
 
     // ========== МЕТОДЫ ДЛЯ ДРУГИХ СЕРВИСОВ ==========
 
-    // Для PostManager
     async getGoldStatus() { 
         return { activated: false, date_get: null };
     }
@@ -780,27 +1171,11 @@ class AccountManager {
     }
     
     async getChannels() { 
-        const channels = [];
-        for (const [id, channel] of memoryStorage.channels.entries()) {
-            if (channel.Owner === this.accountID) {
-                channels.push({
-                    id: channel.ID,
-                    name: channel.Name,
-                    username: channel.Username,
-                    avatar: channel.Avatar,
-                    cover: channel.Cover,
-                    description: channel.Description,
-                    subscribers: channel.Subscribers,
-                    posts: channel.Posts,
-                    create_date: channel.CreateDate
-                });
-            }
-        }
-        return channels;
+        return AccountManager.getChannelsByOwner(this.accountID);
     }
     
     async getMessengerNotifications() { 
-        return 0; 
+        return AccountManager.getUserNotifications(this.accountID).length;
     }
     
     async changeAvatar(avatar) { 
@@ -885,7 +1260,6 @@ class AccountManager {
     
     async maybeReward(type) { 
         console.log(`📦 maybeReward: ${type}`);
-        // Награда за пост/комментарий/песню
         const rewards = {
             post: 5,
             comment: 2,
@@ -1024,6 +1398,7 @@ class AccountManager {
 
 // ========== ЭКСПОРТЫ ДЛЯ ДРУГИХ МОДУЛЕЙ ==========
 
+// Основные методы AccountManager
 export const getSession = AccountManager.getSession;
 export const sendMessageToUser = AccountManager.sendMessageToUser;
 export const getUserSessions = AccountManager.getUserSessions;
@@ -1042,21 +1417,50 @@ export const getAccountInfo = AccountManager.getAccountInfo;
 export const updateAccountInfo = AccountManager.updateAccountInfo;
 export const simpleAuth = AccountManager.simpleAuth;
 
-// Экспорт для работы с хранилищем
+// Методы для работы с хранилищем
 export const getMemoryStorage = () => memoryStorage;
+
+// Методы для постов
 export const addPost = AccountManager.addPost;
 export const getPost = AccountManager.getPost;
 export const getPostsByAuthor = AccountManager.getPostsByAuthor;
+export const updatePost = AccountManager.updatePost;
+export const deletePost = AccountManager.deletePost;
+
+// Методы для лайков
+export const addLike = AccountManager.addLike;
+export const removeLike = AccountManager.removeLike;
+export const getUserReaction = AccountManager.getUserReaction;
+export const getPostStats = AccountManager.getPostStats;
+export const toggleLike = AccountManager.toggleLike;
+export const toggleDislike = AccountManager.toggleDislike;
+
+// Методы для каналов
+export const createChannel = AccountManager.createChannel;
+export const getChannel = AccountManager.getChannel;
+export const getChannelsByOwner = AccountManager.getChannelsByOwner;
+export const updateChannel = AccountManager.updateChannel;
+
+// Методы для файлов и изображений
 export const addFile = AccountManager.addFile;
 export const getFile = AccountManager.getFile;
 export const addImage = AccountManager.addImage;
 export const getImage = AccountManager.getImage;
 export const updateUserAvatar = AccountManager.updateUserAvatar;
 export const updateUserCover = AccountManager.updateUserCover;
+
+// Методы для подписок и блокировок
+export const addSubscription = AccountManager.addSubscription;
+export const removeSubscription = AccountManager.removeSubscription;
+export const isSubscribed = AccountManager.isSubscribed;
+export const addBlock = AccountManager.addBlock;
+export const removeBlock = AccountManager.removeBlock;
+export const isBlocked = AccountManager.isBlocked;
+
+// Методы для уведомлений
 export const addNotification = AccountManager.addNotification;
 export const getUserNotifications = AccountManager.getUserNotifications;
-export const createChannel = AccountManager.createChannel;
-export const getChannel = AccountManager.getChannel;
+export const markNotificationAsViewed = AccountManager.markNotificationAsViewed;
 
 // Экспорт для отладки
 export const debugMemory = () => ({
@@ -1064,9 +1468,13 @@ export const debugMemory = () => ({
     totalSessions: memoryStorage.sessions.size,
     totalPosts: memoryStorage.posts.size,
     totalChannels: memoryStorage.channels.size,
+    totalLikes: memoryStorage.likes.size,
     totalImages: memoryStorage.images.size,
     totalFiles: memoryStorage.files.size,
+    totalSubscriptions: memoryStorage.subscriptions.size,
+    totalBlocks: memoryStorage.blocks.size,
     totalNotifications: memoryStorage.notifications.size,
+    
     nextIds: {
         account: memoryStorage.nextAccountId,
         post: memoryStorage.nextPostId,
@@ -1075,24 +1483,42 @@ export const debugMemory = () => ({
         image: memoryStorage.nextImageId,
         file: memoryStorage.nextFileId,
         comment: memoryStorage.nextCommentId,
-        notification: memoryStorage.nextNotificationId
+        like: memoryStorage.nextLikeId,
+        notification: memoryStorage.nextNotificationId,
+        message: memoryStorage.nextMessageId,
+        gift: memoryStorage.nextGiftId,
+        report: memoryStorage.nextReportId,
+        appeal: memoryStorage.nextAppealId,
+        punishment: memoryStorage.nextPunishmentId
     },
+    
     accounts: Array.from(memoryStorage.accounts.entries()).map(([id, acc]) => ({
         ID: id,
         Username: acc.Username,
         Email: acc.Email,
         Name: acc.Name,
         Posts: acc.Posts || 0,
+        Eballs: acc.Eballs || 0,
         Avatar: acc.Avatar ? 'есть' : 'нет',
         Cover: acc.Cover ? 'есть' : 'нет'
     })),
+    
     posts: Array.from(memoryStorage.posts.entries()).map(([id, post]) => ({
         ID: id,
         author: `${post.author_type === 0 ? 'пользователь' : 'канал'} ${post.author_id}`,
-        text: post.text?.substring(0, 50) + (post.text?.length > 50 ? '...' : ''),
-        type: post.content_type,
+        text: post.text?.substring(0, 30) + (post.text?.length > 30 ? '...' : ''),
+        likes: post.likes || 0,
+        dislikes: post.dislikes || 0,
         date: post.date
-    }))
+    })),
+    
+    likesSummary: {
+        totalLikes: memoryStorage.likes.size,
+        likesByType: {
+            like: Array.from(memoryStorage.likes.values()).filter(l => l.type === 'like').length,
+            dislike: Array.from(memoryStorage.likes.values()).filter(l => l.type === 'dislike').length
+        }
+    }
 });
 
 // Экспорт класса как default
