@@ -1,5 +1,8 @@
 // authorization.ts
+// УБЕРИТЕ создание memoryStorage в начале файла - оно уже есть в AccountManager.js
+
 import AccountManager from '../../system/global/AccountManager.js';
+import { getSession } from '../../system/global/AccountManager.js'; // Уже есть этот экспорт
 import LinkManager from '../../services/account/LinkManager.js';
 
 const connect = async (ws, data) => {
@@ -7,94 +10,91 @@ const connect = async (ws, data) => {
     return 'S-KEY не найден.';
   }
 
-  console.log(`🔍 Ищем сессию в памяти по S_KEY: ${data.S_KEY.substring(0, 10)}...`);
+  console.log(`🔍 Ищем сессию по S_KEY: ${data.S_KEY.substring(0, 10)}...`);
 
-  // 1. Ищем сессию в памяти
-  const session = memoryStorage.sessions.get(data.S_KEY);
+  // Используем существующий метод getSession из AccountManager
+  const sessionData = await getSession(data.S_KEY);
   
-  if (!session) {
-    console.log(`❌ Сессия не найдена в памяти для S_KEY: ${data.S_KEY.substring(0, 10)}...`);
+  if (!sessionData || !sessionData.ID) {
+    console.log(`❌ Сессия не найдена для S_KEY: ${data.S_KEY.substring(0, 10)}...`);
     return { status: 'error', message: 'S-KEY не актуален.' };
   }
-  
-  console.log(`✅ Сессия найдена в памяти для UID: ${session.uid}`);
 
-  // 2. Ищем аккаунт в памяти
-  const account = memoryStorage.accounts.get(session.uid);
-  if (!account) {
-    console.log(`❌ Аккаунт не найден в памяти для UID: ${session.uid}`);
+  console.log(`✅ Сессия найдена для пользователя ID: ${sessionData.ID}`);
+
+  // Создаем AccountManager для этого пользователя
+  const accountManager = new AccountManager(sessionData.ID);
+  
+  // Получаем данные аккаунта
+  const accountData = await accountManager.getAccountData();
+  
+  if (!accountData) {
     return { status: 'error', message: 'Аккаунт не найден.' };
   }
 
-  console.log(`✅ Аккаунт найден: ${account.Username} (ID: ${account.ID})`);
-
-  // 3. Обновляем сессию (добавляем WebSocket и время активности)
-  session.connection = ws;
-  session.lastActive = Date.now();
-  memoryStorage.sessions.set(data.S_KEY, session);
-
-  // 4. Создаем менеджеры и получаем данные
-  const accountManager = new AccountManager(account.ID);
-  const linkManager = new LinkManager(account.ID);
+  // Получаем дополнительные данные
+  const linkManager = new LinkManager(sessionData.ID);
+  let goldStatus, permissions, channels, goldHistory, links, messengerNotifications;
   
-  let goldStatus = false;
-  let permissions = {};
-  let channels = [];
-  let goldHistory = [];
-  let links = [];
-  let messengerNotifications = 0;
-  let notifications = 0;
-
   try {
-    // Пытаемся получить данные через AccountManager
-    permissions = await accountManager.getPermissions() || getDefaultPermissions();
-    goldStatus = await accountManager.getGoldStatus() || { activated: false };
-    channels = await accountManager.getChannels() || [];
-    goldHistory = await accountManager.getGoldHistory() || [];
-    links = await linkManager.getLinks() || [];
-    messengerNotifications = await accountManager.getMessengerNotifications() || 0;
-    
+    goldStatus = await accountManager.getGoldStatus();
+    permissions = await accountManager.getPermissions();
+    channels = await accountManager.getChannels();
+    goldHistory = await accountManager.getGoldHistory();
+    links = await linkManager.getLinks();
+    messengerNotifications = await accountManager.getMessengerNotifications();
   } catch (error) {
     console.log(`⚠️ Ошибка при получении дополнительных данных: ${error.message}`);
-    // Устанавливаем значения по умолчанию при ошибке
-    permissions = getDefaultPermissions();
+    // Устанавливаем значения по умолчанию
+    goldStatus = { activated: false };
+    permissions = {
+      Posts: true,
+      Comments: true,
+      NewChats: true,
+      MusicUpload: false,
+      Admin: false,
+      Verified: false,
+      Fake: false
+    };
+    channels = [];
+    goldHistory = [];
+    links = [];
+    messengerNotifications = 0;
   }
 
-  // 5. Сохраняем аккаунт в WebSocket соединение
+  // Обновляем сессию с WebSocket (используем статический метод)
+  await AccountManager.updateSession(data.S_KEY, { 
+    connection: ws,
+    lastActive: new Date().toISOString()
+  });
+
+  // Устанавливаем аккаунт в WebSocket
   ws.account = { 
-    ID: account.ID,
-    Name: account.Name,
-    Username: account.Username,
-    Email: account.Email,
-    Avatar: account.Avatar,
-    Cover: account.Cover,
-    Description: account.Description,
-    Eballs: account.Eballs || 0,
+    ...accountData,
     permissions: permissions,
     s_key: data.S_KEY
   };
 
-  console.log(`✅ Успешное подключение: ${account.Username}`);
+  console.log(`✅ Успешное подключение: ${accountData.Username}`);
 
-  // 6. Возвращаем данные клиенту
   return {
     status: 'success',
     accountData: {
-      id: account.ID,
-      name: account.Name,
-      username: account.Username,
-      email: account.Email,
-      avatar: account.Avatar,
-      cover: account.Cover,
-      description: account.Description,
-      e_balls: account.Eballs || 0,
+      id: accountData.ID,
+      name: accountData.Name,
+      username: accountData.Username,
+      email: accountData.Email,
+      avatar: accountData.Avatar,
+      cover: accountData.Cover,
+      description: accountData.Description,
+      e_balls: accountData.Eballs || 0,
       permissions: permissions,
       channels: channels,
       gold_status: goldStatus && goldStatus.activated || false,
       gold_history: goldHistory,
       links: links,
       messenger_notifications: messengerNotifications,
-      notifications: notifications,
+      notifications: 0,
     }
   }
 }
@@ -104,35 +104,14 @@ const logout = async (ws, data) => {
     return { status: 'error', message: 'S-KEY не найден' };
   }
 
-  // Удаляем сессию из памяти
-  const sessionDeleted = memoryStorage.sessions.delete(data.S_KEY);
-  
-  if (sessionDeleted) {
-    console.log(`✅ Сессия удалена из памяти: ${data.S_KEY.substring(0, 10)}...`);
-  } else {
-    console.log(`ℹ️ Сессия не найдена в памяти при logout: ${data.S_KEY.substring(0, 10)}...`);
-  }
+  // Используем метод logout из AccountManager
+  await AccountManager.logout(data.S_KEY);
 
-  // Очищаем аккаунт в WebSocket, если он принадлежал этой сессии
   if (ws.account?.s_key === data.S_KEY) {
     ws.account = null;
-    console.log(`✅ Аккаунт отвязан от WebSocket соединения`);
   }
 
   return { status: 'success' };
-}
-
-// Вспомогательная функция для разрешений по умолчанию
-function getDefaultPermissions() {
-  return {
-    Posts: true,
-    Comments: true,
-    NewChats: true,
-    MusicUpload: false,
-    Admin: false,
-    Verified: false,
-    Fake: false
-  };
 }
 
 const handlers = {
