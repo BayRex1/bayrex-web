@@ -1,8 +1,7 @@
 import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Config from '../../../../../system/global/Config.js';
-
+import Config from '../../../../system/global/Config.js';
 // Локальные реализации на случай отсутствия импортов
 const LocalRouterHelper = {
     success: (data: any) => ({
@@ -308,3 +307,4 @@ export const clearMemoryStorage = () => {
 };
 
 export default reg;
+
