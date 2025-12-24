@@ -90,7 +90,6 @@ export const getProfile = async ({ account, data }) => {
         // Проверяем, наш ли это профиль и подписку
         let myProfile = false;
         let subscribed = false;
-        const accountDataHelper = new AccountDataHelper();
 
         if (account) {
             if (profileType[0] === 0) {
@@ -114,7 +113,6 @@ export const getProfile = async ({ account, data }) => {
         
         // Подсчёт подписчиков (если не указано)
         if (!profile.Subscribers) {
-            // В режиме памяти показываем 0
             profile.Subscribers = 0;
         }
         
@@ -123,12 +121,38 @@ export const getProfile = async ({ account, data }) => {
             profile.Subscriptions = 0;
         }
 
-        // Формируем данные профиля
+        // 🔧 ФОРМИРУЕМ ДАННЫЕ ПРОФИЛЯ С path И tabs 🔧
         const profileData = {
             type: profileType[1],
             id: profile.ID,
             name: profile.Name,
             username: profile.Username,
+            
+            // ⭐ КРИТИЧЕСКИ ВАЖНЫЕ ПОЛЯ (были пропущены) ⭐
+            path: `/profile/${profile.Username}`,
+            tabs: [
+                { 
+                    id: 'posts', 
+                    label: 'Посты', 
+                    path: `/profile/${profile.Username}/posts` 
+                },
+                { 
+                    id: 'about', 
+                    label: 'О себе', 
+                    path: `/profile/${profile.Username}/about` 
+                },
+                { 
+                    id: 'subscribers', 
+                    label: 'Подписчики', 
+                    path: `/profile/${profile.Username}/subscribers` 
+                },
+                { 
+                    id: 'subscriptions', 
+                    label: 'Подписки', 
+                    path: `/profile/${profile.Username}/subscriptions` 
+                },
+            ],
+            
             cover: profile.Cover || '/mock/default/cover.jpg',
             avatar: profile.Avatar || '/mock/default/avatar.jpg',
             description: profile.Description || '',
@@ -143,12 +167,11 @@ export const getProfile = async ({ account, data }) => {
             my_profile: myProfile,
             links_count: profile.Links || 0,
             links: links,
-            online: false // Заглушка для онлайн статуса
+            online: false
         };
 
         // Дополнительные данные для пользователей
         if (profileType[0] === 0) {
-            // Получаем разрешения
             const permissions = memoryStorage.permissions.get(profile.ID) || {
                 Posts: true,
                 Comments: true,
@@ -159,7 +182,6 @@ export const getProfile = async ({ account, data }) => {
                 Fake: false
             };
             
-            // Иконки (заглушка)
             const icons = [];
             
             profileData.icons = icons;
@@ -173,7 +195,7 @@ export const getProfile = async ({ account, data }) => {
                 admin: permissions.Admin
             };
             
-            // Проверяем онлайн статус (упрощённо через сессии)
+            // Проверяем онлайн статус
             let isOnline = false;
             for (const session of memoryStorage.sessions.values()) {
                 if (session.uid === profile.ID && session.connection) {
@@ -184,7 +206,18 @@ export const getProfile = async ({ account, data }) => {
             profileData.online = isOnline;
         }
 
+        // ДЛЯ КАНАЛОВ: добавляем специфичные поля
+        if (profileType[0] === 1) {
+            profileData.owner_id = profile.Owner;
+            // Для каналов можно добавить другие специфичные поля
+        }
+
+        // 🔍 ЛОГИРУЕМ СТРУКТУРУ ОТВЕТА ДЛЯ ДИАГНОСТИКИ
         console.log(`✅ Профиль загружен: ${profile.Username} (${profileType[1]})`);
+        console.log('📊 Структура ответа:');
+        console.log('- path:', profileData.path);
+        console.log('- tabs количество:', profileData.tabs.length);
+        console.log('- tabs структура:', profileData.tabs);
         
         return RouterHelper.success({
             data: profileData
