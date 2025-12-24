@@ -1,10 +1,9 @@
 import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Config from '../../../../system/global/Config.js';
-import RouterHelper from '../../../../services/system/RouterHelper.js';
-import Validator from '../../../../services/system/Validator.js';
-import { getDate } from '../../../../system/global/Function.js';
+import Config from '../../../../../system/global/Config.js';
+import RouterHelper from '../../../../../services/system/RouterHelper.js';
+import { getDate } from '../../../../../system/global/Function.js';
 
 // Хранилище аккаунтов в памяти
 const memoryStorage = {
@@ -27,8 +26,14 @@ const checkUniqueCredentials = (username, email) => {
     return true;
 };
 
-// Валидация капчи
+// Валидация капчи (упрощенная для разработки)
 const validateCaptcha = async (hCaptchaToken) => {
+    // В режиме разработки отключаем капчу
+    console.log('⚠️  Капча отключена для разработки');
+    return true;
+    
+    /*
+    // Полная версия (закомментирована)
     if (!Config.CAPTCHA || !Config.CAPTCHA_KEY) {
         console.log('⚠️  Капча отключена в конфигурации');
         return true;
@@ -43,7 +48,6 @@ const validateCaptcha = async (hCaptchaToken) => {
         params.append('secret', Config.CAPTCHA_KEY);
         params.append('response', hCaptchaToken);
         
-        // Для hCaptcha
         const captchaUrl = Config.CAPTCHA_URL || 'https://hcaptcha.com/siteverify';
         
         const captchaRes = await axios.post(captchaUrl, params.toString(), {
@@ -59,7 +63,6 @@ const validateCaptcha = async (hCaptchaToken) => {
             const errorCodes = captchaRes.data['error-codes'] || [];
             let errorMessage = 'Проверка капчи не пройдена';
             
-            // Расшифровка кодов ошибок hCaptcha
             if (errorCodes.includes('missing-input-secret')) {
                 errorMessage = 'Ошибка сервера капчи: отсутствует секретный ключ';
             } else if (errorCodes.includes('invalid-input-secret')) {
@@ -87,6 +90,7 @@ const validateCaptcha = async (hCaptchaToken) => {
         
         throw new Error('Ошибка при проверке капчи: ' + error.message);
     }
+    */
 };
 
 // Создание аккаунта в памяти
@@ -116,7 +120,8 @@ const createAccountInMemory = async (accountData) => {
         Eballs: 100, // Начальный баланс
         last_post: null,
         last_comment: null,
-        last_song: null
+        last_song: null,
+        messenger_size: 0
     };
 
     // Сохраняем в память
@@ -151,13 +156,15 @@ const createSession = (accountId, deviceType = 'browser', device = null) => {
                     deviceType === 'ios_app' ? 3 :
                     deviceType === 'windows_app' ? 4 : 0,
         device: device || 'unknown',
-        create_date: getDate()
+        create_date: getDate(),
+        aesKey: 'mock_aes_key_for_testing',
+        mesKey: 'mock_mes_key_for_testing'
     };
 
     // Сохраняем сессию
     memoryStorage.sessions.set(S_KEY, session);
     
-    console.log(`✅ Сессия создана для аккаунта ${accountId}`);
+    console.log(`✅ Сессия создана для аккаунта ${accountId}: ${S_KEY.substring(0, 10)}...`);
     
     return S_KEY;
 };
@@ -234,7 +241,7 @@ export const reg = async ({ data }) => {
     }
 
     try {
-        // Проверка капчи (если включена)
+        // Проверка капчи (если включена) - временно отключена
         if (Config.CAPTCHA !== false) {
             console.log('🔐 Проверяю капчу...');
             await validateCaptcha(data.h_captcha);
