@@ -1,6 +1,6 @@
 import AccountDataHelper from '../../../services/account/AccountDataHelper.js';
 import RouterHelper from '../../../services/system/RouterHelper.js';
-import { getMemoryStorage } from '../../../services/account/AccountManager.js';
+import { getMemoryStorage } from '../../../services/account/AccountStorage.js';
 
 const handleContent = async (content) => {
     if (!content || typeof content !== 'object') return null;
