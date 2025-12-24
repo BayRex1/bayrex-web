@@ -1,5 +1,9 @@
 // services/account/AccountStorage.js
 
+// Используем динамический импорт для CommonJS модуля
+const bcryptPromise = import('bcryptjs');
+const cryptoPromise = import('crypto');
+
 // Центральное хранилище в памяти
 export const memoryStorage = {
     // Основные хранилища
@@ -47,13 +51,16 @@ export const memoryStorage = {
 };
 
 // Инициализация тестовых данных
-export const initTestData = () => {
+export const initTestData = async () => {
     console.log('🧪 Инициализация тестовых данных...');
+    
+    // Ждем загрузку модулей
+    const bcrypt = (await bcryptPromise).default;
+    const crypto = (await cryptoPromise).default;
     
     // Тестовый аккаунт 1
     const testAccountId = 1;
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = bcrypt.hashSync('test123', 10);
+    const hashedPassword = await bcrypt.hash('test123', 10);
     
     memoryStorage.accounts.set(testAccountId, {
         ID: testAccountId,
@@ -85,7 +92,7 @@ export const initTestData = () => {
     
     // Тестовый аккаунт 2
     const testAccountId2 = 2;
-    const hashedPassword2 = bcrypt.hashSync('test456', 10);
+    const hashedPassword2 = await bcrypt.hash('test456', 10);
     
     memoryStorage.accounts.set(testAccountId2, {
         ID: testAccountId2,
@@ -116,7 +123,6 @@ export const initTestData = () => {
     });
     
     // Тестовые сессии
-    const crypto = require('crypto');
     const testSessionKey1 = 'test_session_key_1_' + Date.now();
     memoryStorage.sessions.set(testSessionKey1, {
         uid: testAccountId,
