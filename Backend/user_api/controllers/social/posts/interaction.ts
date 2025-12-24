@@ -1,4 +1,4 @@
-import { getMemoryStorage } from "../../../../services/account/AccountManager.js";
+import { getMemoryStorage } from "../../../../services/account/AccountStorage.js";
 import { getDate } from "../../../../system/global/Function.js";
 
 // Вспомогательные функции для работы с памятью
