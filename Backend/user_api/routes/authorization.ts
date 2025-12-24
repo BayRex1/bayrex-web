@@ -1,85 +1,100 @@
+// authorization.ts
 import AccountManager from '../../system/global/AccountManager.js';
 import LinkManager from '../../services/account/LinkManager.js';
-import { dbE } from '../../lib/db.js';
 
 const connect = async (ws, data) => {
   if (!data?.S_KEY) {
     return 'S-KEY не найден.';
   }
 
-  // Получаем сессию напрямую из БД
-  const sessionResult = await dbE.query(
-    'SELECT accounts.*, accounts_sessions.* FROM `accounts_sessions` ' +
-    'INNER JOIN `accounts` ON accounts.ID = accounts_sessions.uid ' +
-    'WHERE accounts_sessions.s_key = ?',
-    [data.S_KEY]
-  );
+  console.log(`🔍 Ищем сессию в памяти по S_KEY: ${data.S_KEY.substring(0, 10)}...`);
+
+  // 1. Ищем сессию в памяти
+  const session = memoryStorage.sessions.get(data.S_KEY);
   
-  if (!sessionResult || sessionResult.length === 0) {
+  if (!session) {
+    console.log(`❌ Сессия не найдена в памяти для S_KEY: ${data.S_KEY.substring(0, 10)}...`);
     return { status: 'error', message: 'S-KEY не актуален.' };
   }
   
-  const session = sessionResult[0];
-  
-  console.log(`✅ Сессия найдена для пользователя ID: ${session.ID}, Username: ${session.Username}`);
+  console.log(`✅ Сессия найдена в памяти для UID: ${session.uid}`);
 
-  // Создаем AccountManager для этого пользователя
-  const accountManager = new AccountManager(session.ID);
-  
-  if (!accountManager) {
+  // 2. Ищем аккаунт в памяти
+  const account = memoryStorage.accounts.get(session.uid);
+  if (!account) {
+    console.log(`❌ Аккаунт не найден в памяти для UID: ${session.uid}`);
     return { status: 'error', message: 'Аккаунт не найден.' };
   }
 
-  // Получаем дополнительные данные
-  const linkManager = new LinkManager(session.ID);
-  const goldStatus = await accountManager.getGoldStatus();
-  const permissions = await accountManager.getPermissions();
-  const notificationsCount = await dbE.query(
-    'SELECT COUNT(*) as count FROM notifications WHERE `for` = ? AND viewed = 0',
-    [session.ID]
-  );
+  console.log(`✅ Аккаунт найден: ${account.Username} (ID: ${account.ID})`);
 
-  // Получаем данные аккаунта через accountManager
-  const accountData = await accountManager.getAccountData();
+  // 3. Обновляем сессию (добавляем WebSocket и время активности)
+  session.connection = ws;
+  session.lastActive = Date.now();
+  memoryStorage.sessions.set(data.S_KEY, session);
+
+  // 4. Создаем менеджеры и получаем данные
+  const accountManager = new AccountManager(account.ID);
+  const linkManager = new LinkManager(account.ID);
   
-  if (!accountData) {
-    return { status: 'error', message: 'Данные аккаунта не получены.' };
+  let goldStatus = false;
+  let permissions = {};
+  let channels = [];
+  let goldHistory = [];
+  let links = [];
+  let messengerNotifications = 0;
+  let notifications = 0;
+
+  try {
+    // Пытаемся получить данные через AccountManager
+    permissions = await accountManager.getPermissions() || getDefaultPermissions();
+    goldStatus = await accountManager.getGoldStatus() || { activated: false };
+    channels = await accountManager.getChannels() || [];
+    goldHistory = await accountManager.getGoldHistory() || [];
+    links = await linkManager.getLinks() || [];
+    messengerNotifications = await accountManager.getMessengerNotifications() || 0;
+    
+  } catch (error) {
+    console.log(`⚠️ Ошибка при получении дополнительных данных: ${error.message}`);
+    // Устанавливаем значения по умолчанию при ошибке
+    permissions = getDefaultPermissions();
   }
 
-  // Устанавливаем аккаунт в WebSocket
+  // 5. Сохраняем аккаунт в WebSocket соединение
   ws.account = { 
-    ID: session.ID,
-    Name: accountData.Name,
-    Username: accountData.Username,
-    Email: accountData.Email,
-    Avatar: accountData.Avatar,
-    Cover: accountData.Cover,
-    Description: accountData.Description,
-    Eballs: accountData.Eballs,
+    ID: account.ID,
+    Name: account.Name,
+    Username: account.Username,
+    Email: account.Email,
+    Avatar: account.Avatar,
+    Cover: account.Cover,
+    Description: account.Description,
+    Eballs: account.Eballs || 0,
     permissions: permissions,
     s_key: data.S_KEY
   };
 
-  console.log(`✅ Успешное подключение: ${accountData.Username}`);
+  console.log(`✅ Успешное подключение: ${account.Username}`);
 
+  // 6. Возвращаем данные клиенту
   return {
     status: 'success',
     accountData: {
-      id: session.ID,
-      name: accountData.Name,
-      username: accountData.Username,
-      email: accountData.Email,
-      avatar: accountData.Avatar,
-      cover: accountData.Cover,
-      description: accountData.Description,
-      e_balls: accountData.Eballs,
+      id: account.ID,
+      name: account.Name,
+      username: account.Username,
+      email: account.Email,
+      avatar: account.Avatar,
+      cover: account.Cover,
+      description: account.Description,
+      e_balls: account.Eballs || 0,
       permissions: permissions,
-      channels: await accountManager.getChannels(),
-      gold_status: goldStatus?.activated || false,
-      gold_history: await accountManager.getGoldHistory(),
-      links: await linkManager.getLinks(),
-      messenger_notifications: await accountManager.getMessengerNotifications(),
-      notifications: notificationsCount[0]?.count || 0,
+      channels: channels,
+      gold_status: goldStatus && goldStatus.activated || false,
+      gold_history: goldHistory,
+      links: links,
+      messenger_notifications: messengerNotifications,
+      notifications: notifications,
     }
   }
 }
@@ -89,21 +104,35 @@ const logout = async (ws, data) => {
     return { status: 'error', message: 'S-KEY не найден' };
   }
 
-  const session = await dbE.query('SELECT * FROM `accounts_sessions` WHERE `s_key` = ?', [data.S_KEY]);
-
-  if (!session || session.length === 0 || !session[0].uid) {
-    return { status: 'error', message: 'S-KEY не актуален' };
-  };
-
-  if (session) {
-    await dbE.query('DELETE FROM `accounts_sessions` WHERE `s_key` = ?', [data.S_KEY]);
+  // Удаляем сессию из памяти
+  const sessionDeleted = memoryStorage.sessions.delete(data.S_KEY);
+  
+  if (sessionDeleted) {
+    console.log(`✅ Сессия удалена из памяти: ${data.S_KEY.substring(0, 10)}...`);
+  } else {
+    console.log(`ℹ️ Сессия не найдена в памяти при logout: ${data.S_KEY.substring(0, 10)}...`);
   }
 
-  if (session[0].uid === ws.account?.ID) {
+  // Очищаем аккаунт в WebSocket, если он принадлежал этой сессии
+  if (ws.account?.s_key === data.S_KEY) {
     ws.account = null;
+    console.log(`✅ Аккаунт отвязан от WebSocket соединения`);
   }
 
   return { status: 'success' };
+}
+
+// Вспомогательная функция для разрешений по умолчанию
+function getDefaultPermissions() {
+  return {
+    Posts: true,
+    Comments: true,
+    NewChats: true,
+    MusicUpload: false,
+    Admin: false,
+    Verified: false,
+    Fake: false
+  };
 }
 
 const handlers = {
