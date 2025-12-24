@@ -1,8 +1,9 @@
+// services/posts/PostManager.js
 import { getDate } from '../../system/global/Function.js';
 import AccountDataHelper from '../account/AccountDataHelper.js';
 import RouterHelper from '../system/RouterHelper.js';
 import AccountManager from '../account/AccountManager.js';
-import { getMemoryStorage } from '../account/AccountManager.js';
+import { getMemoryStorage } from '../account/AccountStorage.js'; // ИЗМЕНИЛИ ИМПОРТ
 import AppError from '../system/AppError.js';
 
 class PostManager {
@@ -180,13 +181,6 @@ class PostManager {
         }
     }
 
-    // Вспомогательная функция для получения расширения файла
-    static sanitizeFileName(name) {
-        if (!name) return `file_${Date.now()}`;
-        const base = name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        return base.length > 0 ? base : `file_${Date.now()}`;
-    }
-
     // Проверка времени между постами
     static async checkTime(from) {
         try {
@@ -238,14 +232,12 @@ class PostManager {
                 const account = memoryStorage.accounts.get(author_id);
                 if (account) {
                     account.Posts = postCount;
-                    memoryStorage.accounts.set(author_id, account);
                     console.log(`📊 У аккаунта ${author_id} теперь ${postCount} постов`);
                 }
             } else if (author_type === 1) {
                 const channel = memoryStorage.channels.get(author_id);
                 if (channel) {
                     channel.Posts = postCount;
-                    memoryStorage.channels.set(author_id, channel);
                     console.log(`📊 У канала ${author_id} теперь ${postCount} постов`);
                 }
             }
@@ -305,11 +297,6 @@ class PostManager {
             return RouterHelper.error(error.message || 'Ошибка при удалении поста');
         }
     }
-
-    // Дополнительные методы для совместимости
-    static async getFilesType(files) {
-        return 'mixed';
-    };
 
     // Получение постов (для контроллера load_posts)
     static async getPosts({ limit = 20, offset = 0, author_id, author_type } = {}) {
@@ -434,6 +421,146 @@ class PostManager {
                 shares: post.shares || 0,
                 views: post.views || 0
             }
+        };
+    }
+
+    // Метод для работы с лайками
+    static async handleLike(postId, userId, type = 'like') {
+        try {
+            const memoryStorage = getMemoryStorage();
+            const post = memoryStorage.posts.get(Number(postId));
+            
+            if (!post) {
+                throw new Error('Пост не найден');
+            }
+
+            const likeKey = `post_${postId}`;
+            const userLikeKey = `${postId}_${userId}`;
+
+            // Получаем или создаем информацию о лайках для поста
+            if (!memoryStorage.postLikes.has(likeKey)) {
+                memoryStorage.postLikes.set(likeKey, {
+                    likes: new Set(),
+                    dislikes: new Set()
+                });
+            }
+
+            const postLikes = memoryStorage.postLikes.get(likeKey);
+            const currentLike = memoryStorage.likes.get(userLikeKey);
+
+            // Проверяем текущий статус лайка
+            let action = 'add';
+            
+            if (currentLike) {
+                // Если уже есть лайк/дизлайк от этого пользователя
+                if (currentLike.type === type) {
+                    // Удаляем лайк/дизлайк (отмена)
+                    action = 'remove';
+                    memoryStorage.likes.delete(userLikeKey);
+                    
+                    if (type === 'like') {
+                        postLikes.likes.delete(userId);
+                        post.likes = Math.max(0, post.likes - 1);
+                    } else {
+                        postLikes.dislikes.delete(userId);
+                        post.dislikes = Math.max(0, post.dislikes - 1);
+                    }
+                } else {
+                    // Меняем лайк на дизлайк или наоборот
+                    action = 'change';
+                    
+                    // Удаляем старый тип
+                    if (currentLike.type === 'like') {
+                        postLikes.likes.delete(userId);
+                        post.likes = Math.max(0, post.likes - 1);
+                    } else {
+                        postLikes.dislikes.delete(userId);
+                        post.dislikes = Math.max(0, post.dislikes - 1);
+                    }
+                    
+                    // Добавляем новый тип
+                    memoryStorage.likes.set(userLikeKey, {
+                        id: memoryStorage.nextLikeId++,
+                        postId: Number(postId),
+                        userId,
+                        type,
+                        date: getDate()
+                    });
+                    
+                    if (type === 'like') {
+                        postLikes.likes.add(userId);
+                        post.likes++;
+                    } else {
+                        postLikes.dislikes.add(userId);
+                        post.dislikes++;
+                    }
+                }
+            } else {
+                // Добавляем новый лайк/дизлайк
+                memoryStorage.likes.set(userLikeKey, {
+                    id: memoryStorage.nextLikeId++,
+                    postId: Number(postId),
+                    userId,
+                    type,
+                    date: getDate()
+                });
+                
+                if (type === 'like') {
+                    postLikes.likes.add(userId);
+                    post.likes++;
+                } else {
+                    postLikes.dislikes.add(userId);
+                    post.dislikes++;
+                }
+            }
+
+            // Сохраняем обновленный пост
+            memoryStorage.posts.set(Number(postId), post);
+            
+            console.log(`❤️ Лайк обработан: пост ${postId}, пользователь ${userId}, действие: ${action}, тип: ${type}`);
+            
+            return {
+                success: true,
+                action,
+                type,
+                likes: post.likes,
+                dislikes: post.dislikes,
+                userLiked: postLikes.likes.has(userId),
+                userDisliked: postLikes.dislikes.has(userId)
+            };
+            
+        } catch (error) {
+            console.error('❌ Ошибка при обработке лайка:', error);
+            throw error;
+        }
+    }
+
+    // Проверка, лайкнул ли пользователь пост
+    static async getUserLikeStatus(postId, userId) {
+        const memoryStorage = getMemoryStorage();
+        const userLikeKey = `${postId}_${userId}`;
+        const like = memoryStorage.likes.get(userLikeKey);
+        
+        return {
+            liked: like?.type === 'like',
+            disliked: like?.type === 'dislike'
+        };
+    }
+
+    // Получить информацию о лайках поста
+    static async getPostLikes(postId) {
+        const memoryStorage = getMemoryStorage();
+        const likeKey = `post_${postId}`;
+        const postLikes = memoryStorage.postLikes.get(likeKey) || {
+            likes: new Set(),
+            dislikes: new Set()
+        };
+        
+        return {
+            likes: Array.from(postLikes.likes),
+            dislikes: Array.from(postLikes.dislikes),
+            likesCount: postLikes.likes.size,
+            dislikesCount: postLikes.dislikes.size
         };
     }
 }
