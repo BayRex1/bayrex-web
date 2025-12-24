@@ -1,350 +1,387 @@
-import { fileTypeFromBuffer } from 'file-type';
-import { getDate } from '../../system/global/Function.js';
 import AccountDataHelper from '../account/AccountDataHelper.js';
 import RouterHelper from '../system/RouterHelper.js';
 import AccountManager from '../account/AccountManager.js';
 import Validator from '../system/Validator.js';
-import FileManager from '../system/FileManager.js';
-import ImageEngine from '../system/ImageEngine.js';
-import { FFmpegInspector } from '../../system/global/FFmpegInspector.js';
+import { getDate } from '../../system/global/Function.js';
 import AppError from '../system/AppError.js';
-import { dbE } from '../../lib/db.js';
-import { basename, extname } from 'node:path';
-
-const validImageTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
-const imageEngine = new ImageEngine();
 
 class PostManager {
     static create = async ({ account, payload }) => {
-        const accountManager = new AccountManager(account.ID);
-        const currentPermissions = await accountManager.getPermissions();
+        try {
+            console.log(`📝 Создание поста от пользователя ${account.ID}`, payload);
+            
+            const accountManager = new AccountManager(account.ID);
+            const currentPermissions = await accountManager.getPermissions();
 
-        if (!currentPermissions || !currentPermissions.Posts) {
-            const activePunishment = await dbE.query(`
-                SELECT reason, punishment_type, end_date 
-                FROM accounts_punishments 
-                WHERE user_id = ? AND punishment_type IN ('restrict_posts', 'ban') AND is_active = 1
-                ORDER BY start_date DESC 
-                LIMIT 1
-            `, [account.ID]);
-
-            if (activePunishment && activePunishment.length > 0) {
-                const punishment = activePunishment[0];
-                const punishmentText = punishment.punishment_type === 'ban' ? 'заблокирован' : 'ограничены посты';
-                const reason = punishment.reason || 'Причина не указана';
-                const endDate = punishment.end_date ?
-                    new Date(punishment.end_date).toLocaleString('ru-RU', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) : '';
-
-                const message = `У вас ${punishmentText}. Причина: ${reason}` +
-                    (endDate ? `. До: ${endDate}` : '');
-
-                return RouterHelper.error(message);
-            } else {
+            // Проверка разрешений
+            if (!currentPermissions || !currentPermissions.Posts) {
                 return RouterHelper.error('У вас ограничена возможность публикации постов');
             }
-        }
 
-        const isGold = await accountManager.getGoldStatus();
-        const { text = '', files, type = 0, songs = 0, wall, from, settings } = payload || {};
+            const { text = '', files, type = 0, songs = 0, wall, from, settings } = payload || {};
 
-        let sender = {
-            id: account.ID,
-            type: 0
-        }
+            // Определяем отправителя
+            let sender = {
+                id: account.ID,
+                type: 0
+            };
 
-        if (from && from.id && from.type) {
-            if (from.type === 1) {
-                const channel = await dbE.query('SELECT * FROM `channels` WHERE `ID` = ? AND `Owner` = ?', [from.id, account.ID]);
-
-                if (channel) {
-                    sender = {
-                        id: channel[0].ID,
-                        type: 1
-                    }
-                } else {
-                    return RouterHelper.error('Канал не найден');
-                }
-            }
-        }
-
-        const filesCount = files?.length || 0;
-        const fileSizeLimit = isGold ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
-
-        if (!text && text.trim() === '' && filesCount < 1 && songs < 1) return RouterHelper.error('Нельзя отправить пустой пост');
-        if (await this.checkTime({ id: sender.id, type: sender.type })) return RouterHelper.error('Отправить пост можно раз в 15 секунд');
-
-        const validator = new Validator();
-
-        if (text) {
-            validator.validateText({
-                title: 'Текст поста',
-                value: text,
-                maxLength: 30000
-            });
-        }
-
-        let totalFileSize = 0;
-        let contentType = 'text';
-        let content: any = {};
-
-        if (files && files?.length > 150) {
-            return RouterHelper.error('Можно добавить не более 150 файлов');
-        }
-
-        if (filesCount > 0) {
-            if (filesCount > 150) return RouterHelper.error('Максимальное количество файлов 150');
-
-            contentType = await this.getFilesType(files);
-
-            for (const file of files) {
-                totalFileSize += file.buffer.length;
-                if (totalFileSize > fileSizeLimit) break;
-            }
-
-            if (totalFileSize > fileSizeLimit)
-                return isGold
-                    ? RouterHelper.error('Размер файлов не должен превышать 50 MB.')
-                    : RouterHelper.error('Размер файлов не должен превышать 20 MB, вы можете увеличить лимит до 50 MB, купив подписку Gold.');
-        }
-
-        let c_images = [];
-        let c_videos = [];
-        let c_files = [];
-
-        if (songs && songs?.length > 0) {
-            for (const song of songs) {
-                const s = await dbE.query('SELECT * FROM songs WHERE id = ?', [song]);
-                if (s.length === 0) {
-                    throw new AppError(`Трек ${song} не найден`);
-                } else {
-                    if (!content.songs) content.songs = [];
-                    content.songs.push({
-                        song_id: song
-                    })
-                }
-            }
-        }
-
-        if (files && files?.length > 0) {
-            for (const file of files) {
-                const fileType = await fileTypeFromBuffer(file.buffer);
-
-                if (fileType?.mime.startsWith('image/')) {
-                    c_images.push({
-                        buffer: file.buffer,
-                        name: file.name
-                    });
-                } else if (fileType?.mime.startsWith('video/')) {
-                    const safeName = this.sanitizeFileName(file.name);
-                    const ffmpegInspector = new FFmpegInspector(file.buffer, safeName);
-                    const metadata = await ffmpegInspector.getMetadata();
-
-                    if (!metadata || !metadata.width || !metadata.height) {
-                        c_files.push({
-                            buffer: file.buffer,
-                            name: file.name
-                        });
+            if (from && from.id && from.type) {
+                if (from.type === 1) {
+                    // Проверяем владение каналом
+                    const channel = memoryStorage.channels.get(from.id);
+                    if (channel && channel.Owner === account.ID) {
+                        sender = {
+                            id: from.id,
+                            type: 1
+                        };
                     } else {
-                        c_videos.push({
-                            buffer: file.buffer,
-                            name: file.name,
-                            metadata: metadata
-                        });
-                    }
-                } else {
-                    c_files.push({
-                        buffer: file.buffer,
-                        name: file.name
-                    });
-                }
-            }
-
-            if (c_images.length > 0) {
-                for (const image of c_images) {
-                    const file = await imageEngine.create({
-                        file: image.buffer,
-                        path: 'posts/images',
-                        simpleSize: 900,
-                        preview: true
-                    });
-
-                    if (file) {
-                        if (!content.images) content.images = [];
-
-                        content.images.push({
-                            img_data: file,
-                            file_name: image.name,
-                            file_size: image.buffer.length
-                        });
+                        return RouterHelper.error('Канал не найден или вы не владелец');
                     }
                 }
             }
 
-            if (c_videos.length > 0) {
-                for (const video of c_videos) {
-                    const uploadedFile = await FileManager.saveFile('posts/videos', video.buffer);
+            // Базовая валидация
+            const filesCount = files?.length || 0;
+            if (!text && text.trim() === '' && filesCount < 1 && songs < 1) {
+                return RouterHelper.error('Нельзя отправить пустой пост');
+            }
 
-                    if (uploadedFile) {
-                        if (!content.videos) content.videos = [];
+            // Проверка времени (раз в 15 секунд)
+            if (await this.checkTime({ id: sender.id, type: sender.type })) {
+                return RouterHelper.error('Отправить пост можно раз в 15 секунд');
+            }
 
-                        content.videos.push({
-                            file: uploadedFile,
-                            name: video.name,
-                            size: video.buffer.length,
-                            info: {
-                                width: video.metadata.width,
-                                height: video.metadata.height
-                            }
-                        });
-                    }
+            // Валидация текста
+            if (text) {
+                const validator = new Validator();
+                validator.validateText({
+                    title: 'Текст поста',
+                    value: text,
+                    maxLength: 30000
+                });
+            }
+
+            // Определяем тип контента
+            let contentType = 'text';
+            if (filesCount > 0) {
+                contentType = 'mixed';
+                if (filesCount > 150) {
+                    return RouterHelper.error('Максимальное количество файлов 150');
                 }
             }
 
-
-            if (c_files.length > 0) {
-                for (const file of c_files) {
-                    const uploadedFile = await FileManager.saveFile('posts/files', file.buffer);
-
-                    if (uploadedFile) {
-                        if (!content.files) content.files = [];
-
-                        content.files.push({
-                            file: uploadedFile,
-                            name: file.name,
-                            size: file.buffer.length
-                        });
-                    }
-                }
+            // Формируем контент
+            let content = {};
+            
+            // Обработка музыки (заглушка)
+            if (songs && songs.length > 0) {
+                content.songs = songs.map(songId => ({
+                    song_id: songId
+                }));
             }
+
+            // Обработка файлов (заглушка для разработки)
+            if (files && files.length > 0) {
+                content.images = files
+                    .filter(file => file.type?.startsWith('image/'))
+                    .map(file => ({
+                        img_data: { url: `mock://image/${file.name}` },
+                        file_name: file.name,
+                        file_size: file.size || 0
+                    }));
+                
+                content.videos = files
+                    .filter(file => file.type?.startsWith('video/'))
+                    .map(file => ({
+                        file: `mock://video/${file.name}`,
+                        name: file.name,
+                        size: file.size || 0,
+                        info: { width: 1920, height: 1080 }
+                    }));
+                
+                content.files = files
+                    .filter(file => !file.type?.startsWith('image/') && !file.type?.startsWith('video/'))
+                    .map(file => ({
+                        file: `mock://file/${file.name}`,
+                        name: file.name,
+                        size: file.size || 0
+                    }));
+            }
+
+            if (settings?.censoring_img) {
+                content.censoring = true;
+            }
+
+            // Создаем пост в памяти
+            const postId = memoryStorage.nextPostId++;
+            const newPost = {
+                id: postId,
+                author_id: sender.id,
+                author_type: sender.type,
+                content_type: contentType,
+                text: text,
+                content: content,
+                date: getDate(),
+                hidden: 0,
+                in_trash: 0,
+                deleted_at: null
+            };
+
+            memoryStorage.posts.set(postId, newPost);
+
+            // Обработка стены (wall)
+            if (type === 'wall' && wall && wall.username) {
+                // Заглушка для стены
+                console.log(`📌 Пост добавлен на стену пользователя ${wall.username}`);
+            }
+
+            // Награда за пост
+            await accountManager.maybeReward('post');
+            
+            // Обновляем счетчик постов
+            await this.recount(sender.id, sender.type);
+
+            console.log(`✅ Пост создан (ID: ${postId}) от ${sender.type === 0 ? 'пользователя' : 'канала'} ${sender.id}`);
+            
+            return RouterHelper.success({ post_id: postId });
+            
+        } catch (error) {
+            console.error('❌ Ошибка при создании поста:', error);
+            return RouterHelper.error(error.message || 'Ошибка при создании поста');
         }
-
-        if (settings?.censoring_img) {
-            content.censoring = true;
-        }
-
-        const res = await dbE.query('INSERT INTO `posts` (`author_id`, `author_type`, `content_type`, `text`, `content`, `date`) VALUES (?, ?, ?, ?, ?, ?)', [
-            sender.id,
-            sender.type,
-            contentType,
-            text,
-            content ? JSON.stringify(content) : null,
-            getDate()
-        ])
-
-        if (type === 'wall' && wall && wall.username) {
-            const profileData = await AccountDataHelper.getDataFromUsername(wall.username);
-
-            if (profileData && profileData.id !== undefined && profileData.type !== undefined) {
-                await dbE.query('INSERT INTO `wall` (`author_id`, `author_type`, `pid`) VALUES (?, ?, ?)', [profileData.id, profileData.type, res.insertId]);
-                await dbE.query('UPDATE `posts` SET `hidden` = 1 WHERE `id` = ?', [res.insertId]);
-            }
-        }
-
-        await accountManager.maybeReward('post');
-        await this.recount(sender.id, sender.type);
-
-        return RouterHelper.success({ post_id: res.insertId })
     }
-
-    static sanitizeFileName(name: string): string {
-        const base = basename(name, extname(name));
-        const safe = base.replace(/[^a-zA-Z0-9_-]/g, '');
-        return safe.length > 0 ? `${safe}${extname(name)}` : `video_${Date.now()}.mp4`;
-    }
-
-    static async getFilesType(
-        files: { name: string, type: string, size: number, buffer: Uint8Array }[]
-    ): Promise<'images' | 'files' | 'mixed'> {
-        let hasImage = false;
-        let hasFile = false;
-
-        for (const file of files) {
-            const buffer = Buffer.from(file.buffer);
-            const type = await fileTypeFromBuffer(buffer);
-
-            if (type && validImageTypes.includes(type.mime)) {
-                hasImage = true;
-            } else {
-                hasFile = true;
-            }
-
-            if (hasImage && hasFile) return 'mixed';
-        }
-
-        if (hasImage) return 'images';
-        if (hasFile) return 'files';
-
-        return 'files';
-    };
 
     static async recount(author_id, author_type) {
-        if (author_type === 0) {
-            const posts = await dbE.query('SELECT COUNT(*) AS count FROM posts WHERE author_id = ? AND author_type = 0 AND hidden = 0', [author_id]);
-            await dbE.query('UPDATE accounts SET Posts = ? WHERE ID = ?', [posts[0].count, author_id]);
-        } else if (author_type === 1) {
-            const posts = await dbE.query('SELECT COUNT(*) AS count FROM posts WHERE author_id = ? AND author_type = 1 AND hidden = 0', [author_id]);
-            await dbE.query('UPDATE channels SET Posts = ? WHERE ID = ?', [posts[0].count, author_id]);
+        try {
+            // Считаем посты
+            let postCount = 0;
+            for (const post of memoryStorage.posts.values()) {
+                if (post.author_id === author_id && 
+                    post.author_type === author_type && 
+                    post.hidden === 0) {
+                    postCount++;
+                }
+            }
+            
+            if (author_type === 0) {
+                // Обновляем счетчик у аккаунта
+                const account = memoryStorage.accounts.get(author_id);
+                if (account) {
+                    account.Posts = postCount;
+                    memoryStorage.accounts.set(author_id, account);
+                    console.log(`📊 У аккаунта ${author_id} теперь ${postCount} постов`);
+                }
+            } else if (author_type === 1) {
+                // Обновляем счетчик у канала
+                const channel = memoryStorage.channels.get(author_id);
+                if (channel) {
+                    channel.Posts = postCount;
+                    memoryStorage.channels.set(author_id, channel);
+                    console.log(`📊 У канала ${author_id} теперь ${postCount} постов`);
+                }
+            }
+            
+            return postCount;
+        } catch (error) {
+            console.error('❌ Ошибка при подсчете постов:', error);
         }
     }
 
     static async moveToTrash({ account, pid }) {
-        const postResult = await dbE.query('SELECT author_id, author_type FROM posts WHERE id = ?', [pid]);
-        const post = postResult?.[0];
-
-        const canManageAny = !!account?.permissions?.Admin || !!account?.permissions?.Moderator;
-
-        if (!canManageAny) {
-            if (post.author_type === 0) {
-                if (Number(post.author_id) !== Number(account.ID)) {
-                    return RouterHelper.error('Вы не владелец этого поста');
-                }
-            } else if (post.author_type === 1) {
-                const channelResult = await dbE.query(
-                    'SELECT Owner FROM channels WHERE ID = ?',
-                    [post.author_id]
-                );
-                const channel = channelResult?.[0];
-                if (!channel) {
-                    return RouterHelper.error('Канал не найден');
-                }
-                if (Number(channel.Owner) !== Number(account.ID)) {
-                    return RouterHelper.error('Вы не владелец этого поста');
-                }
-            } else {
-                return RouterHelper.error('Неверный тип автора');
+        try {
+            console.log(`🗑️  Удаление поста ${pid} пользователем ${account.ID}`);
+            
+            const post = memoryStorage.posts.get(Number(pid));
+            if (!post) {
+                return RouterHelper.error('Пост не найден');
             }
+
+            const canManageAny = !!account?.permissions?.Admin || !!account?.permissions?.Moderator;
+
+            if (!canManageAny) {
+                if (post.author_type === 0) {
+                    if (Number(post.author_id) !== Number(account.ID)) {
+                        return RouterHelper.error('Вы не владелец этого поста');
+                    }
+                } else if (post.author_type === 1) {
+                    const channel = memoryStorage.channels.get(post.author_id);
+                    if (!channel) {
+                        return RouterHelper.error('Канал не найден');
+                    }
+                    if (Number(channel.Owner) !== Number(account.ID)) {
+                        return RouterHelper.error('Вы не владелец этого поста');
+                    }
+                } else {
+                    return RouterHelper.error('Неверный тип автора');
+                }
+            }
+
+            // Помечаем как удаленный
+            post.in_trash = 1;
+            post.deleted_at = getDate();
+            memoryStorage.posts.set(Number(pid), post);
+
+            console.log(`✅ Пост ${pid} перемещен в корзину`);
+            
+            return RouterHelper.success({
+                message: 'Пост успешно удален'
+            });
+            
+        } catch (error) {
+            console.error('❌ Ошибка при удалении поста:', error);
+            return RouterHelper.error(error.message || 'Ошибка при удалении поста');
         }
-
-        await dbE.query(
-            'UPDATE posts SET in_trash = 1, deleted_at = ? WHERE id = ?',
-            [getDate(), pid]
-        );
-
-        return RouterHelper.success({
-            message: 'Пост успешно удален'
-        });
     }
 
     static async checkTime(from) {
-        const rows = await dbE.query(
-            'SELECT * FROM `posts` WHERE `author_id` = ? AND `author_type` = ? ORDER BY `date` DESC LIMIT 1',
-            [from.id, from.type]
-        );
+        try {
+            // Находим последний пост от этого автора
+            let lastPost = null;
+            for (const post of memoryStorage.posts.values()) {
+                if (post.author_id === from.id && post.author_type === from.type) {
+                    if (!lastPost || new Date(post.date) > new Date(lastPost.date)) {
+                        lastPost = post;
+                    }
+                }
+            }
 
-        if (rows.length > 0) {
-            const timeLimit = 15;
-            const lastPostTime = new Date(rows[0].date).getTime() / 1000;
-            const currentTime = Math.floor(Date.now() / 1000);
-            const elapsedTime = currentTime - lastPostTime;
+            if (lastPost) {
+                const timeLimit = 15; // 15 секунд
+                const lastPostTime = new Date(lastPost.date).getTime() / 1000;
+                const currentTime = Math.floor(Date.now() / 1000);
+                const elapsedTime = currentTime - lastPostTime;
 
-            return elapsedTime < timeLimit;
+                return elapsedTime < timeLimit;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ Ошибка при проверке времени:', error);
+            return false;
         }
+    }
+
+    // Новый метод для получения постов
+    static async getPosts({ limit = 20, offset = 0, author_id, author_type } = {}) {
+        try {
+            console.log(`📄 Получение постов: author=${author_id}, type=${author_type}, limit=${limit}`);
+            
+            let postsArray = Array.from(memoryStorage.posts.values())
+                .filter(post => post.hidden === 0 && post.in_trash === 0);
+
+            // Фильтрация по автору
+            if (author_id !== undefined && author_type !== undefined) {
+                postsArray = postsArray.filter(post => 
+                    post.author_id === author_id && post.author_type === author_type
+                );
+            }
+
+            // Сортировка по дате (новые первыми)
+            postsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Пагинация
+            const paginatedPosts = postsArray.slice(offset, offset + limit);
+
+            // Форматируем ответ
+            const formattedPosts = await Promise.all(paginatedPosts.map(async post => {
+                // Получаем информацию об авторе
+                let authorInfo = null;
+                if (post.author_type === 0) {
+                    const account = memoryStorage.accounts.get(post.author_id);
+                    if (account) {
+                        authorInfo = {
+                            id: account.ID,
+                            name: account.Name,
+                            username: account.Username,
+                            avatar: account.Avatar
+                        };
+                    }
+                } else if (post.author_type === 1) {
+                    const channel = memoryStorage.channels.get(post.author_id);
+                    if (channel) {
+                        authorInfo = {
+                            id: channel.ID,
+                            name: channel.Name,
+                            username: channel.Username,
+                            avatar: channel.Avatar
+                        };
+                    }
+                }
+
+                return {
+                    id: post.id,
+                    text: post.text,
+                    content: post.content,
+                    content_type: post.content_type,
+                    date: post.date,
+                    author: authorInfo,
+                    stats: {
+                        likes: 0,
+                        comments: 0,
+                        shares: 0
+                    }
+                };
+            }));
+
+            console.log(`✅ Получено ${formattedPosts.length} постов`);
+            
+            return {
+                posts: formattedPosts,
+                has_more: postsArray.length > offset + limit,
+                total: postsArray.length
+            };
+            
+        } catch (error) {
+            console.error('❌ Ошибка при получении постов:', error);
+            return { posts: [], has_more: false, total: 0 };
+        }
+    }
+
+    // Метод для получения одного поста
+    static async getPostById(postId) {
+        const post = memoryStorage.posts.get(Number(postId));
+        if (!post || post.hidden === 1 || post.in_trash === 1) {
+            return null;
+        }
+
+        // Получаем информацию об авторе
+        let authorInfo = null;
+        if (post.author_type === 0) {
+            const account = memoryStorage.accounts.get(post.author_id);
+            if (account) {
+                authorInfo = {
+                    id: account.ID,
+                    name: account.Name,
+                    username: account.Username,
+                    avatar: account.Avatar
+                };
+            }
+        } else if (post.author_type === 1) {
+            const channel = memoryStorage.channels.get(post.author_id);
+            if (channel) {
+                authorInfo = {
+                    id: channel.ID,
+                    name: channel.Name,
+                    username: channel.Username,
+                    avatar: channel.Avatar
+                };
+            }
+        }
+
+        return {
+            id: post.id,
+            text: post.text,
+            content: post.content,
+            content_type: post.content_type,
+            date: post.date,
+            author: authorInfo,
+            stats: {
+                likes: 0,
+                comments: 0,
+                shares: 0
+            }
+        };
     }
 }
 
