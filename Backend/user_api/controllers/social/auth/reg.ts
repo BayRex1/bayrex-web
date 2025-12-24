@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import Config from '../../../../../system/global/Config.js';
 import RouterHelper from '../../../../../services/system/RouterHelper.js';
+import Validator from '../../../../../services/system/Validator.js';
 import { getDate } from '../../../../../system/global/Function.js';
 
 // Хранилище аккаунтов в памяти
@@ -14,7 +15,7 @@ const memoryStorage = {
 };
 
 // Проверка уникальности username и email
-const checkUniqueCredentials = (username, email) => {
+const checkUniqueCredentials = (username: string, email: string) => {
     for (const [id, account] of memoryStorage.accounts.entries()) {
         if (account.Username === username) {
             throw new Error('Этот логин уже занят');
@@ -27,74 +28,19 @@ const checkUniqueCredentials = (username, email) => {
 };
 
 // Валидация капчи (упрощенная для разработки)
-const validateCaptcha = async (hCaptchaToken) => {
+const validateCaptcha = async (hCaptchaToken: string) => {
     // В режиме разработки отключаем капчу
     console.log('⚠️  Капча отключена для разработки');
     return true;
-    
-    /*
-    // Полная версия (закомментирована)
-    if (!Config.CAPTCHA || !Config.CAPTCHA_KEY) {
-        console.log('⚠️  Капча отключена в конфигурации');
-        return true;
-    }
-
-    if (!hCaptchaToken) {
-        throw new Error('Токен капчи не предоставлен');
-    }
-
-    try {
-        const params = new URLSearchParams();
-        params.append('secret', Config.CAPTCHA_KEY);
-        params.append('response', hCaptchaToken);
-        
-        const captchaUrl = Config.CAPTCHA_URL || 'https://hcaptcha.com/siteverify';
-        
-        const captchaRes = await axios.post(captchaUrl, params.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            timeout: 10000
-        });
-
-        console.log('🔐 Ответ капчи:', captchaRes.data);
-
-        if (!captchaRes.data.success) {
-            const errorCodes = captchaRes.data['error-codes'] || [];
-            let errorMessage = 'Проверка капчи не пройдена';
-            
-            if (errorCodes.includes('missing-input-secret')) {
-                errorMessage = 'Ошибка сервера капчи: отсутствует секретный ключ';
-            } else if (errorCodes.includes('invalid-input-secret')) {
-                errorMessage = 'Ошибка сервера капчи: неверный секретный ключ';
-            } else if (errorCodes.includes('missing-input-response')) {
-                errorMessage = 'Капча не была решена';
-            } else if (errorCodes.includes('invalid-input-response')) {
-                errorMessage = 'Неверный ответ капчи';
-            } else if (errorCodes.includes('bad-request')) {
-                errorMessage = 'Некорректный запрос к сервису капчи';
-            } else if (errorCodes.includes('timeout-or-duplicate')) {
-                errorMessage = 'Ответ капчи устарел или был использован ранее';
-            }
-            
-            throw new Error(errorMessage);
-        }
-
-        return true;
-    } catch (error) {
-        console.error('❌ Ошибка проверки капчи:', error.message);
-        
-        if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-            throw new Error('Сервис капчи временно недоступен. Попробуйте позже');
-        }
-        
-        throw new Error('Ошибка при проверке капчи: ' + error.message);
-    }
-    */
 };
 
 // Создание аккаунта в памяти
-const createAccountInMemory = async (accountData) => {
+const createAccountInMemory = async (accountData: {
+    name: string;
+    username: string;
+    email: string;
+    password: string;
+}) => {
     const { name, username, email, password } = accountData;
     
     // Проверяем уникальность
@@ -114,14 +60,15 @@ const createAccountInMemory = async (accountData) => {
         Email: email,
         Password: hashedPassword,
         CreateDate: getDate(),
-        Avatar: null,
-        Cover: null,
+        Avatar: null as string | null,
+        Cover: null as string | null,
         Description: '',
-        Eballs: 100, // Начальный баланс
-        last_post: null,
-        last_comment: null,
-        last_song: null,
-        messenger_size: 0
+        Eballs: 100,
+        last_post: null as string | null,
+        last_comment: null as string | null,
+        last_song: null as string | null,
+        messenger_size: 0,
+        Keyword: 0
     };
 
     // Сохраняем в память
@@ -145,16 +92,13 @@ const createAccountInMemory = async (accountData) => {
 };
 
 // Создание сессии
-const createSession = (accountId, deviceType = 'browser', device = null) => {
+const createSession = (accountId: number, deviceType: string = 'browser', device: string | null = null) => {
     const S_KEY = crypto.randomBytes(32).toString('hex');
     
     const session = {
         uid: accountId,
         s_key: S_KEY,
-        device_type: deviceType === 'browser' ? 1 : 
-                    deviceType === 'android_app' ? 2 :
-                    deviceType === 'ios_app' ? 3 :
-                    deviceType === 'windows_app' ? 4 : 0,
+        device_type: deviceType === 'browser' ? 1 : 0,
         device: device || 'unknown',
         create_date: getDate(),
         aesKey: 'mock_aes_key_for_testing',
@@ -170,7 +114,7 @@ const createSession = (accountId, deviceType = 'browser', device = null) => {
 };
 
 // Получение данных аккаунта
-const getAccountData = (accountId) => {
+const getAccountData = (accountId: number) => {
     const account = memoryStorage.accounts.get(accountId);
     if (!account) {
         throw new Error('Аккаунт не найден');
@@ -181,8 +125,8 @@ const getAccountData = (accountId) => {
     return safeAccountData;
 };
 
-export const reg = async ({ data }) => {
-    console.log('📝 Начало регистрации:', {
+export const reg = async ({ data }: { data: any }) => {
+    console.log('📝 Начало регистрации (TypeScript версия):', {
         username: data.username,
         email: data.email,
         name: data.name
@@ -253,10 +197,10 @@ export const reg = async ({ data }) => {
         // Создаем аккаунт в памяти
         console.log('👤 Создаю аккаунт в памяти...');
         const account = await createAccountInMemory({
-            name: name,
-            username: username,
-            email: email,
-            password: password
+            name: name!,
+            username: username!,
+            email: email!,
+            password: password!
         });
 
         // Создаем сессию
@@ -289,7 +233,7 @@ export const reg = async ({ data }) => {
             mode: 'memory-storage'
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Ошибка при регистрации:', error.message);
         
         // Пользовательские ошибки
@@ -304,7 +248,7 @@ export const reg = async ({ data }) => {
         
         // Системные ошибки
         return RouterHelper.error(
-            'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз или обратитесь в поддержку.'
+            'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз.'
         );
     }
 };
