@@ -65,21 +65,72 @@ class WebSocketClient extends EventEmitter {
             
             try {
                 const data = JSON.parse(event.data);
-                console.log(`📨 Сообщение от сервера: ${data.type || 'unknown'}`);
+                
+                // УЛУЧШЕННОЕ ЛОГИРОВАНИЕ: Определяем тип сообщения
+                const messageType = data.action || data.type || 'unknown';
+                console.log(`📨 Сообщение от сервера: ${messageType}`);
+                
+                // СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ ПРОФИЛЯ
+                if (messageType === 'get_profile') {
+                    console.log('👤 Обработка ответа профиля');
+                    console.log('📊 Структура данных:', {
+                        status: data.status,
+                        hasData: !!data.data,
+                        dataKeys: data.data ? Object.keys(data.data) : 'no data'
+                    });
+                }
                 
                 // Обработка connection_ready от сервера
                 if (data.type === 'connection_ready') {
                     console.log('✅ Сервер подтвердил подключение:', data.message);
                 }
                 
-                const listeners = this.eventListeners[data.type];
-                if (Array.isArray(listeners)) {
-                    listeners.forEach(callback => {
-                        callback(data);
-                    });
+                // ВЫЗЫВАЕМ ОБРАБОТЧИКИ ДЛЯ action (основной способ)
+                if (data.action) {
+                    const listeners = this.eventListeners[data.action];
+                    if (Array.isArray(listeners)) {
+                        console.log(`🔊 Вызываем ${listeners.length} обработчиков для action: ${data.action}`);
+                        listeners.forEach(callback => {
+                            try {
+                                callback(data);
+                            } catch (error) {
+                                console.error(`❌ Ошибка в обработчике ${data.action}:`, error);
+                            }
+                        });
+                    }
                 }
+                
+                // ВЫЗЫВАЕМ ОБРАБОТЧИКИ ДЛЯ type (для обратной совместимости)
+                if (data.type && data.type !== data.action) { // Не дублируем вызовы
+                    const listeners = this.eventListeners[data.type];
+                    if (Array.isArray(listeners)) {
+                        console.log(`🔊 Вызываем ${listeners.length} обработчиков для type: ${data.type}`);
+                        listeners.forEach(callback => {
+                            try {
+                                callback(data);
+                            } catch (error) {
+                                console.error(`❌ Ошибка в обработчике ${data.type}:`, error);
+                            }
+                        });
+                    }
+                }
+                
+                // Эмитируем общее событие
+                this.emit('message', data);
+                
             } catch (error) {
                 console.error('❌ Ошибка парсинга сообщения:', error, event.data);
+                
+                // Отправляем ошибку на сервер для диагностики
+                this.send({
+                    type: 'system',
+                    action: 'report_error',
+                    data: {
+                        error: 'parse_error',
+                        message: error.message,
+                        raw_data: event.data.substring(0, 200)
+                    }
+                });
             }
         };
 
@@ -106,13 +157,13 @@ class WebSocketClient extends EventEmitter {
 
     async send(data): Promise<any> {
         if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN || !this.socketReady) {
-            console.log('⏳ Отправка сообщения отложена (сокет не готов)', data.type || data);
+            console.log('⏳ Отправка сообщения отложена (сокет не готов)', data.action || data.type || 'unknown');
             this.messageQueue.push(data);
             return;
         }
 
         const ray_id = this.generateRayID();
-        console.log(`📤 Отправка: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
+        console.log(`📤 Отправка: ${data.action || data.type || 'unknown'} (ray_id: ${ray_id})`);
 
         // Отправляем как JSON (без шифрования)
         this.socket.send(JSON.stringify({ ray_id, ...data }));
@@ -123,7 +174,7 @@ class WebSocketClient extends EventEmitter {
                     const response = JSON.parse(event.data);
                     if (response.ray_id === ray_id) {
                         this.socket?.removeEventListener('message', onMessage);
-                        console.log(`📨 Получен ответ для: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
+                        console.log(`📨 Получен ответ для: ${data.action || data.type || 'unknown'} (ray_id: ${ray_id})`);
                         resolve(response);
                     }
                 } catch (error) {
@@ -135,7 +186,7 @@ class WebSocketClient extends EventEmitter {
 
             setTimeout(() => {
                 this.socket?.removeEventListener('message', onMessage);
-                console.log(`⏱️  Таймаут ожидания ответа для: ${data.type || 'unknown'} (ray_id: ${ray_id})`);
+                console.log(`⏱️  Таймаут ожидания ответа для: ${data.action || data.type || 'unknown'} (ray_id: ${ray_id})`);
                 // Не реджектим, чтобы не ломать существующий код
                 resolve({ status: 'timeout', ray_id });
             }, 5000);
@@ -192,6 +243,8 @@ class WebSocketClient extends EventEmitter {
     }
 
     onMessage(type: string, callback: (data: any) => void): void {
+        console.log(`🎯 Регистрация обработчика для: ${type}`);
+        
         if (!this.eventListeners[type]) {
             this.eventListeners[type] = [];
         }
@@ -199,9 +252,15 @@ class WebSocketClient extends EventEmitter {
         if (!this.eventListeners[type].includes(callback)) {
             this.eventListeners[type].push(callback);
 
+            // Обрабатываем накопленные события
             if (this.eventQueue[type]) {
+                console.log(`📂 Обработка ${this.eventQueue[type].length} накопленных событий для: ${type}`);
                 while (this.eventQueue[type].length > 0) {
-                    callback(this.eventQueue[type].shift());
+                    try {
+                        callback(this.eventQueue[type].shift());
+                    } catch (error) {
+                        console.error(`❌ Ошибка в обработчике накопленного события ${type}:`, error);
+                    }
                 }
             }
         }
@@ -210,6 +269,7 @@ class WebSocketClient extends EventEmitter {
     offMessage(type: string, callback: (data: any) => void): void {
         if (this.eventListeners[type]) {
             this.eventListeners[type] = this.eventListeners[type].filter(cb => cb !== callback);
+            console.log(`🗑️  Удалён обработчик для: ${type}`);
         }
     }
 
@@ -229,3 +289,46 @@ export const websocketClient = new WebSocketClient([
     'wss://bayrex-backend.onrender.com/user_api'
     // Только wss (без ws, так как сайт на HTTPS)
 ]);
+
+// 🔧 ДОБАВЛЯЕМ СПЕЦИАЛЬНЫЙ ОБРАБОТЧИК ДЛЯ ПРОФИЛЯ
+// Это гарантирует, что данные профиля будут правильно обработаны
+websocketClient.onMessage('get_profile', (data) => {
+    console.log('👤 [ГЛОБАЛЬНЫЙ ОБРАБОТЧИК] Получены данные профиля');
+    
+    // НОРМАЛИЗУЕМ ДАННЫЕ: гарантируем наличие поля path
+    if (data.status === 'success' && data.data) {
+        const profileData = data.data;
+        
+        // Если у профиля нет path, добавляем его
+        if (!profileData.path && profileData.username) {
+            profileData.path = `/profile/${profileData.username}`;
+            console.log('👤 Добавлено поле path к профилю:', profileData.path);
+        }
+        
+        // Если у профиля нет tabs, добавляем базовые вкладки
+        if (!profileData.tabs && profileData.username) {
+            profileData.tabs = [
+                { id: 'posts', label: 'Посты', path: `/profile/${profileData.username}/posts` },
+                { id: 'about', label: 'О себе', path: `/profile/${profileData.username}/about` },
+                { id: 'subscribers', label: 'Подписчики', path: `/profile/${profileData.username}/subscribers` },
+                { id: 'subscriptions', label: 'Подписки', path: `/profile/${profileData.username}/subscriptions` },
+            ];
+            console.log('👤 Добавлены базовые вкладки профиля');
+        }
+        
+        // Эмитируем нормализованное событие
+        websocketClient.emit('profile_loaded', profileData);
+    } else {
+        console.error('👤 [ГЛОБАЛЬНЫЙ ОБРАБОТЧИК] Ошибка в данных профиля:', data);
+        websocketClient.emit('profile_error', {
+            message: data.message || 'Ошибка загрузки профиля',
+            originalData: data
+        });
+    }
+});
+
+// 🎯 ДОБАВЛЯЕМ ОБРАБОТКУ ОШИБОК
+websocketClient.onMessage('error', (data) => {
+    console.error('❌ [ГЛОБАЛЬНЫЙ ОБРАБОТЧИК] Ошибка от сервера:', data);
+    websocketClient.emit('server_error', data);
+});
