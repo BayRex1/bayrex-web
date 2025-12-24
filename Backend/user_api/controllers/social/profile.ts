@@ -1,173 +1,287 @@
-import AccountManager from '../../../services/account/AccountManager.js';
+import { getMemoryStorage } from '../../../services/account/AccountStorage.js';
 import AccountDataHelper from '../../../services/account/AccountDataHelper.js';
-import { getSession } from '../../../system/global/AccountManager.js';
 import RouterHelper from '../../../services/system/RouterHelper.js';
-import { dbE } from '../../../lib/db.js';
 
 export const getProfile = async ({ account, data }) => {
-    if (!data.username && !data.uid) {
-        return RouterHelper.error('Профиль не найден');
-    }
+    try {
+        console.log('👤 Запрос на получение профиля:', { 
+            requested: data.username || data.uid,
+            viewer: account?.Username 
+        });
 
-    let profileType = [0, 'user'];
-    let profile;
+        if (!data.username && !data.uid) {
+            return RouterHelper.error('Профиль не найден');
+        }
 
-    if (data.username) {
-        profile = await dbE.query('SELECT * FROM `accounts` WHERE `Username` = ?', [data.username]);
-        profile = profile[0] || null;
+        const memoryStorage = getMemoryStorage();
+        let profileType = [0, 'user']; // [type, string_type]
+        let profile = null;
+
+        // Поиск профиля по username или uid
+        if (data.username) {
+            // Ищем в аккаунтах
+            for (const [id, acc] of memoryStorage.accounts.entries()) {
+                if (acc.Username === data.username) {
+                    profile = { ...acc, ID: id };
+                    break;
+                }
+            }
+            
+            // Если не нашли в аккаунтах, ищем в каналах
+            if (!profile) {
+                for (const [id, channel] of memoryStorage.channels.entries()) {
+                    if (channel.Username === data.username) {
+                        profile = { ...channel, ID: id };
+                        profileType = [1, 'channel'];
+                        break;
+                    }
+                }
+            }
+        } else if (data.uid) {
+            // Поиск по ID
+            const uid = Number(data.uid);
+            
+            // Сначала в аккаунтах
+            if (memoryStorage.accounts.has(uid)) {
+                const acc = memoryStorage.accounts.get(uid);
+                profile = { ...acc, ID: uid };
+            } 
+            // Затем в каналах
+            else if (memoryStorage.channels.has(uid)) {
+                const channel = memoryStorage.channels.get(uid);
+                profile = { ...channel, ID: uid };
+                profileType = [1, 'channel'];
+            }
+        }
 
         if (!profile) {
-            profile = await dbE.query('SELECT * FROM `channels` WHERE `Username` = ?', [data.username]);
-            profile = profile[0] || null;
-            profileType = [1, 'channel'];
+            console.log(`❌ Профиль не найден: ${data.username || data.uid}`);
+            return RouterHelper.error('Профиль не найден');
         }
-    } else if (data.uid) {
-        profile = await dbE.query('SELECT * FROM `accounts` WHERE `ID` = ?', [data.uid]);
-        profile = profile[0] || null;
-    }
 
-    if (!profile) {
-        return RouterHelper.error('Профиль не найден');
-    }
-
-    if (profile.Posts === 0) {
-        const result = await dbE.query('SELECT COUNT(*) AS Count FROM `posts` WHERE `author_id` = ? AND `author_type` = ?', [profile.ID, profileType[0]]);
-        profile.Posts = result[0]?.Count || 0;
-
-        const updateQuery = profileType[0] === 0
-            ? 'UPDATE `accounts` SET `Posts` = ? WHERE `ID` = ?'
-            : 'UPDATE `channels` SET `Posts` = ? WHERE `ID` = ?';
-
-        await dbE.query(updateQuery, [profile.Posts, profile.ID]);
-    }
-
-    let links = null;
-    if (profile.Links > 0) {
-        links = await dbE.query('SELECT * FROM `accounts_links` WHERE `UserID` = ? ORDER BY `Date` DESC', [profile.ID]);
-        links = links.map(link => ({
-            id: link.ID,
-            title: link.Title,
-            link: link.Link
-        }));
-    }
-
-    let myProfile = false;
-    let subscribed = false;
-    const accountDataHelper = new AccountDataHelper();
-
-    if (account) {
-        if (profileType[0] === 0) {
-            myProfile = account.ID === profile.ID;
-        } else if (profileType[0] === 1) {
-            myProfile = account.ID === profile.Owner;
+        // Подсчёт постов для профиля (если не указано)
+        if (!profile.Posts || profile.Posts === 0) {
+            let postCount = 0;
+            for (const post of memoryStorage.posts.values()) {
+                if (post.author_id === profile.ID && post.author_type === profileType[0] && post.hidden === 0) {
+                    postCount++;
+                }
+            }
+            profile.Posts = postCount;
+            
+            // Обновляем в хранилище
+            if (profileType[0] === 0) {
+                memoryStorage.accounts.set(profile.ID, { ...profile });
+            } else {
+                memoryStorage.channels.set(profile.ID, { ...profile });
+            }
+            
+            console.log(`📊 Подсчитано постов для ${profile.Username}: ${postCount}`);
         }
-        subscribed = await accountDataHelper.checkSubscription(account.ID, {
-            type: profileType[0],
-            id: profile.ID
-        });
-    }
 
-    const [isBlocked, wall, gifts] = await Promise.all([
-        (account && account.ID !== profile.ID) ? accountDataHelper.checkBlock(account.ID, profile.ID, profileType[0]) : Promise.resolve(false),
-        dbE.query('SELECT COUNT(*) as count FROM wall WHERE author_type = ? AND author_id = ?', [profileType[0], profile.ID]),
-        dbE.query('SELECT COUNT(*) as count FROM `entity_gifts` WHERE entity_type = ? AND entity_id = ?', [profileType[0], profile.ID])
-    ]);
+        // Получение ссылок профиля (заглушка для памяти)
+        let links = null;
+        if (profile.Links > 0) {
+            // В режиме памяти возвращаем пустые ссылки
+            links = [];
+            console.log(`🔗 Ссылки профиля (заглушка): ${profile.Username}`);
+        }
 
-    const profileData: any = {
-        type: profileType[1],
-        id: profile.ID,
-        name: profile.Name,
-        username: profile.Username,
-        cover: AccountDataHelper.getCover(profile.Cover),
-        avatar: AccountDataHelper.getAvatar(profile.Avatar),
-        description: profile.Description,
-        posts: profile.Posts,
-        subscribers: profile.Subscribers,
-        subscribed,
-        wall_count: wall[0].count,
-        gifts_count: gifts[0].count,
-        create_date: profile.CreateDate,
-        blocked: isBlocked,
-        my_profile: myProfile
-    };
+        // Проверяем, наш ли это профиль и подписку
+        let myProfile = false;
+        let subscribed = false;
+        const accountDataHelper = new AccountDataHelper();
 
-    if (profileType[0] === 0) {
-        const manager = new AccountManager(profile.ID);
+        if (account) {
+            if (profileType[0] === 0) {
+                myProfile = account.ID === profile.ID;
+            } else if (profileType[0] === 1) {
+                myProfile = account.ID === profile.Owner;
+            }
+            
+            // Проверка подписки (заглушка для памяти)
+            subscribed = false; // Пока заглушка
+        }
+
+        // Проверка блокировки (заглушка для памяти)
+        const isBlocked = false;
         
-        const [permissions, session, icons] = await Promise.all([
-            manager.getPermissions(),
-            getSession(profile.ID),
-            accountDataHelper.getIcons(profile.ID)
-        ]);
+        // Подсчёт wall (заглушка)
+        const wallCount = 0;
+        
+        // Подсчёт подарков (заглушка)
+        const giftsCount = 0;
+        
+        // Подсчёт подписчиков (если не указано)
+        if (!profile.Subscribers) {
+            // В режиме памяти показываем 0
+            profile.Subscribers = 0;
+        }
+        
+        // Подсчёт подписок (для пользователей)
+        if (profileType[0] === 0 && !profile.Subscriptions) {
+            profile.Subscriptions = 0;
+        }
 
-        profileData.online = (session && session.connection) ? true : false;
-        profileData.icons = icons || null;
-        profileData.subscriptions = profile.Subscriptions;
-        profileData.links_count = profile.Links;
-        profileData.links = links;
-        profileData.permissions = (
-            permissions ? {
+        // Формируем данные профиля
+        const profileData = {
+            type: profileType[1],
+            id: profile.ID,
+            name: profile.Name,
+            username: profile.Username,
+            cover: profile.Cover || '/mock/default/cover.jpg',
+            avatar: profile.Avatar || '/mock/default/avatar.jpg',
+            description: profile.Description || '',
+            posts: profile.Posts || 0,
+            subscribers: profile.Subscribers || 0,
+            subscriptions: profile.Subscriptions || 0,
+            subscribed,
+            wall_count: wallCount,
+            gifts_count: giftsCount,
+            create_date: profile.CreateDate || new Date().toISOString(),
+            blocked: isBlocked,
+            my_profile: myProfile,
+            links_count: profile.Links || 0,
+            links: links,
+            online: false // Заглушка для онлайн статуса
+        };
+
+        // Дополнительные данные для пользователей
+        if (profileType[0] === 0) {
+            // Получаем разрешения
+            const permissions = memoryStorage.permissions.get(profile.ID) || {
+                Posts: true,
+                Comments: true,
+                NewChats: true,
+                MusicUpload: false,
+                Admin: false,
+                Verified: false,
+                Fake: false
+            };
+            
+            // Иконки (заглушка)
+            const icons = [];
+            
+            profileData.icons = icons;
+            profileData.permissions = {
                 posts: permissions.Posts,
                 comments: permissions.Comments,
                 new_chats: permissions.NewChats,
                 music_upload: permissions.MusicUpload,
                 verified: permissions.Verified,
-                fake: permissions.Fake
-            } : null
-        );
+                fake: permissions.Fake,
+                admin: permissions.Admin
+            };
+            
+            // Проверяем онлайн статус (упрощённо через сессии)
+            let isOnline = false;
+            for (const session of memoryStorage.sessions.values()) {
+                if (session.uid === profile.ID && session.connection) {
+                    isOnline = true;
+                    break;
+                }
+            }
+            profileData.online = isOnline;
+        }
+
+        console.log(`✅ Профиль загружен: ${profile.Username} (${profileType[1]})`);
+        
+        return RouterHelper.success({
+            data: profileData
+        });
+        
+    } catch (error) {
+        console.error('❌ Ошибка при получении профиля:', error);
+        return RouterHelper.error('Ошибка при загрузке профиля');
     }
+};
 
-    return RouterHelper.success({
-        data: profileData
-    });
-}
-
+// Вспомогательная функция для определения типа профиля
 const getProfileTypeData = async (username) => {
-    let profile = await dbE.query('SELECT * FROM `accounts` WHERE `Username` = ?', [username]);
-
-    if (profile.length > 0) {
-        return [profile[0].ID, 0];
-    } else {
-        profile = await dbE.query('SELECT * FROM `channels` WHERE `Username` = ?', [username]);
-
-        if (profile.length > 0) {
-            return [profile[0].ID, 1];
-        } else {
-            return undefined;
+    const memoryStorage = getMemoryStorage();
+    
+    // Ищем в аккаунтах
+    for (const [id, account] of memoryStorage.accounts.entries()) {
+        if (account.Username === username) {
+            return [id, 0]; // [ID, type]
         }
     }
-}
-
-export const blockProfile = async ({ account, data }) => {
-    if (!account) { return };
-
-    const profileData = await getProfileTypeData(data.username);
-
-    if (!profileData) {
-        return RouterHelper.error('Профиль не найден');
-    }
-
-    const accountManager = new AccountManager(account.ID);
-    await accountManager.blockProfile(profileData[0], profileData[1]);
-
-    return RouterHelper.success({
-        message: 'Профиль заблокирован'
-    });
-}
-
-export const unblockProfile = async ({ account, data }) => {
-    if (!account) { return };
-
-    const profileData = await getProfileTypeData(data.username);
-
-    if (!profileData) {
-        return RouterHelper.error('Профиль не найден');
+    
+    // Ищем в каналах
+    for (const [id, channel] of memoryStorage.channels.entries()) {
+        if (channel.Username === username) {
+            return [id, 1]; // [ID, type]
+        }
     }
     
-    const accountManager = new AccountManager(account.ID);
-    await accountManager.unblockProfile(profileData[0], profileData[1]);
+    return undefined;
+};
 
-    return RouterHelper.success({
-        message: 'Профиль разблокирован'
-    });
-}
+export const blockProfile = async ({ account, data }) => {
+    try {
+        if (!account) {
+            return RouterHelper.error('Требуется авторизация');
+        }
+
+        const profileData = await getProfileTypeData(data.username);
+
+        if (!profileData) {
+            return RouterHelper.error('Профиль не найден');
+        }
+
+        const memoryStorage = getMemoryStorage();
+        const [targetId, targetType] = profileData;
+        
+        // Создаём запись о блокировке
+        const blockKey = `${account.ID}_${targetType}_${targetId}`;
+        memoryStorage.blocks.set(blockKey, {
+            blockerId: account.ID,
+            targetId,
+            targetType,
+            date: new Date().toISOString()
+        });
+
+        console.log(`🚫 Пользователь ${account.Username} заблокировал профиль ${data.username}`);
+        
+        return RouterHelper.success({
+            message: 'Профиль заблокирован'
+        });
+        
+    } catch (error) {
+        console.error('❌ Ошибка при блокировке профиля:', error);
+        return RouterHelper.error('Ошибка при блокировке');
+    }
+};
+
+export const unblockProfile = async ({ account, data }) => {
+    try {
+        if (!account) {
+            return RouterHelper.error('Требуется авторизация');
+        }
+
+        const profileData = await getProfileTypeData(data.username);
+
+        if (!profileData) {
+            return RouterHelper.error('Профиль не найден');
+        }
+
+        const memoryStorage = getMemoryStorage();
+        const [targetId, targetType] = profileData;
+        
+        // Удаляем запись о блокировке
+        const blockKey = `${account.ID}_${targetType}_${targetId}`;
+        const deleted = memoryStorage.blocks.delete(blockKey);
+
+        if (deleted) {
+            console.log(`🔓 Пользователь ${account.Username} разблокировал профиль ${data.username}`);
+        }
+        
+        return RouterHelper.success({
+            message: 'Профиль разблокирован'
+        });
+        
+    } catch (error) {
+        console.error('❌ Ошибка при разблокировке профиля:', error);
+        return RouterHelper.error('Ошибка при разблокировке');
+    }
+};
