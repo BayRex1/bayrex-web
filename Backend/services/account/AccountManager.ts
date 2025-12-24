@@ -1,11 +1,10 @@
-// services/account/AccountManager.js
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import AppError from '../../services/system/AppError.js';
 import { memoryStorage, initTestData } from './AccountStorage.js';
 
 // Инициализируем тестовые данные
-initTestData();
+await initTestData();
 
 class AccountManager {
     constructor(id) {
