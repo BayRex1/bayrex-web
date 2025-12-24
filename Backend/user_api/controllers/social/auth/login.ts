@@ -1,44 +1,50 @@
 import AccountManager from '../../../../system/global/AccountManager.js';
-import Validator from '../../../../services/system/Validator.js';
+import { connectAccount } from '../../../../system/global/AccountManager.js';
+import AppError from '../../../../services/system/AppError.js';
 
 const login = async ({ data }) => {
     try {
-        const validator = new Validator();
-        await validator.validateEmail(data.email);
-        validator.validateText({ title: 'Пароль', value: data.password, maxLength: 100 });
-
-        // Поиск аккаунта в памяти
-        let accountId = null;
-        for (const [id, acc] of AccountManager.memory.accounts.entries()) {
-            if (acc.Email.toLowerCase() === data.email.toLowerCase()) {
-                accountId = id;
-                break;
-            }
-        }
-
-        if (!accountId) {
-            return { status: 'error', message: 'Аккаунт не найден' };
-        }
-
-        const accountManager = new AccountManager(accountId);
-        const isPasswordValid = await accountManager.verifyPassword(data.password);
-
-        if (!isPasswordValid) {
-            return { status: 'error', message: 'Неверный пароль' };
-        }
-
-        const S_KEY = await accountManager.startSession(data.device_type, data.device);
-
+        console.log('🔐 Вход в аккаунт:', { 
+            email: data.email?.substring(0, 10) + '...', 
+            username: data.username,
+            hasPassword: !!data.password 
+        });
+        
+        // Используем новый метод connectAccount для упрощения
+        const result = await connectAccount({
+            email: data.email,
+            username: data.username,
+            password: data.password,
+            device_type: data.device_type || 'browser',
+            device: data.device || 'unknown'
+        });
+        
+        console.log(`✅ Вход успешен: ${result.account.Username} (ID: ${result.account.ID})`);
+        
         return {
             status: 'success',
-            S_KEY,
-            accountID: accountId,
-            username: accountManager.accountData.Username
+            S_KEY: result.session.s_key,
+            accountID: result.account.ID,
+            username: result.account.Username,
+            account: result.account,
+            session: result.session,
+            permissions: result.permissions
         };
 
     } catch (err) {
-        console.error('❌ Ошибка логина:', err);
-        return { status: 'error', message: 'Произошла ошибка при входе' };
+        console.error('❌ Ошибка логина:', err.message);
+        
+        if (err instanceof AppError) {
+            return { 
+                status: 'error', 
+                message: err.message 
+            };
+        }
+        
+        return { 
+            status: 'error', 
+            message: 'Произошла ошибка при входе' 
+        };
     }
 };
 
