@@ -23,7 +23,7 @@ import loadModerationHistory from '../controllers/social/moderation/load_moderat
 import { submitAppeal, loadMyAppeals, checkExisting, loadAdminAppeals, reviewAppeal, updateAppealStatus } from '../controllers/social/appeals/index.js';
 
 // ⭐ ИМПОРТ КОНТРОЛЛЕРА РЕГИСТРАЦИИ ⭐
-import { reg } from '../controllers/authorization/register.js';
+import { reg } from '../controllers/auth/reg.ts';
 
 const routes = {
     // ⭐ ДОБАВЛЕНО: Роуты для authorization ⭐
@@ -272,3 +272,4 @@ const social = async (ws, action, data) => {
 };
 
 export default social;
+
