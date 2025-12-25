@@ -22,13 +22,30 @@ import moderation from '../controllers/social/moderation/index.js';
 import loadModerationHistory from '../controllers/social/moderation/load_moderation_history.js';
 import { submitAppeal, loadMyAppeals, checkExisting, loadAdminAppeals, reviewAppeal, updateAppealStatus } from '../controllers/social/appeals/index.js';
 
-// ⭐ ИСПРАВЛЕННЫЙ ПУТЬ ИМПОРТА ⭐
-import { reg } from '../../controllers/auth/reg.js';
+// ⭐ ДИНАМИЧЕСКИЙ ИМПОРТ ДЛЯ РЕГИСТРАЦИИ ⭐
+let regController;
+(async () => {
+    try {
+        // Пробуем разные пути для импорта
+        const module = await import('../../controllers/auth/reg.ts');
+        regController = module.reg;
+        console.log('✅ Контроллер регистрации загружен из reg.ts');
+    } catch (error) {
+        console.error('❌ Ошибка загрузки reg.ts:', error.message);
+        regController = async ({ data }) => ({
+            status: 'error',
+            message: 'Register controller not available: ' + error.message
+        });
+    }
+})();
 
 const routes = {
-    // ⭐ ДОБАВЛЕНО: Роуты для authorization ⭐
+    // ⭐ Роут для authorization/register ⭐
     authorization: {
-        register: { h: reg, useAccount: false }
+        register: { h: regController || async () => ({ 
+            status: 'error', 
+            message: 'Register controller loading...' 
+        }), useAccount: false }
     },
     
     auth: {
@@ -190,16 +207,22 @@ const flattenRoutes = (obj, path = '') => {
 
 flattenRoutes(routes);
 
-console.log('✅ Social.ts загружен с маршрутом authorization/register');
+console.log('✅ Social.ts инициализирован');
+console.log('📋 Маршруты загружены, включая authorization/register');
 
 const social = async (ws, action, data) => {
     try {
+        console.log(`🔵 [social] Action: ${action}`);
+        
         const route = flatRoutes.get(action);
 
         if (!route) {
+            console.log(`❌ [social] Маршрут не найден: ${action}`);
             return { status: 'error', message: 'Такого действия нет' };
         }
 
+        console.log(`✅ [social] Маршрут найден: ${action}`);
+        
         if (route.useAccount && !ws?.account?.ID) {
             return { status: 'error', message: 'Вы не вошли в аккаунт' };
         }
@@ -212,7 +235,7 @@ const social = async (ws, action, data) => {
 
         return { action, ...result };
     } catch (error) {
-        console.log(error);
+        console.log(`❌ [social] Ошибка: ${action}:`, error);
 
         if (error instanceof AppError) {
             return { status: 'error', message: error.message };
