@@ -22,8 +22,8 @@ import moderation from '../controllers/social/moderation/index.js';
 import loadModerationHistory from '../controllers/social/moderation/load_moderation_history.js';
 import { submitAppeal, loadMyAppeals, checkExisting, loadAdminAppeals, reviewAppeal, updateAppealStatus } from '../controllers/social/appeals/index.js';
 
-// ⭐ ИМПОРТ КОНТРОЛЛЕРА РЕГИСТРАЦИИ ⭐
-import { reg } from '../controllers/auth/reg.ts';
+// ⭐ ИСПРАВЛЕННЫЙ ПУТЬ ИМПОРТА ⭐
+import { reg } from '../../controllers/auth/reg.js';
 
 const routes = {
     // ⭐ ДОБАВЛЕНО: Роуты для authorization ⭐
@@ -190,86 +190,38 @@ const flattenRoutes = (obj, path = '') => {
 
 flattenRoutes(routes);
 
-// ⭐ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Добавляем отладку для регистрации ⭐
-console.log('📋 Загруженные маршруты social.ts:');
-console.log(`   - authorization/register: ${flatRoutes.has('authorization/register') ? '✅' : '❌'}`);
-console.log(`   - auth/reg: ${flatRoutes.has('auth/reg') ? '✅' : '❌'}`);
-console.log(`   - auth/login: ${flatRoutes.has('auth/login') ? '✅' : '❌'}`);
+console.log('✅ Social.ts загружен с маршрутом authorization/register');
 
 const social = async (ws, action, data) => {
     try {
-        // ⭐ ДОБАВЛЕНА ОТЛАДКА ⭐
-        console.log(`🔵 [social router] Получено действие: ${action}`);
-        
         const route = flatRoutes.get(action);
 
         if (!route) {
-            console.log(`❌ [social router] Маршрут не найден: ${action}`);
-            console.log(`📋 Доступные маршруты (первые 10):`);
-            let count = 0;
-            for (const [key] of flatRoutes) {
-                if (count++ < 10) console.log(`   - ${key}`);
-                else break;
-            }
             return { status: 'error', message: 'Такого действия нет' };
         }
 
-        console.log(`✅ [social router] Маршрут найден: ${action}`);
-        
         if (route.useAccount && !ws?.account?.ID) {
-            console.log(`❌ [social router] Нет аккаунта для действия: ${action}`);
             return { status: 'error', message: 'Вы не вошли в аккаунт' };
         }
 
         if (route.permission && !ws?.account?.permissions?.[route.permission]) {
-            console.log(`❌ [social router] Нет прав: ${action}, требуется: ${route.permission}`);
             return { status: 'error', message: 'У вас нет прав на это действие' };
-        }
-
-        // ⭐ ОСОБАЯ ОБРАБОТКА ДЛЯ РЕГИСТРАЦИИ ⭐
-        if (action === 'authorization/register' || action === 'auth/reg') {
-            console.log('🎯 [social router] Обработка регистрации...');
-            console.log('📝 Данные регистрации:', {
-                username: data.username,
-                email: data.email?.substring(0, 10) + '...',
-                name: data.name
-            });
         }
 
         const result = await route.h({ account: ws.account, data });
 
-        // ⭐ ОСОБАЯ ПРОВЕРКА ДЛЯ РЕГИСТРАЦИИ ⭐
-        if ((action === 'authorization/register' || action === 'auth/reg') && result.status === 'success') {
-            console.log('✅ [social router] Регистрация успешна!');
-            console.log(`   Новый аккаунт: ID=${result.accountID}, Username=${result.accountData?.Username}`);
-            
-            // Проверяем, что это не тестовый аккаунт
-            if (result.accountID === 1 || result.accountData?.Username?.toLowerCase().includes('test')) {
-                console.warn('⚠️  [social router] ВНИМАНИЕ: Создан аккаунт с подозрительными данными!');
-                console.warn(`   ID: ${result.accountID}, Username: ${result.accountData?.Username}`);
-            }
-        }
-
         return { action, ...result };
     } catch (error) {
-        console.log(`❌ [social router] Ошибка при обработке ${action}:`, error);
+        console.log(error);
 
         if (error instanceof AppError) {
             return { status: 'error', message: error.message };
         }
-        
-        // ⭐ ДОБАВЛЕНА ДЕТАЛЬНАЯ ИНФОРМАЦИЯ ОБ ОШИБКЕ ⭐
-        console.error('🔧 Детали ошибки:');
-        console.error('   - Message:', error.message);
-        console.error('   - Stack:', error.stack);
-        
         return {
             status: 'error',
-            message: 'Внутренняя ошибка сервера',
-            debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Внутренняя ошибка сервера'
         };
     }
 };
 
 export default social;
-
